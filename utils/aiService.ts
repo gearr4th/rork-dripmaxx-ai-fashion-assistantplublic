@@ -58,7 +58,12 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
       const preferences: string[] = Array.isArray(parsed.preferences)
         ? parsed.preferences.filter((p: unknown) => typeof p === 'string').map((p: string) => p.trim()).filter(Boolean)
         : [];
-      const location: string | null = typeof parsed.location === 'string' ? parsed.location : null;
+      const rawLocation: string | null = typeof parsed.location === 'string' ? parsed.location : null;
+      let location: string | null = rawLocation;
+      if (rawLocation) {
+        const geo = await geocodePlace(rawLocation);
+        if (geo) location = geo;
+      }
       return { occasion, budget, preferences, location } as ParsedUserRequest;
     }
   } catch (e) {
@@ -92,6 +97,10 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
     if (mallHints.test(maybePlace)) {
       location = maybePlace;
     }
+  }
+  if (location) {
+    const geo = await geocodePlace(location);
+    if (geo) location = geo;
   }
   return { occasion, budget, preferences: Array.from(new Set(prefs)), location };
 }
