@@ -1,4 +1,4 @@
-import { ClothingItem, Outfit, Weather } from "@/types";
+import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel } from "@/types";
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GEMINI_API_KEY, CONFIG } from './config';
 
@@ -117,6 +117,81 @@ export async function fetchSocialTrends(params: { prompt: string; location?: str
     console.error('fetchSocialTrends error:', error);
   }
   return CONFIG.DEFAULT_TRENDS;
+}
+
+type AnalyzeImageInput = { base64: string; mimeType: string };
+
+export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<ImageAnalysisResult> {
+  try {
+    console.log('Analyzing clothing image with Gemini...', { mimeType: input.mimeType, size: input.base64.length });
+    const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
+
+    const prompt = `You are a fashion product identifier. Given an image of a clothing item, return ONLY JSON in this shape:
+{
+  "itemName": string, // simple human-friendly name if brand unknown
+  "officialProductName": string, // closest product name from likely brand catalog
+  "brand": string|null,
+  "type": string|null, // hoodie, tee, jeans, sneakers, etc.
+  "style": string|null, // e.g., streetwear, minimalist, smart casual, Y2K
+  "averagePrice": number|null, // average price from brand official store (estimate if exact unavailable)
+  "currency": "USD", // pick currency and keep consistent based on brand region
+  "versatilityScore": number, // 0-100 rating for how many occasions it fits
+  "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip",
+  "reasoning": string, // short justification including comparable products
+  "sources": string[] // likely brand/catalog URLs or search terms
+}
+Rules:
+- Prefer official brand pricing, never reseller or aftermarket.
+- If brand uncertain, infer from cues like logos, silhouettes, typical colorways.
+- Be conservative with Maxx Drip; reserve for iconic or high-fashion pieces.
+- Do not add extra text, only the JSON. Make sure it is valid JSON.`;
+
+    const result = await model.generateContent([
+      { text: prompt },
+      {
+        inlineData: {
+          data: input.base64,
+          mimeType: input.mimeType,
+        }
+      } as any,
+    ]);
+    const text = result.response.text();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in AI response');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    const dripString = String(parsed.dripLevel ?? parsed.drip ?? 'Lowkey Drip') as DripLevel;
+    const normalized: ImageAnalysisResult = {
+      itemName: String(parsed.itemName ?? 'Clothing Item'),
+      officialProductName: String(parsed.officialProductName ?? parsed.itemName ?? 'Unknown'),
+      brand: parsed.brand ? String(parsed.brand) : undefined,
+      type: parsed.type ? String(parsed.type) : undefined,
+      style: parsed.style ? String(parsed.style) : undefined,
+      averagePrice: typeof parsed.averagePrice === 'number' ? parsed.averagePrice : null,
+      currency: parsed.currency ? String(parsed.currency) : 'USD',
+      versatilityScore: Math.max(0, Math.min(100, Number(parsed.versatilityScore ?? 60))),
+      dripLevel: (['Maxx Drip','Pure Drip','Certified Drip','Lowkey Drip'].includes(dripString) ? dripString : 'Lowkey Drip') as DripLevel,
+      reasoning: String(parsed.reasoning ?? ''),
+      sources: Array.isArray(parsed.sources) ? parsed.sources.map((s: unknown) => String(s)).slice(0, 5) : [],
+    };
+    return normalized;
+  } catch (e) {
+    console.log('analyzeClothingImage error, returning fallback', e);
+    const fallback: ImageAnalysisResult = {
+      itemName: 'Clothing Item',
+      officialProductName: 'Unknown Product',
+      brand: undefined,
+      type: undefined,
+      style: undefined,
+      averagePrice: null,
+      currency: 'USD',
+      versatilityScore: 55,
+      dripLevel: 'Certified Drip',
+      reasoning: 'Could not confidently identify. Generic style score applied.',
+      sources: [],
+    };
+    return fallback;
+  }
 }
 
 export async function generateOutfit({

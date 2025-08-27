@@ -9,13 +9,17 @@ import {
   Alert,
   Image,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Image as ImageIcon, X, Check, RotateCcw, Trash2 } from "lucide-react-native";
+import { Camera, Image as ImageIcon, X, Check, RotateCcw, Trash2, ScanSearch } from "lucide-react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useClothes } from "@/providers/ClothesProvider";
+import { analyzeClothingImage } from "@/utils/aiService";
+import ImageAnalysisCard from "@/components/ImageAnalysisCard";
+import { ImageAnalysisResult } from "@/types";
 
 const clothingTypes = ["tops", "bottoms", "shoes", "accessories"];
 const colors = [
@@ -32,11 +36,15 @@ const colors = [
 export default function ScanClothesScreen() {
   const { addClothingItem } = useClothes();
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [selectedType, setSelectedType] = useState("tops");
-  const [selectedColor, setSelectedColor] = useState("#000000");
-  const [saving, setSaving] = useState(false);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imageMime, setImageMime] = useState<string | null>(null);
+  const [name, setName] = useState<string>("");
+  const [brand, setBrand] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("tops");
+  const [selectedColor, setSelectedColor] = useState<string>("#000000");
+  const [saving, setSaving] = useState<boolean>(false);
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const [analysis, setAnalysis] = useState<ImageAnalysisResult | null>(null);
 
   const pickImage = async (useCamera: boolean) => {
     const permissionResult = useCamera
@@ -53,22 +61,25 @@ export default function ScanClothesScreen() {
       return;
     }
 
+    const commonOptions: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+      base64: true,
+    };
+
     const result = useCamera
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [3, 4],
-          quality: 0.8,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [3, 4],
-          quality: 0.8,
-        });
+      ? await ImagePicker.launchCameraAsync(commonOptions)
+      : await ImagePicker.launchImageLibraryAsync(commonOptions);
 
     if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      setImageBase64(asset.base64 ?? null);
+      setImageMime(asset.type ? `${asset.type}/${asset.uri.split('.').pop() ?? 'jpeg'}` : 'image/jpeg');
+      setAnalysis(null);
+      setName(asset.fileName ?? name);
     }
   };
 
@@ -77,18 +88,9 @@ export default function ScanClothesScreen() {
       "Retake Photo",
       "How would you like to add a new photo?",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Take Photo",
-          onPress: () => pickImage(true),
-        },
-        {
-          text: "Choose from Gallery",
-          onPress: () => pickImage(false),
-        },
+        { text: "Cancel", style: "cancel" },
+        { text: "Take Photo", onPress: () => pickImage(true) },
+        { text: "Choose from Gallery", onPress: () => pickImage(false) },
       ]
     );
   };
@@ -98,17 +100,33 @@ export default function ScanClothesScreen() {
       "Delete Photo",
       "Are you sure you want to delete this photo?",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => setImageUri(null),
-        },
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => {
+            setImageUri(null);
+            setImageBase64(null);
+            setImageMime(null);
+            setAnalysis(null);
+          } },
       ]
     );
+  };
+
+  const handleAnalyze = async () => {
+    if (!imageBase64 || !imageMime) {
+      Alert.alert("No image", "Please add a clothing photo first.");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const res = await analyzeClothingImage({ base64: imageBase64, mimeType: imageMime });
+      setAnalysis(res);
+      if (!name && res.itemName) setName(res.itemName);
+      if (!brand && res.brand) setBrand(res.brand);
+    } catch (e) {
+      Alert.alert("Analysis failed", "Could not analyze the image. Please try another photo.");
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const handleSave = async () => {
@@ -156,6 +174,7 @@ export default function ScanClothesScreen() {
           {!imageUri ? (
             <View style={styles.imagePickerContainer}>
               <TouchableOpacity
+                testID="take-photo"
                 style={styles.imagePickerButton}
                 onPress={() => pickImage(true)}
               >
@@ -163,6 +182,7 @@ export default function ScanClothesScreen() {
                 <Text style={styles.imagePickerText}>Take Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="pick-photo"
                 style={styles.imagePickerButton}
                 onPress={() => pickImage(false)}
               >
@@ -175,6 +195,7 @@ export default function ScanClothesScreen() {
               <Image source={{ uri: imageUri }} style={styles.image} />
               <View style={styles.imageActions}>
                 <TouchableOpacity
+                  testID="retake-photo"
                   style={styles.actionButton}
                   onPress={retakePhoto}
                 >
@@ -182,6 +203,7 @@ export default function ScanClothesScreen() {
                   <Text style={styles.actionButtonText}>Retake</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="delete-photo"
                   style={[styles.actionButton, styles.deleteButton]}
                   onPress={deletePhoto}
                 >
@@ -189,6 +211,30 @@ export default function ScanClothesScreen() {
                   <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
                 </TouchableOpacity>
               </View>
+
+              <TouchableOpacity
+                testID="analyze-button"
+                style={[styles.analyzeButton, analyzing && styles.disabledButton]}
+                onPress={handleAnalyze}
+                disabled={analyzing}
+              >
+                <LinearGradient colors={["#FFD700", "#FFA500"]} style={styles.gradientButtonRow}>
+                  {analyzing ? (
+                    <ActivityIndicator color="#000" />
+                  ) : (
+                    <>
+                      <ScanSearch color="#000" size={22} />
+                      <Text style={styles.analyzeText}>Analyze Item</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {analysis && (
+                <View style={{ marginTop: 16 }}>
+                  <ImageAnalysisCard result={analysis} />
+                </View>
+              )}
             </View>
           )}
 
@@ -196,6 +242,7 @@ export default function ScanClothesScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Item Name *</Text>
               <TextInput
+                testID="item-name-input"
                 style={styles.input}
                 placeholder="e.g., Black Leather Jacket"
                 placeholderTextColor="#666"
@@ -207,6 +254,7 @@ export default function ScanClothesScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Brand</Text>
               <TextInput
+                testID="brand-input"
                 style={styles.input}
                 placeholder="e.g., Nike, Zara"
                 placeholderTextColor="#666"
@@ -267,6 +315,7 @@ export default function ScanClothesScreen() {
           </View>
 
           <TouchableOpacity
+            testID="save-item-button"
             style={[styles.saveButton, saving && styles.disabledButton]}
             onPress={handleSave}
             disabled={saving}
@@ -374,6 +423,23 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: "#FF4444",
+  },
+  analyzeButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginTop: 12,
+  },
+  gradientButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+  },
+  analyzeText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
   },
   form: {
     marginBottom: 32,
