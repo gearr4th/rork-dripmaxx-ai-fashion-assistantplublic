@@ -15,15 +15,39 @@ export interface ParsedUserRequest {
   occasion: string | null;
   budget: number | null;
   preferences: string[];
+  location: string | null;
+}
+
+async function geocodePlace(place: string): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'WardrobeApp/1.0 (+https://example.com)'
+      }
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as Array<{ display_name?: string }>;
+    if (Array.isArray(data) && data.length > 0) {
+      const display = data[0]?.display_name ?? null;
+      return display ? String(display) : null;
+    }
+    return null;
+  } catch (e) {
+    console.log('geocodePlace error', e);
+    return null;
+  }
 }
 
 export async function interpretUserStyleRequest(input: string): Promise<ParsedUserRequest> {
   try {
     const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
-    const sys = `Extract concise structured data from the user's outfit request. Respond with ONLY JSON in this exact shape: {"occasion": string|null, "budget": number|null, "preferences": string[]}.
-- occasion: short phrase like "school", "party", "date", "office", or null if not provided.
+    const sys = `Extract concise structured data from the user's outfit request. Respond with ONLY JSON in this exact shape: {"occasion": string|null, "budget": number|null, "preferences": string[], "location": string|null}.
+- occasion: short phrase like "school", "party", "date", "office", or inferred from place types like mall -> "shopping" if user mentions a venue.
 - budget: total budget in user's currency as a number without symbols. If the user mentions $80 or under 50, return 80 or 50. If no budget mentioned, null.
-- preferences: array of short tokens for styles, colors, fits, brands, fabrics. Keep 3-8 items.`;
+- preferences: array of short tokens for styles, colors, fits, brands, fabrics. Keep 3-8 items.
+- location: human-readable location if a place or city is mentioned (e.g., "Chadstone Shopping Centre, Melbourne, Australia"), else null.`;
     const res = await model.generateContent(`${sys}\nUser: ${input}`);
     const text = res.response.text();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -34,7 +58,8 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
       const preferences: string[] = Array.isArray(parsed.preferences)
         ? parsed.preferences.filter((p: unknown) => typeof p === 'string').map((p: string) => p.trim()).filter(Boolean)
         : [];
-      return { occasion, budget, preferences } as ParsedUserRequest;
+      const location: string | null = typeof parsed.location === 'string' ? parsed.location : null;
+      return { occasion, budget, preferences, location } as ParsedUserRequest;
     }
   } catch (e) {
     console.log('interpretUserStyleRequest fallback parse', e);
@@ -44,9 +69,14 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
   const moneyMatch = lower.match(/\b(under\s*)?(\$|£|€)?\s?(\d{2,4})\b/);
   if (moneyMatch) budget = Number(moneyMatch[3]);
   let occasion: string | null = null;
-  const knownOccasions = ['school','party','date','office','work','wedding','gym','brunch','travel','beach'];
+  const knownOccasions = ['school','party','date','office','work','wedding','gym','brunch','travel','beach','shopping'];
   for (const occ of knownOccasions) {
     if (lower.includes(occ)) { occasion = occ; break; }
+  }
+  if (!occasion) {
+    if (/(mall|shopping\s?centre|shopping\s?center|plaza)/.test(lower)) {
+      occasion = 'shopping';
+    }
   }
   const prefs: string[] = [];
   const colorMatch = lower.match(/\b(black|white|navy|blue|green|olive|brown|beige|cream|grey|gray|red|pink|pastel)\b/g);
@@ -55,7 +85,15 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
   if (lower.includes('slim')) prefs.push('slim');
   if (lower.includes('baggy')) prefs.push('baggy');
   if (lower.includes('minimal')) prefs.push('minimalist');
-  return { occasion, budget, preferences: Array.from(new Set(prefs)) };
+  let location: string | null = null;
+  const maybePlace = input.trim();
+  if (maybePlace && maybePlace.length > 2 && /[a-zA-Z]/.test(maybePlace)) {
+    const mallHints = /(mall|shopping\s?centre|shopping\s?center|plaza|centre|center)/i;
+    if (mallHints.test(maybePlace)) {
+      location = maybePlace;
+    }
+  }
+  return { occasion, budget, preferences: Array.from(new Set(prefs)), location };
 }
 
 export async function fetchSocialTrends(params: { prompt: string; location?: string | null }): Promise<string[]> {
@@ -63,7 +101,7 @@ export async function fetchSocialTrends(params: { prompt: string; location?: str
   try {
     console.log('Fetching social trends from AI...', { prompt, location });
     const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
-    const trendPrompt = `You are a fashion trend scout scanning TikTok and Instagram culture. Based on the current month and year, the user's location "${location ?? 'Unknown'}", and the user's intent: "${prompt || 'general daily outfit'}", output ONLY a compact JSON array of 6-10 short trend tags people are wearing right now on TikTok/Instagram. Focus on wearable items (e.g., "oversized vintage tee", "loose carpenter jeans", "adidas sambas", "ballet flats", "quiet luxury", "gorpcore shells"). Avoid influencers or brand names unless iconic. No explanation, just JSON array of strings.`;
+    const trendPrompt = `You are a fashion trend scout scanning TikTok and Instagram culture. Based on the current month and year, the user's location "${location ?? 'Unknown'}", and the user's intent: "${prompt || 'general daily outfit'}", output ONLY a compact JSON array of 6-10 short trend tags people are wearing right now on TikTok/Instagram. Focus on wearable items (e.g., "oversized vintage tee", "loose carpenter jeans", "adidas sambas", "ballet flats", "quiet luxury", "gorpcore shells"). Avoid influencers or brand names unless iconic. If the location resembles a shopping mall or venue (e.g., "Chadstone Shopping Centre"), bias toward practical shopping-day outfits and Melbourne/AU seasonal context if applicable. No explanation, just JSON array of strings.`;
     const res = await model.generateContent(trendPrompt);
     const text = res.response.text();
     console.log('Trend AI raw:', text);

@@ -68,11 +68,12 @@ export default function HomeScreen() {
       setParsed(parsedReq);
       const enrichedPrompt = [
         prompt?.trim() || '',
+        parsedReq.location ? `Location: ${parsedReq.location}` : null,
         parsedReq.occasion ? `Occasion: ${parsedReq.occasion}` : null,
         parsedReq.budget != null ? `Budget: ${parsedReq.budget}` : null,
         parsedReq.preferences.length ? `Preferences: ${parsedReq.preferences.join(', ')}` : null,
       ].filter(Boolean).join('\n');
-      const dynamicTrends = await fetchSocialTrends({ prompt: enrichedPrompt, location: weather?.location ?? null });
+      const dynamicTrends = await fetchSocialTrends({ prompt: enrichedPrompt, location: parsedReq.location ?? weather?.location ?? null });
       setTrends(dynamicTrends);
       const newOutfit = await generateOutfit({
         weather,
@@ -201,6 +202,7 @@ export default function HomeScreen() {
                 <Text style={styles.parsedText}>Occasion: {parsed.occasion ?? '—'}</Text>
                 <Text style={styles.parsedText}>Budget: {parsed.budget != null ? `${parsed.budget}` : '—'}</Text>
                 <Text style={styles.parsedText}>Preferences: {parsed.preferences.length ? parsed.preferences.join(', ') : '—'}</Text>
+                <Text style={styles.parsedText}>Location: {parsed.location ?? '—'}</Text>
               </View>
             </View>
           )}
