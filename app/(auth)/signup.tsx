@@ -33,8 +33,8 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signUp(email, password, name, parseInt(age));
-      Alert.alert("Success", "Account created! Please sign in.");
-      router.replace("/login" as any);
+      router.replace("/select-age" as any);
+      setTimeout(() => router.push("/select-budget" as any), 50);
     } catch (error) {
       Alert.alert("Error", "Failed to create account");
     } finally {

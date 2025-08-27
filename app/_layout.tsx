@@ -7,6 +7,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import { ClothesProvider } from "@/providers/ClothesProvider";
 import { WeatherProvider } from "@/providers/WeatherProvider";
 import { SessionProvider } from "@/providers/SessionProvider";
+import { BudgetProvider } from "@/providers/BudgetProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,6 +19,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="select-age" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="select-budget" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen 
         name="scan-clothes" 
         options={{ 
@@ -48,7 +50,9 @@ export default function RootLayout() {
           <WeatherProvider>
             <ClothesProvider>
               <SessionProvider>
-                <RootLayoutNav />
+                <BudgetProvider>
+                  <RootLayoutNav />
+                </BudgetProvider>
               </SessionProvider>
             </ClothesProvider>
           </WeatherProvider>

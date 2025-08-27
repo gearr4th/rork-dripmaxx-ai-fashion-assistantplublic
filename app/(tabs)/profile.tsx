@@ -18,12 +18,15 @@ import {
   LogOut,
   Crown,
   ChevronRight,
+  Wallet,
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
+import { useBudget } from "@/providers/BudgetProvider";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { budget } = useBudget();
 
   const handleUpgrade = () => {
     Alert.alert(
@@ -132,6 +135,19 @@ export default function ProfileScreen() {
                 <Text style={styles.infoValue}>Free Plan</Text>
               </View>
             </View>
+
+            <View style={styles.infoItem}>
+              <View style={styles.infoIcon}>
+                <Wallet color="#666" size={20} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Monthly Budget</Text>
+                <Text style={styles.infoValue}>{budget ?? 'Not set'}</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/select-budget' as any)}>
+                <Text style={[styles.infoValue, { color: '#FFD700' }]}>Change</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -146,6 +162,12 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.menuItem}>
               <CreditCard color="#888" size={20} />
               <Text style={styles.menuText}>Payment Methods</Text>
+              <ChevronRight color="#666" size={20} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/select-budget' as any)}>
+              <Wallet color="#888" size={20} />
+              <Text style={styles.menuText}>Monthly Budget</Text>
               <ChevronRight color="#666" size={20} />
             </TouchableOpacity>
 

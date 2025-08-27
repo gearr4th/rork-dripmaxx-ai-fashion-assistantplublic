@@ -15,12 +15,14 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sparkles, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/providers/AuthProvider";
+import { useBudget } from "@/providers/BudgetProvider";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  const { getBudgetForCurrentUser } = useBudget();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,6 +35,12 @@ export default function LoginScreen() {
       // Mock authentication
       await signIn(email, password);
       router.replace("/select-age" as any);
+      setTimeout(async () => {
+        const b = await getBudgetForCurrentUser();
+        if (!b) {
+          router.push("/select-budget" as any);
+        }
+      }, 50);
     } catch (error) {
       Alert.alert("Error", "Invalid credentials. Try demo@dripmaxx.ai / password");
     } finally {
