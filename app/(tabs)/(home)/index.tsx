@@ -44,6 +44,33 @@ export default function HomeScreen() {
   const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist"]);
   const [parsed, setParsed] = useState<ParsedUserRequest | null>(null);
   const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
+  const [currentGreeting, setCurrentGreeting] = useState<string>("");
+
+  const getTimeBasedGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    if (hour >= 5 && hour < 12) {
+      return "Good Morning!";
+    } else if (hour >= 12 && hour < 17) {
+      return "Good Afternoon!";
+    } else if (hour >= 17 && hour < 22) {
+      return "Good Evening!";
+    } else {
+      return "Good Night!";
+    }
+  };
+
+  useEffect(() => {
+    const updateGreeting = () => {
+      setCurrentGreeting(getTimeBasedGreeting());
+    };
+    
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetchWeather();
@@ -126,18 +153,10 @@ export default function HomeScreen() {
         >
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>Good Morning!</Text>
+              <Text style={styles.greeting}>{currentGreeting}</Text>
               <Text style={styles.title}>What's your vibe today?</Text>
             </View>
             <View style={styles.headerButtons}>
-              <TouchableOpacity
-                style={styles.feedbackButton}
-                onPress={() => setFeedbackModalVisible(true)}
-                testID="feedback-button"
-              >
-                <MessageSquare color="#FFFFFF" size={20} />
-                <Text style={styles.feedbackButtonText}>Give Feedback</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => router.push("/scan-clothes" as any)}
@@ -192,6 +211,15 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.feedbackButtonLarge}
+            onPress={() => setFeedbackModalVisible(true)}
+            testID="feedback-button"
+          >
+            <MessageSquare color="#4A90E2" size={24} />
+            <Text style={styles.feedbackButtonLargeText}>Give Feedback</Text>
+          </TouchableOpacity>
+
           {parsed && (
             <View style={styles.outfitSection}>
               <Text style={styles.sectionTitle}>Chat understanding</Text>
@@ -243,21 +271,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  feedbackButton: {
+  feedbackButtonLarge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(74, 144, 226, 0.2)",
-    borderWidth: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(74, 144, 226, 0.15)",
+    borderWidth: 2,
     borderColor: "#4A90E2",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+    marginBottom: 24,
   },
-  feedbackButtonText: {
+  feedbackButtonLargeText: {
     color: "#4A90E2",
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
   },
   greeting: {
     fontSize: 16,
