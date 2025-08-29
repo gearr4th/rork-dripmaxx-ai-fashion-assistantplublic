@@ -1,4 +1,5 @@
-import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel } from "@/types";
+import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion, CheaperAlternative } from "@/types";
+import { BudgetOption } from '@/providers/BudgetProvider';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GEMINI_API_KEY, CONFIG } from './config';
 
@@ -28,7 +29,7 @@ async function geocodePlace(place: string): Promise<string | null> {
       }
     });
     if (!res.ok) return null;
-    const data = await res.json() as Array<{ display_name?: string }>;
+    const data = await res.json() as { display_name?: string }[];
     if (Array.isArray(data) && data.length > 0) {
       const display = data[0]?.display_name ?? null;
       return display ? String(display) : null;
@@ -388,30 +389,83 @@ function generateSmartOutfit(
   };
 }
 
-function generateMockOutfit(
-  weather: Weather | null,
-  trends: string[],
-  prompt: string,
-  clothes: ClothingItem[]
-): Outfit {
-  const tops = clothes.filter(c => c.type === "tops");
-  const bottoms = clothes.filter(c => c.type === "bottoms");
-  const shoes = clothes.filter(c => c.type === "shoes");
-  const selectedItems: ClothingItem[] = [];
-  if (tops.length > 0) {
-    selectedItems.push(tops[Math.floor(Math.random() * tops.length)] as ClothingItem);
+function parseBudgetAmount(budget: BudgetOption): number {
+  switch (budget) {
+    case '$100': return 100;
+    case '$250': return 250;
+    case '$500': return 500;
+    case '$1000': return 1000;
+    case '$2000+': return 2000;
+    default: return 100;
   }
-  if (bottoms.length > 0) {
-    selectedItems.push(bottoms[Math.floor(Math.random() * bottoms.length)] as ClothingItem);
+}
+
+function isOccasionMatch(itemAnalysis: ImageAnalysisResult | undefined, occasion: Occasion): boolean {
+  if (!itemAnalysis) return true;
+  
+  const style = itemAnalysis.style?.toLowerCase() || '';
+  const type = itemAnalysis.type?.toLowerCase() || '';
+  const name = itemAnalysis.itemName.toLowerCase();
+  
+  switch (occasion) {
+    case 'formal':
+      return style.includes('formal') || style.includes('business') || 
+             name.includes('suit') || name.includes('dress shirt') || name.includes('blazer');
+    case 'party':
+      return style.includes('party') || style.includes('night') || 
+             name.includes('dress') || name.includes('heels') || itemAnalysis.dripLevel === 'Maxx Drip';
+    case 'gym':
+      return style.includes('athletic') || style.includes('sport') || 
+             name.includes('sneakers') || name.includes('leggings') || name.includes('tank');
+    case 'work':
+      return style.includes('business') || style.includes('professional') || 
+             name.includes('shirt') || name.includes('pants') || name.includes('blazer');
+    case 'date':
+      return itemAnalysis.dripLevel === 'Maxx Drip' || itemAnalysis.dripLevel === 'Pure Drip' ||
+             style.includes('elegant') || style.includes('chic');
+    case 'casual':
+    case 'daily wear':
+    case 'travel':
+    default:
+      return itemAnalysis.versatilityScore > 60;
   }
-  if (shoes.length > 0) {
-    selectedItems.push(shoes[Math.floor(Math.random() * shoes.length)] as ClothingItem);
+}
+
+export function evaluateBudgetAndOccasion(
+  analysis: ImageAnalysisResult,
+  budget: BudgetOption | null,
+  occasion: Occasion = 'casual'
+): BudgetRecommendation {
+  const budgetAmount = budget ? parseBudgetAmount(budget) : null;
+  const itemPrice = analysis.averagePrice || 0;
+  const occasionMatch = isOccasionMatch(analysis, occasion);
+  
+  let fits = true;
+  let message = '';
+  let occasionMessage = '';
+  
+  if (budgetAmount && itemPrice > budgetAmount) {
+    fits = false;
+    const overage = itemPrice - budgetAmount;
+    message = `This item costs ${itemPrice}, which is ${overage} over your ${budget} budget.`;
+  } else if (budgetAmount) {
+    const remaining = budgetAmount - itemPrice;
+    message = `Great choice! This fits your ${budget} budget with ${remaining} to spare.`;
+  } else {
+    message = 'No budget set - consider setting a monthly budget in settings.';
   }
+  
+  if (!occasionMatch) {
+    occasionMessage = `This item might not be ideal for ${occasion} occasions. Consider the style and versatility score.`;
+  } else {
+    occasionMessage = `Perfect match for ${occasion} occasions!`;
+  }
+  
   return {
-    id: Date.now().toString(),
-    items: selectedItems,
-    occasion: prompt || "Casual Day Out",
-    weather: weather ? `${weather.condition}, ${weather.temperature}°C` : "All Weather",
-    style: (trends[Math.floor(Math.random() * Math.max(trends.length, 1))] ?? "Modern Casual") as string,
+    fits,
+    message,
+    alternatives: fits ? undefined : analysis.cheaperAlternatives,
+    occasionMatch,
+    occasionMessage
   };
 }

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
-import { ClothingItem } from "@/types";
+import { ClothingItem, ImageAnalysisResult } from "@/types";
 
 interface ClothesContextType {
   clothes: ClothingItem[];
   addClothingItem: (item: Omit<ClothingItem, "id">) => Promise<void>;
+  addClothingItemWithAnalysis: (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => Promise<void>;
   removeClothingItem: (id: string) => Promise<void>;
   loading: boolean;
 }
@@ -69,26 +70,41 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     }
   };
 
-  const addClothingItem = async (item: Omit<ClothingItem, "id">) => {
+  const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {
     const newItem: ClothingItem = {
       ...item,
       id: Date.now().toString(),
+      dateAdded: new Date(),
     };
     const updated = [...clothes, newItem];
     setClothes(updated);
     await AsyncStorage.setItem("clothes", JSON.stringify(updated));
-  };
+  }, [clothes]);
 
-  const removeClothingItem = async (id: string) => {
+  const addClothingItemWithAnalysis = useCallback(async (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => {
+    const newItem: ClothingItem = {
+      ...item,
+      id: Date.now().toString(),
+      analysis,
+      addedToWardrobe: true,
+      dateAdded: new Date(),
+    };
+    const updated = [...clothes, newItem];
+    setClothes(updated);
+    await AsyncStorage.setItem("clothes", JSON.stringify(updated));
+  }, [clothes]);
+
+  const removeClothingItem = useCallback(async (id: string) => {
     const updated = clothes.filter(item => item.id !== id);
     setClothes(updated);
     await AsyncStorage.setItem("clothes", JSON.stringify(updated));
-  };
+  }, [clothes]);
 
-  return {
+  return useMemo(() => ({
     clothes,
     addClothingItem,
+    addClothingItemWithAnalysis,
     removeClothingItem,
     loading,
-  };
+  }), [clothes, addClothingItem, addClothingItemWithAnalysis, removeClothingItem, loading]);
 });

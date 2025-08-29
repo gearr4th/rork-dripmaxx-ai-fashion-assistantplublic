@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
   Image,
-  Platform,
+
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,11 +17,23 @@ import { Camera, Image as ImageIcon, X, Check, RotateCcw, Trash2, ScanSearch } f
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useClothes } from "@/providers/ClothesProvider";
-import { analyzeClothingImage } from "@/utils/aiService";
+import { useBudget } from "@/providers/BudgetProvider";
+import { analyzeClothingImage, evaluateBudgetAndOccasion } from "@/utils/aiService";
 import ImageAnalysisCard from "@/components/ImageAnalysisCard";
-import { ImageAnalysisResult } from "@/types";
+import BudgetRecommendationCard from "@/components/BudgetRecommendationCard";
+import { ImageAnalysisResult, BudgetRecommendation, Occasion } from "@/types";
 
 const clothingTypes = ["tops", "bottoms", "shoes", "accessories"];
+const occasions: { id: Occasion; name: string; icon: string }[] = [
+  { id: 'casual', name: 'Casual', icon: '👕' },
+  { id: 'work', name: 'Work', icon: '💼' },
+  { id: 'party', name: 'Party', icon: '🎉' },
+  { id: 'date', name: 'Date', icon: '💕' },
+  { id: 'gym', name: 'Gym', icon: '💪' },
+  { id: 'formal', name: 'Formal', icon: '🤵' },
+  { id: 'travel', name: 'Travel', icon: '✈️' },
+  { id: 'daily wear', name: 'Daily', icon: '🌟' },
+];
 const colors = [
   { name: "Black", hex: "#000000" },
   { name: "White", hex: "#FFFFFF" },
@@ -34,7 +46,8 @@ const colors = [
 ];
 
 export default function ScanClothesScreen() {
-  const { addClothingItem } = useClothes();
+  const { addClothingItemWithAnalysis } = useClothes();
+  const { budget } = useBudget();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMime, setImageMime] = useState<string | null>(null);
@@ -45,6 +58,9 @@ export default function ScanClothesScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [analysis, setAnalysis] = useState<ImageAnalysisResult | null>(null);
+  const [budgetRecommendation, setBudgetRecommendation] = useState<BudgetRecommendation | null>(null);
+  const [selectedOccasion, setSelectedOccasion] = useState<Occasion>('casual');
+
 
   const pickImage = async (useCamera: boolean) => {
     const permissionResult = useCamera
@@ -122,7 +138,11 @@ export default function ScanClothesScreen() {
       setAnalysis(res);
       if (!name && res.itemName) setName(res.itemName);
       if (!brand && res.brand) setBrand(res.brand);
-    } catch (e) {
+      
+      const budgetRec = evaluateBudgetAndOccasion(res, budget, selectedOccasion);
+      setBudgetRecommendation(budgetRec);
+
+    } catch {
       Alert.alert("Analysis failed", "Could not analyze the image. Please try another photo.");
     } finally {
       setAnalyzing(false);
@@ -130,24 +150,24 @@ export default function ScanClothesScreen() {
   };
 
   const handleSave = async () => {
-    if (!imageUri || !name) {
-      Alert.alert("Missing Information", "Please add an image and name");
+    if (!imageUri || !name || !analysis) {
+      Alert.alert("Missing Information", "Please add an image, name, and analyze the item first");
       return;
     }
 
     setSaving(true);
     try {
-      await addClothingItem({
+      await addClothingItemWithAnalysis({
         name,
         brand,
         type: selectedType,
         color: selectedColor,
         imageUrl: imageUri,
-      });
-      Alert.alert("Success", "Item added to your wardrobe!", [
+      }, analysis);
+      Alert.alert("Success", "Item added to your wardrobe with analysis!", [
         { text: "OK", onPress: () => router.back() },
       ]);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to save item");
     } finally {
       setSaving(false);
@@ -233,8 +253,52 @@ export default function ScanClothesScreen() {
               {analysis && (
                 <View style={{ marginTop: 16 }}>
                   <ImageAnalysisCard result={analysis} />
+                  {budgetRecommendation && (
+                    <BudgetRecommendationCard 
+                      recommendation={budgetRecommendation} 
+                      currency={analysis.currency}
+                    />
+                  )}
                 </View>
               )}
+            </View>
+          )}
+
+          {analysis && (
+            <View style={styles.occasionSection}>
+              <Text style={styles.label}>Select Occasion for Analysis</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.occasionScroll}
+              >
+                {occasions.map((occasion) => (
+                  <TouchableOpacity
+                    key={occasion.id}
+                    style={[
+                      styles.occasionButton,
+                      selectedOccasion === occasion.id && styles.occasionButtonActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedOccasion(occasion.id);
+                      if (analysis) {
+                        const budgetRec = evaluateBudgetAndOccasion(analysis, budget, occasion.id);
+                        setBudgetRecommendation(budgetRec);
+                      }
+                    }}
+                  >
+                    <Text style={styles.occasionIcon}>{occasion.icon}</Text>
+                    <Text
+                      style={[
+                        styles.occasionText,
+                        selectedOccasion === occasion.id && styles.occasionTextActive,
+                      ]}
+                    >
+                      {occasion.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -519,5 +583,38 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  occasionSection: {
+    marginBottom: 24,
+  },
+  occasionScroll: {
+    flexDirection: "row",
+  },
+  occasionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    marginRight: 12,
+    gap: 6,
+  },
+  occasionButtonActive: {
+    backgroundColor: "#FFD700",
+    borderColor: "#FFD700",
+  },
+  occasionIcon: {
+    fontSize: 16,
+  },
+  occasionText: {
+    color: "#888",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  occasionTextActive: {
+    color: "#000000",
   },
 });

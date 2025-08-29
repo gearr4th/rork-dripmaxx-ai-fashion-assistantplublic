@@ -5,6 +5,9 @@ export interface ClothingItem {
   color: string;
   brand?: string;
   imageUrl: string;
+  analysis?: ImageAnalysisResult;
+  addedToWardrobe?: boolean;
+  dateAdded?: Date;
 }
 
 export interface Weather {
@@ -32,6 +35,16 @@ export interface OutfitHistory {
 }
 
 export type DripLevel = 'Maxx Drip' | 'Pure Drip' | 'Certified Drip' | 'Lowkey Drip';
+
+export type Occasion = 'casual' | 'work' | 'party' | 'date' | 'gym' | 'formal' | 'travel' | 'daily wear';
+
+export interface BudgetRecommendation {
+  fits: boolean;
+  message: string;
+  alternatives?: CheaperAlternative[];
+  occasionMatch: boolean;
+  occasionMessage?: string;
+}
 
 export interface CheaperAlternative {
   name: string;
