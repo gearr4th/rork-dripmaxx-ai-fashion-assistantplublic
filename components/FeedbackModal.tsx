@@ -90,50 +90,33 @@ ${feedbackData.additionalComments || 'No additional comments provided'}
 ---
 This feedback was automatically sent from your Drip App.`;
 
-      // Using EmailJS service - more reliable for feedback forms
-      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      // Using Formspree - reliable email service for forms
+      const response = await fetch('https://formspree.io/f/xpwagvpb', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          service_id: 'service_drip_feedback',
-          template_id: 'template_drip_feedback',
-          user_id: 'user_drip_app',
-          template_params: {
-            to_email: 'gearr4th@gmail.com',
-            from_name: 'Drip App User',
-            subject: emailSubject,
-            message: emailBody,
-            reply_to: 'noreply@dripapp.com'
-          }
-        })
-      });
-
-      if (!response.ok) {
-        // Fallback to a simpler webhook service
-        const webhookResponse = await fetch('https://hooks.zapier.com/hooks/catch/19579046/3k8k8k8/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: 'gearr4th@gmail.com',
-            subject: emailSubject,
-            message: emailBody,
-            timestamp: feedbackData.timestamp.toISOString(),
+          email: 'gearr4th@gmail.com',
+          subject: emailSubject,
+          message: emailBody,
+          _replyto: 'feedback@dripapp.com',
+          _subject: emailSubject,
+          feedback_data: {
             ratings: {
               easeOfUse: feedbackData.easeOfUse,
               accuracyOfDripRating: feedbackData.accuracyOfDripRating,
               usefulnessOfRecommendations: feedbackData.usefulnessOfRecommendations,
               average: averageRating
-            }
-          })
-        });
-        
-        if (!webhookResponse.ok) {
-          throw new Error(`Email services responded with status: ${response.status}`);
-        }
+            },
+            timestamp: feedbackData.timestamp.toISOString(),
+            platform: feedbackData.deviceInfo
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Email service responded with status: ${response.status}`);
       }
 
       console.log('Feedback email sent successfully to gearr4th@gmail.com');
