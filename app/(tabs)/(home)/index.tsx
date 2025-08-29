@@ -26,6 +26,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import OutfitCard from "@/components/OutfitCard";
 import WeatherCard from "@/components/WeatherCard";
 import TrendCard from "@/components/TrendCard";
+import WardrobeUpliftCard from "@/components/WardrobeUpliftCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
 import { useSession } from "@/providers/SessionProvider";
@@ -139,6 +140,15 @@ export default function HomeScreen() {
             loading={weatherLoading} 
             error={weatherError} 
             onRefresh={fetchWeather}
+          />
+
+          <WardrobeUpliftCard
+            clothes={clothes}
+            weather={weather}
+            occasion={prompt || 'daily wear'}
+            onItemPress={(item) => {
+              console.log('Suggested item pressed:', item.name);
+            }}
           />
 
           <View style={styles.trendsSection}>
