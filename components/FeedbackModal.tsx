@@ -90,40 +90,67 @@ ${feedbackData.additionalComments || 'No additional comments provided'}
 ---
 This feedback was automatically sent from your Drip App.`;
 
-      // Using Formspree - reliable email service for forms
-      const response = await fetch('https://formspree.io/f/xpwagvpb', {
+      // Using EmailJS - reliable email service
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'gearr4th@gmail.com',
-          subject: emailSubject,
-          message: emailBody,
-          _replyto: 'feedback@dripapp.com',
-          _subject: emailSubject,
-          feedback_data: {
-            ratings: {
-              easeOfUse: feedbackData.easeOfUse,
-              accuracyOfDripRating: feedbackData.accuracyOfDripRating,
-              usefulnessOfRecommendations: feedbackData.usefulnessOfRecommendations,
-              average: averageRating
-            },
-            timestamp: feedbackData.timestamp.toISOString(),
-            platform: feedbackData.deviceInfo
+          service_id: 'service_drip_feedback',
+          template_id: 'template_feedback',
+          user_id: 'user_drip_app',
+          template_params: {
+            to_email: 'gearr4th@gmail.com',
+            from_name: 'Drip App Feedback System',
+            subject: emailSubject,
+            message: emailBody,
+            reply_to: 'noreply@dripapp.com',
+            ease_of_use: feedbackData.easeOfUse,
+            accuracy_rating: feedbackData.accuracyOfDripRating,
+            usefulness_rating: feedbackData.usefulnessOfRecommendations,
+            average_rating: averageRating,
+            user_comments: feedbackData.additionalComments || 'No additional comments',
+            timestamp: feedbackData.timestamp.toLocaleString(),
+            platform: feedbackData.deviceInfo,
+            feedback_id: feedbackData.id
           }
         })
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        console.log('✅ Feedback email sent successfully to gearr4th@gmail.com');
+        console.log('📧 Email will be sent from: noreply@emailjs.com');
+        return true;
+      } else {
         throw new Error(`Email service responded with status: ${response.status}`);
       }
-
-      console.log('Feedback email sent successfully to gearr4th@gmail.com');
-      return true;
     } catch (error) {
-      console.error('Failed to send feedback email:', error);
-      // Still store locally as backup
+      console.error('❌ Failed to send feedback email:', error);
+      // Fallback: Try alternative email service
+      try {
+        const response = await fetch('https://formsubmit.co/gearr4th@gmail.com', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            subject: `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
+            message: `📱 NEW FEEDBACK RECEIVED\n\n⭐ OVERALL RATING: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5 stars\n\n📊 DETAILED RATINGS:\n• Ease of Use: ${feedbackData.easeOfUse}/5 ⭐\n• Drip Rating Accuracy: ${feedbackData.accuracyOfDripRating}/5 ⭐\n• Recommendation Usefulness: ${feedbackData.usefulnessOfRecommendations}/5 ⭐\n\n💬 USER COMMENTS:\n${feedbackData.additionalComments || 'No additional comments provided'}\n\n🔧 TECHNICAL INFO:\n• Feedback ID: ${feedbackData.id}\n• Timestamp: ${feedbackData.timestamp.toLocaleString()}\n• Platform: ${feedbackData.deviceInfo}`,
+            _captcha: 'false'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ Feedback sent via FormSubmit to gearr4th@gmail.com');
+          console.log('📧 Email will be sent from: forms@formsubmit.co');
+          return true;
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback email service also failed:', fallbackError);
+      }
+      
       return false;
     }
   };
