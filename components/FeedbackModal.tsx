@@ -64,6 +64,59 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
     setAdditionalComments('');
   };
 
+  const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
+    try {
+      const emailSubject = `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`;
+      const averageRating = ((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1);
+      
+      const emailBody = `
+📱 NEW FEEDBACK RECEIVED
+
+⭐ OVERALL RATING: ${averageRating}/5 stars
+
+📊 DETAILED RATINGS:
+• Ease of Use: ${feedbackData.easeOfUse}/5 ⭐
+• Drip Rating Accuracy: ${feedbackData.accuracyOfDripRating}/5 ⭐
+• Recommendation Usefulness: ${feedbackData.usefulnessOfRecommendations}/5 ⭐
+
+💬 USER COMMENTS:
+${feedbackData.additionalComments || 'No additional comments provided'}
+
+🔧 TECHNICAL INFO:
+• Feedback ID: ${feedbackData.id}
+• Timestamp: ${feedbackData.timestamp.toLocaleString()}
+• App Version: ${feedbackData.appVersion}
+• Platform: ${feedbackData.deviceInfo}
+
+---
+This feedback was automatically sent from your Drip App.
+      `;
+
+      const response = await fetch('https://toolkit.rork.com/email/send/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: 'gearr4th@gmail.com',
+          subject: emailSubject,
+          text: emailBody,
+          from: 'Drip App Feedback <feedback@dripapp.com>'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Email API responded with status: ${response.status}`);
+      }
+
+      console.log('Feedback email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to send feedback email:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
     if (easeOfUse === 0 || accuracyOfDripRating === 0 || usefulnessOfRecommendations === 0) {
       Alert.alert('Missing Ratings', 'Please provide ratings for all categories.');
@@ -83,17 +136,22 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
         deviceInfo: Platform.OS,
       };
 
-      // Store feedback locally for now (in a real app, this would go to a backend)
+      // Store feedback locally as backup
       const existingFeedback = await AsyncStorage.getItem('user_feedback');
       const feedbackArray = existingFeedback ? JSON.parse(existingFeedback) : [];
       feedbackArray.push(feedbackData);
       await AsyncStorage.setItem('user_feedback', JSON.stringify(feedbackArray));
 
+      // Send organized email to your address
+      const emailSent = await sendFeedbackEmail(feedbackData);
+      
       console.log('Feedback submitted:', feedbackData);
       
       Alert.alert(
-        'Thank You!',
-        'Your feedback has been submitted successfully. It helps us improve the app!',
+        'Thank You! 🙏',
+        emailSent 
+          ? 'Your feedback has been sent successfully! It helps us improve the app.' 
+          : 'Your feedback has been saved locally. We\'ll sync it when connection improves.',
         [{ text: 'OK', onPress: () => {
           resetForm();
           onClose();

@@ -216,8 +216,15 @@ export default function HomeScreen() {
             onPress={() => setFeedbackModalVisible(true)}
             testID="feedback-button"
           >
-            <MessageSquare color="#4A90E2" size={24} />
-            <Text style={styles.feedbackButtonLargeText}>Give Feedback</Text>
+            <LinearGradient
+              colors={["rgba(74, 144, 226, 0.2)", "rgba(74, 144, 226, 0.1)"]}
+              style={styles.feedbackGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <MessageSquare color="#4A90E2" size={24} />
+              <Text style={styles.feedbackButtonLargeText}>💬 Give Feedback</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
           {parsed && (
@@ -272,27 +279,38 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   feedbackButtonLarge: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: "#4A90E2",
+    shadowColor: "#4A90E2",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  feedbackGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(74, 144, 226, 0.15)",
-    borderWidth: 2,
-    borderColor: "#4A90E2",
-    borderRadius: 12,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
     gap: 12,
-    marginBottom: 24,
   },
   feedbackButtonLargeText: {
     color: "#4A90E2",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
   },
   greeting: {
-    fontSize: 16,
-    color: "#888",
+    fontSize: 18,
+    color: "#FFD700",
     marginBottom: 4,
+    fontWeight: "600",
   },
   title: {
     fontSize: 28,
