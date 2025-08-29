@@ -10,14 +10,22 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Plus, Shirt, Filter } from "lucide-react-native";
+import { Plus, Shirt, Filter, TrendingUp, Camera, Sparkles } from "lucide-react-native";
 import { router } from "expo-router";
 import { useClothes } from "@/providers/ClothesProvider";
+import { useWeather } from "@/providers/WeatherProvider";
 import ClothingItem from "@/components/ClothingItem";
+import WardrobeUpliftCard from "@/components/WardrobeUpliftCard";
+import TrendCard from "@/components/TrendCard";
+import ImageAnalysisCard from "@/components/ImageAnalysisCard";
+import { ImageAnalysisResult } from "@/types";
 
 export default function ClothesScreen() {
   const { clothes } = useClothes();
+  const { weather } = useWeather();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [analysisResults, setAnalysisResults] = useState<ImageAnalysisResult[]>([]);
+  const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist", "Y2K Revival"]);
 
   const categories = [
     { id: "all", name: "All", icon: "👔" },
@@ -80,50 +88,118 @@ export default function ClothesScreen() {
           ))}
         </ScrollView>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{clothes.length}</Text>
-            <Text style={styles.statLabel}>Total Items</Text>
+        <ScrollView 
+          style={styles.mainContent}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{clothes.length}</Text>
+              <Text style={styles.statLabel}>Total Items</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {clothes.filter(c => c.type === "tops").length}
+              </Text>
+              <Text style={styles.statLabel}>Tops</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {clothes.filter(c => c.type === "bottoms").length}
+              </Text>
+              <Text style={styles.statLabel}>Bottoms</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {clothes.filter(c => c.type === "shoes").length}
+              </Text>
+              <Text style={styles.statLabel}>Shoes</Text>
+            </View>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {clothes.filter(c => c.type === "tops").length}
-            </Text>
-            <Text style={styles.statLabel}>Tops</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {clothes.filter(c => c.type === "bottoms").length}
-            </Text>
-            <Text style={styles.statLabel}>Bottoms</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {clothes.filter(c => c.type === "shoes").length}
-            </Text>
-            <Text style={styles.statLabel}>Shoes</Text>
-          </View>
-        </View>
 
-        {filteredClothes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Shirt color="#666" size={48} />
-            <Text style={styles.emptyStateText}>No items in wardrobe</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Tap the + button to add your first item
+          <WardrobeUpliftCard
+            clothes={clothes}
+            weather={weather}
+            occasion="daily wear"
+            onItemPress={(item) => {
+              console.log('Suggested item pressed:', item.name);
+            }}
+          />
+
+          <View style={styles.trendsSection}>
+            <Text style={styles.sectionTitle}>
+              <TrendingUp color="#FFD700" size={20} /> Current Trends
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.trendsScroll}
+            >
+              {trends.map((trend, index) => (
+                <TrendCard key={`${trend}-${index}`} trend={trend} />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.scanSection}>
+            <Text style={styles.sectionTitle}>
+              <Camera color="#FFD700" size={20} /> Scan & Analyze
+            </Text>
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => router.push("/scan-clothes" as any)}
+            >
+              <LinearGradient
+                colors={["#4CAF50", "#45A049"]}
+                style={styles.scanButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Camera color="#FFF" size={24} />
+                <Text style={styles.scanButtonText}>Scan New Item</Text>
+                <Sparkles color="#FFF" size={20} />
+              </LinearGradient>
+            </TouchableOpacity>
+            <Text style={styles.scanDescription}>
+              Get instant analysis: brand, price, drip level & cheaper alternatives
             </Text>
           </View>
-        ) : (
-          <FlatList
-            data={filteredClothes}
-            renderItem={({ item }) => <ClothingItem item={item} />}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
-            contentContainerStyle={styles.gridContent}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+
+          {analysisResults.length > 0 && (
+            <View style={styles.analysisSection}>
+              <Text style={styles.sectionTitle}>
+                <Sparkles color="#FFD700" size={20} /> Recent Analysis
+              </Text>
+              {analysisResults.map((result, index) => (
+                <ImageAnalysisCard key={index} result={result} />
+              ))}
+            </View>
+          )}
+
+          <View style={styles.wardrobeSection}>
+            <Text style={styles.sectionTitle}>
+              <Shirt color="#FFD700" size={20} /> My Wardrobe
+            </Text>
+            {filteredClothes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Shirt color="#666" size={48} />
+                <Text style={styles.emptyStateText}>No items in wardrobe</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Tap the + button to add your first item
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.gridContainer}>
+                {filteredClothes.map((item, index) => (
+                  <View key={item.id} style={styles.gridItem}>
+                    <ClothingItem item={item} />
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -193,6 +269,12 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: "#000000",
   },
+  mainContent: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -213,11 +295,69 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 4,
   },
-  emptyState: {
-    flex: 1,
+  trendsSection: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  trendsScroll: {
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+  },
+  scanSection: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  scanButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  scanButtonGradient: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 80,
+    padding: 16,
+    gap: 10,
+  },
+  scanButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  scanDescription: {
+    color: "#888",
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  analysisSection: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  wardrobeSection: {
+    paddingHorizontal: 20,
+  },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  gridItem: {
+    width: "48%",
+    marginBottom: 12,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
   },
   emptyStateText: {
     fontSize: 20,
@@ -230,11 +370,5 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 8,
   },
-  row: {
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-  },
-  gridContent: {
-    paddingBottom: 100,
-  },
+
 });

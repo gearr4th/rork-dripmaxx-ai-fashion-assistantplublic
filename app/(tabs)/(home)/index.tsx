@@ -26,7 +26,6 @@ import { useAuth } from "@/providers/AuthProvider";
 import OutfitCard from "@/components/OutfitCard";
 import WeatherCard from "@/components/WeatherCard";
 import TrendCard from "@/components/TrendCard";
-import WardrobeUpliftCard from "@/components/WardrobeUpliftCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
 import { useSession } from "@/providers/SessionProvider";
@@ -142,30 +141,6 @@ export default function HomeScreen() {
             onRefresh={fetchWeather}
           />
 
-          <WardrobeUpliftCard
-            clothes={clothes}
-            weather={weather}
-            occasion={prompt || 'daily wear'}
-            onItemPress={(item) => {
-              console.log('Suggested item pressed:', item.name);
-            }}
-          />
-
-          <View style={styles.trendsSection}>
-            <Text style={styles.sectionTitle}>
-              <TrendingUp color="#FFD700" size={20} /> Trending Now
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.trendsScroll}
-            >
-              {trends.map((trend, index) => (
-                <TrendCard key={`${trend}-${index}`} trend={trend} />
-              ))}
-            </ScrollView>
-          </View>
-
           <View style={styles.promptSection}>
             <Text style={styles.sectionTitle}>
               <MapPin color="#FFD700" size={20} /> Where are you going?
@@ -198,12 +173,11 @@ export default function HomeScreen() {
               ) : (
                 <>
                   <Sparkles color="#000" size={28} />
-                  <Text style={styles.generateButtonText}>New Outfit</Text>
+                  <Text style={styles.generateButtonText}>Create Outfit</Text>
                 </>
               )}
             </LinearGradient>
           </TouchableOpacity>
-          <Text style={styles.helperNote}>Uses your prompt + live weather + TikTok/Instagram trends</Text>
 
           {parsed && (
             <View style={styles.outfitSection}>
@@ -264,9 +238,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  trendsSection: {
-    marginBottom: 24,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -274,10 +245,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
-  },
-  trendsScroll: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
   },
   promptSection: {
     marginBottom: 24,
@@ -310,13 +277,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-  helperNote: {
-    color: "#AAA",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 16,
-  },
+
   disabledButton: {
     opacity: 0.6,
   },
