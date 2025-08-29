@@ -18,6 +18,7 @@ import {
   TrendingUp,
   MapPin,
   Plus,
+  MessageSquare,
 } from "lucide-react-native";
 import { useWeather } from "@/providers/WeatherProvider";
 import { useClothes } from "@/providers/ClothesProvider";
@@ -29,6 +30,7 @@ import TrendCard from "@/components/TrendCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
 import { useSession } from "@/providers/SessionProvider";
+import FeedbackModal from "@/components/FeedbackModal";
 
 export default function HomeScreen() {
   const { isAuthenticated } = useAuth();
@@ -41,6 +43,7 @@ export default function HomeScreen() {
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist"]);
   const [parsed, setParsed] = useState<ParsedUserRequest | null>(null);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     fetchWeather();
@@ -126,12 +129,22 @@ export default function HomeScreen() {
               <Text style={styles.greeting}>Good Morning!</Text>
               <Text style={styles.title}>What's your vibe today?</Text>
             </View>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => router.push("/scan-clothes" as any)}
-            >
-              <Plus color="#000" size={24} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                style={styles.feedbackButton}
+                onPress={() => setFeedbackModalVisible(true)}
+                testID="feedback-button"
+              >
+                <MessageSquare color="#FFFFFF" size={20} />
+                <Text style={styles.feedbackButtonText}>Give Feedback</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => router.push("/scan-clothes" as any)}
+              >
+                <Plus color="#000" size={24} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <WeatherCard 
@@ -198,6 +211,11 @@ export default function HomeScreen() {
             </View>
           )}
         </ScrollView>
+        
+        <FeedbackModal
+          visible={feedbackModalVisible}
+          onClose={() => setFeedbackModalVisible(false)}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -219,6 +237,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 24,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  feedbackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(74, 144, 226, 0.2)",
+    borderWidth: 1,
+    borderColor: "#4A90E2",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  feedbackButtonText: {
+    color: "#4A90E2",
+    fontSize: 12,
+    fontWeight: "600",
   },
   greeting: {
     fontSize: 16,

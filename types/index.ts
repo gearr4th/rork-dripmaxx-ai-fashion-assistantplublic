@@ -69,3 +69,15 @@ export interface ImageAnalysisResult {
   sources: string[];
   cheaperAlternatives?: CheaperAlternative[];
 }
+
+export interface FeedbackData {
+  id: string;
+  userId?: string;
+  easeOfUse: number; // 1-5 stars
+  accuracyOfDripRating: number; // 1-5 stars
+  usefulnessOfRecommendations: number; // 1-5 stars
+  additionalComments: string;
+  timestamp: Date;
+  appVersion?: string;
+  deviceInfo?: string;
+}
