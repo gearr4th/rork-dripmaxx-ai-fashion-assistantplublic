@@ -135,7 +135,7 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
     console.log('Analyzing clothing image with Gemini...', { mimeType: input.mimeType, size: input.base64.length });
     const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
 
-    const prompt = `You are a fashion product identifier. Given an image of a clothing item, return ONLY JSON in this shape:
+    const prompt = `You are a fashion product identifier and trend analyst. Given an image of a clothing item, return ONLY JSON in this shape:
 {
   "itemName": string, // simple human-friendly name if brand unknown
   "officialProductName": string, // closest product name from likely brand catalog
@@ -147,12 +147,25 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
   "versatilityScore": number, // 0-100 rating for how many occasions it fits
   "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip",
   "reasoning": string, // short justification including comparable products
-  "sources": string[] // likely brand/catalog URLs or search terms
+  "sources": string[], // likely brand/catalog URLs or search terms
+  "cheaperAlternatives": [
+    {
+      "name": string, // product name
+      "brand": string, // affordable brand
+      "estimatedPrice": number, // price in same currency
+      "similarity": number, // 0-100 how similar to original
+      "trendAlignment": string, // how it fits current trends
+      "whereToFind": string // store/website suggestion
+    }
+  ]
 }
 Rules:
 - Prefer official brand pricing, never reseller or aftermarket.
 - If brand uncertain, infer from cues like logos, silhouettes, typical colorways.
 - Be conservative with Maxx Drip; reserve for iconic or high-fashion pieces.
+- For cheaper alternatives, suggest 3-5 similar items from affordable brands (H&M, Zara, Uniqlo, Target, etc.)
+- Alternatives should be 30-70% cheaper than original while maintaining style essence
+- Consider current 2025 fashion trends when suggesting alternatives
 - Do not add extra text, only the JSON. Make sure it is valid JSON.`;
 
     const result = await model.generateContent([
@@ -170,6 +183,17 @@ Rules:
     const parsed = JSON.parse(jsonMatch[0]);
 
     const dripString = String(parsed.dripLevel ?? parsed.drip ?? 'Lowkey Drip') as DripLevel;
+    const cheaperAlternatives = Array.isArray(parsed.cheaperAlternatives) 
+      ? parsed.cheaperAlternatives.map((alt: any) => ({
+          name: String(alt.name ?? 'Alternative Item'),
+          brand: String(alt.brand ?? 'Unknown Brand'),
+          estimatedPrice: typeof alt.estimatedPrice === 'number' ? alt.estimatedPrice : 0,
+          similarity: Math.max(0, Math.min(100, Number(alt.similarity ?? 70))),
+          trendAlignment: String(alt.trendAlignment ?? 'Trendy'),
+          whereToFind: String(alt.whereToFind ?? 'Online retailers'),
+        })).slice(0, 5)
+      : [];
+
     const normalized: ImageAnalysisResult = {
       itemName: String(parsed.itemName ?? 'Clothing Item'),
       officialProductName: String(parsed.officialProductName ?? parsed.itemName ?? 'Unknown'),
@@ -182,6 +206,7 @@ Rules:
       dripLevel: (['Maxx Drip','Pure Drip','Certified Drip','Lowkey Drip'].includes(dripString) ? dripString : 'Lowkey Drip') as DripLevel,
       reasoning: String(parsed.reasoning ?? ''),
       sources: Array.isArray(parsed.sources) ? parsed.sources.map((s: unknown) => String(s)).slice(0, 5) : [],
+      cheaperAlternatives,
     };
     return normalized;
   } catch (e) {
@@ -198,6 +223,7 @@ Rules:
       dripLevel: 'Certified Drip',
       reasoning: 'Could not confidently identify. Generic style score applied.',
       sources: [],
+      cheaperAlternatives: [],
     };
     return fallback;
   }

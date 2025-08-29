@@ -33,6 +33,15 @@ export interface OutfitHistory {
 
 export type DripLevel = 'Maxx Drip' | 'Pure Drip' | 'Certified Drip' | 'Lowkey Drip';
 
+export interface CheaperAlternative {
+  name: string;
+  brand: string;
+  estimatedPrice: number;
+  similarity: number;
+  trendAlignment: string;
+  whereToFind: string;
+}
+
 export interface ImageAnalysisResult {
   itemName: string;
   officialProductName: string;
@@ -40,9 +49,10 @@ export interface ImageAnalysisResult {
   type?: string;
   style?: string;
   averagePrice: number | null;
-  currency?: string;
+  currency: string;
   versatilityScore: number; // 0-100
   dripLevel: DripLevel;
   reasoning: string;
-  sources?: string[];
+  sources: string[];
+  cheaperAlternatives?: CheaperAlternative[];
 }

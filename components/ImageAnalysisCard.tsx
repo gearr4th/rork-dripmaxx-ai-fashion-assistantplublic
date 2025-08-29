@@ -1,7 +1,7 @@
-import React, { memo, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { ImageAnalysisResult, DripLevel } from '@/types';
-import { DollarSign, Sparkles, Shirt } from 'lucide-react-native';
+import React, { memo, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { ImageAnalysisResult, DripLevel, CheaperAlternative } from '@/types';
+import { DollarSign, Sparkles, Shirt, ChevronDown, ChevronUp, TrendingDown, Star } from 'lucide-react-native';
 
 interface Props {
   result: ImageAnalysisResult;
@@ -23,7 +23,10 @@ function formatPrice(price: number | null, currency?: string): string {
 function clampScore(score: number): number { return Math.max(0, Math.min(100, score)); }
 
 function ImageAnalysisCard({ result }: Props) {
+  const [showAlternatives, setShowAlternatives] = useState<boolean>(false);
   const dripColor = useMemo(() => DRIP_COLORS[result.dripLevel], [result.dripLevel]);
+  const hasAlternatives = result.cheaperAlternatives && result.cheaperAlternatives.length > 0;
+  
   return (
     <View style={styles.card} testID="analysis-card">
       <View style={styles.rowHeader}>
@@ -49,6 +52,82 @@ function ImageAnalysisCard({ result }: Props) {
       {result.style && (
         <Text style={styles.subtle}>Style: {result.style}</Text>
       )}
+      
+      {hasAlternatives && (
+        <>
+          <TouchableOpacity 
+            style={styles.alternativesToggle}
+            onPress={() => setShowAlternatives(!showAlternatives)}
+            testID="alternatives-toggle"
+          >
+            <TrendingDown color="#4CAF50" size={16} />
+            <Text style={styles.alternativesToggleText}>
+              Cheaper Alternatives ({result.cheaperAlternatives!.length})
+            </Text>
+            {showAlternatives ? (
+              <ChevronUp color="#4CAF50" size={16} />
+            ) : (
+              <ChevronDown color="#4CAF50" size={16} />
+            )}
+          </TouchableOpacity>
+          
+          {showAlternatives && (
+            <ScrollView 
+              style={styles.alternativesContainer}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
+              {result.cheaperAlternatives!.map((alt: CheaperAlternative, index: number) => (
+                <AlternativeCard key={index} alternative={alt} currency={result.currency || 'USD'} />
+              ))}
+            </ScrollView>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+interface AlternativeCardProps {
+  alternative: CheaperAlternative;
+  currency: string;
+}
+
+function AlternativeCard({ alternative, currency }: AlternativeCardProps) {
+  const savings = alternative.estimatedPrice > 0 
+    ? Math.round(((100 - alternative.estimatedPrice) / 100) * 100)
+    : 0;
+    
+  return (
+    <View style={styles.alternativeCard} testID="alternative-card">
+      <View style={styles.alternativeHeader}>
+        <Text style={styles.alternativeName} numberOfLines={1}>
+          {alternative.name}
+        </Text>
+        <View style={styles.alternativePrice}>
+          <Text style={styles.alternativePriceText}>
+            {formatPrice(alternative.estimatedPrice, currency)}
+          </Text>
+          {savings > 0 && (
+            <Text style={styles.savingsText}>-{savings}%</Text>
+          )}
+        </View>
+      </View>
+      
+      <View style={styles.alternativeDetails}>
+        <Text style={styles.alternativeBrand}>{alternative.brand}</Text>
+        <View style={styles.alternativeMetrics}>
+          <View style={styles.metricItem}>
+            <Star color="#FFD700" size={12} />
+            <Text style={styles.metricText}>{alternative.similarity}% match</Text>
+          </View>
+          <Text style={styles.metricDivider}>•</Text>
+          <Text style={styles.metricText}>{alternative.trendAlignment}</Text>
+        </View>
+        <Text style={styles.whereToFind} numberOfLines={1}>
+          Available at: {alternative.whereToFind}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -111,5 +190,97 @@ const styles = StyleSheet.create({
     color: '#BBB',
     fontSize: 12,
     marginTop: 2,
+  },
+  alternativesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  alternativesToggleText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  alternativesContainer: {
+    maxHeight: 300,
+    marginTop: 8,
+  },
+  alternativeCard: {
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.2)',
+  },
+  alternativeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  alternativeName: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  alternativePrice: {
+    alignItems: 'flex-end',
+  },
+  alternativePriceText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  savingsText: {
+    color: '#4CAF50',
+    fontSize: 11,
+    fontWeight: '600',
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    marginTop: 2,
+  },
+  alternativeDetails: {
+    gap: 4,
+  },
+  alternativeBrand: {
+    color: '#CCC',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  alternativeMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metricItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  metricText: {
+    color: '#AAA',
+    fontSize: 11,
+  },
+  metricDivider: {
+    color: '#666',
+    fontSize: 11,
+  },
+  whereToFind: {
+    color: '#999',
+    fontSize: 11,
+    fontStyle: 'italic',
   },
 });
