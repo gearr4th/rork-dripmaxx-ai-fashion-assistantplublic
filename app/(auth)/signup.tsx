@@ -17,11 +17,11 @@ import { Sparkles, Mail, Lock, User, Calendar } from "lucide-react-native";
 import { useAuth } from "@/providers/AuthProvider";
 
 export default function SignupScreen() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [age, setAge] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [age, setAge] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const { signUp } = useAuth();
 
   const handleSignup = async () => {
@@ -32,11 +32,12 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      await signUp(email, password, name, parseInt(age));
+      await signUp(email, password, name, parseInt(age, 10));
       router.replace("/select-age" as any);
       setTimeout(() => router.push("/select-budget" as any), 50);
-    } catch (error) {
-      Alert.alert("Error", "Failed to create account");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create account";
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
@@ -68,6 +69,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <User color="#666" size={20} style={styles.inputIcon} />
                 <TextInput
+                  testID="signup-name"
                   style={styles.input}
                   placeholder="Full Name"
                   placeholderTextColor="#666"
@@ -80,6 +82,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Mail color="#666" size={20} style={styles.inputIcon} />
                 <TextInput
+                  testID="signup-email"
                   style={styles.input}
                   placeholder="Email"
                   placeholderTextColor="#666"
@@ -93,6 +96,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Lock color="#666" size={20} style={styles.inputIcon} />
                 <TextInput
+                  testID="signup-password"
                   style={styles.input}
                   placeholder="Password"
                   placeholderTextColor="#666"
@@ -105,6 +109,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Calendar color="#666" size={20} style={styles.inputIcon} />
                 <TextInput
+                  testID="signup-age"
                   style={styles.input}
                   placeholder="Age"
                   placeholderTextColor="#666"
@@ -115,6 +120,7 @@ export default function SignupScreen() {
               </View>
 
               <TouchableOpacity
+                testID="signup-submit"
                 style={[styles.signupButton, loading && styles.disabledButton]}
                 onPress={handleSignup}
                 disabled={loading}

@@ -18,9 +18,9 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useBudget } from "@/providers/BudgetProvider";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const { signIn } = useAuth();
   const { getBudgetForCurrentUser } = useBudget();
 
@@ -32,7 +32,6 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // Mock authentication
       await signIn(email, password);
       router.replace("/select-age" as any);
       setTimeout(async () => {
@@ -41,8 +40,9 @@ export default function LoginScreen() {
           router.push("/select-budget" as any);
         }
       }, 50);
-    } catch (error) {
-      Alert.alert("Error", "Invalid credentials. Try demo@dripmaxx.ai / password");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to sign in";
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
@@ -74,6 +74,7 @@ export default function LoginScreen() {
               <View style={styles.inputContainer}>
                 <Mail color="#666" size={20} style={styles.inputIcon} />
                 <TextInput
+                  testID="login-email"
                   style={styles.input}
                   placeholder="Email"
                   placeholderTextColor="#666"
@@ -87,6 +88,7 @@ export default function LoginScreen() {
               <View style={styles.inputContainer}>
                 <Lock color="#666" size={20} style={styles.inputIcon} />
                 <TextInput
+                  testID="login-password"
                   style={styles.input}
                   placeholder="Password"
                   placeholderTextColor="#666"
@@ -97,6 +99,7 @@ export default function LoginScreen() {
               </View>
 
               <TouchableOpacity
+                testID="login-submit"
                 style={[styles.loginButton, loading && styles.disabledButton]}
                 onPress={handleLogin}
                 disabled={loading}
@@ -114,6 +117,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
+                testID="login-fill-demo"
                 style={styles.demoButton}
                 onPress={() => {
                   setEmail("demo@dripmaxx.ai");
@@ -125,7 +129,7 @@ export default function LoginScreen() {
 
               <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Don't have an account? </Text>
-                <TouchableOpacity onPress={() => router.push("/signup" as any)}>
+                <TouchableOpacity testID="go-signup" onPress={() => router.push("/signup" as any)}>
                   <Text style={styles.signupLink}>Sign Up</Text>
                 </TouchableOpacity>
               </View>

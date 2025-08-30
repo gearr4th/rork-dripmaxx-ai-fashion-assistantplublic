@@ -9,6 +9,13 @@ export const GEMINI_API_KEY = 'AIzaSyDpIpEu0enKLo0-wncDtXpQEjKdHLnXEEo';
 // Weather API configuration (if you want to use a different weather service)
 export const WEATHER_API_KEY = 'your-weather-api-key-here';
 
+// Supabase configuration (set these to enable real auth)
+// Example:
+// export const SUPABASE_URL = 'https://your-project-ref.supabase.co';
+// export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';
+export const SUPABASE_URL: string = '';
+export const SUPABASE_ANON_KEY: string = '';
+
 // Other configuration options
 export const CONFIG = {
   // Gemini model to use
