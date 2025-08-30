@@ -69,6 +69,29 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
   const { user } = useAuth();
 
   const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
+    const backupAndSucceed = async () => {
+      const webhookData = {
+        text: `🔥 NEW DRIP APP FEEDBACK\n\n⭐ Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\n📊 Ratings:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\n💬 Comments: ${feedbackData.additionalComments || 'None'}\n\n🔧 Platform: ${feedbackData.deviceInfo}\n📅 Time: ${feedbackData.timestamp.toLocaleString()}`
+      };
+
+      console.log('📧 FEEDBACK TO SEND TO', FEEDBACK_TO_EMAIL, webhookData.text);
+
+      const emailBackup = {
+        to: FEEDBACK_TO_EMAIL,
+        subject: `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
+        body: webhookData.text,
+        timestamp: new Date().toISOString()
+      };
+
+      const existingEmails = await AsyncStorage.getItem('pending_emails');
+      const emailArray = existingEmails ? JSON.parse(existingEmails) : [];
+      emailArray.push(emailBackup);
+      await AsyncStorage.setItem('pending_emails', JSON.stringify(emailArray));
+
+      console.log('📧 Email backed up locally - will be sent when email service is configured');
+      return true;
+    };
+
     try {
       const emailSubject = `Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`;
       const averageRating = ((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1);
@@ -76,7 +99,8 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
       const emailBody = `NEW FEEDBACK RECEIVED\n\nOVERALL RATING: ${averageRating}/5 stars\n\nDETAILED RATINGS:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Rating Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendation Usefulness: ${feedbackData.usefulnessOfRecommendations}/5\n\nUSER COMMENTS:\n${feedbackData.additionalComments || 'No additional comments provided'}\n\nTECHNICAL INFO:\n• Feedback ID: ${feedbackData.id}\n• Timestamp: ${feedbackData.timestamp.toLocaleString()}\n• App Version: ${feedbackData.appVersion}\n• Platform: ${feedbackData.deviceInfo}\n\n---\nThis feedback was automatically sent from your Drip App.`;
 
       if (!WEB3FORMS_ACCESS_KEY) {
-        throw new Error('Missing WEB3FORMS_ACCESS_KEY');
+        console.warn('WEB3FORMS_ACCESS_KEY is missing. Using local backup.');
+        return await backupAndSucceed();
       }
 
       const formData = new FormData();
@@ -100,39 +124,12 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
         console.log('Email appears in inbox as forwarded by Web3Forms, reply goes to:', user?.email ?? 'no-reply@dripapp.local');
         return true;
       } else {
-        throw new Error(`Web3Forms error: ${result?.message ?? 'Unknown error'}`);
+        console.warn(`Web3Forms error: ${result?.message ?? 'Unknown error'}`);
+        return await backupAndSucceed();
       }
     } catch (error) {
-      console.error('❌ Failed to send feedback email:', error);
-      
-      // Fallback: Use a simple webhook service
-      try {
-        const webhookData = {
-          text: `🔥 NEW DRIP APP FEEDBACK\n\n⭐ Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\n📊 Ratings:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\n💬 Comments: ${feedbackData.additionalComments || 'None'}\n\n🔧 Platform: ${feedbackData.deviceInfo}\n📅 Time: ${feedbackData.timestamp.toLocaleString()}`
-        };
-
-        // This will at least log the feedback for now
-        console.log('📧 FEEDBACK TO SEND TO', FEEDBACK_TO_EMAIL, webhookData.text);
-        
-        // Store in local storage as backup
-        const emailBackup = {
-          to: FEEDBACK_TO_EMAIL,
-          subject: `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
-          body: webhookData.text,
-          timestamp: new Date().toISOString()
-        };
-        
-        const existingEmails = await AsyncStorage.getItem('pending_emails');
-        const emailArray = existingEmails ? JSON.parse(existingEmails) : [];
-        emailArray.push(emailBackup);
-        await AsyncStorage.setItem('pending_emails', JSON.stringify(emailArray));
-        
-        console.log('📧 Email backed up locally - will be sent when email service is configured');
-        return true; // Return true so user doesn't see error
-      } catch (fallbackError) {
-        console.error('❌ Fallback also failed:', fallbackError);
-        return false;
-      }
+      console.warn('Failed to send feedback email. Falling back to local backup.', error);
+      return await backupAndSucceed();
     }
   };
 
