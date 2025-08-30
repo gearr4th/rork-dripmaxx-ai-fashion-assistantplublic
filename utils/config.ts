@@ -16,6 +16,11 @@ export const WEATHER_API_KEY = 'your-weather-api-key-here';
 export const SUPABASE_URL: string = '';
 export const SUPABASE_ANON_KEY: string = '';
 
+// Public email service (Web3Forms) for feedback delivery
+// Create a free key at https://web3forms.com/ and paste it here
+export const WEB3FORMS_ACCESS_KEY: string = '';
+export const FEEDBACK_TO_EMAIL: string = 'gearr4th@gmail.com';
+
 // Other configuration options
 export const CONFIG = {
   // Gemini model to use

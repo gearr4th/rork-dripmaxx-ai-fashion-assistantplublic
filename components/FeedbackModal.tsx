@@ -14,6 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { X, Star, Send } from 'lucide-react-native';
 import { FeedbackData } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FEEDBACK_TO_EMAIL, WEB3FORMS_ACCESS_KEY } from '@/utils/config';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface FeedbackModalProps {
   visible: boolean;
@@ -64,39 +66,26 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
     setAdditionalComments('');
   };
 
+  const { user } = useAuth();
+
   const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
     try {
-      const emailSubject = `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`;
+      const emailSubject = `Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`;
       const averageRating = ((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1);
       
-      const emailBody = `📱 NEW FEEDBACK RECEIVED
+      const emailBody = `NEW FEEDBACK RECEIVED\n\nOVERALL RATING: ${averageRating}/5 stars\n\nDETAILED RATINGS:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Rating Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendation Usefulness: ${feedbackData.usefulnessOfRecommendations}/5\n\nUSER COMMENTS:\n${feedbackData.additionalComments || 'No additional comments provided'}\n\nTECHNICAL INFO:\n• Feedback ID: ${feedbackData.id}\n• Timestamp: ${feedbackData.timestamp.toLocaleString()}\n• App Version: ${feedbackData.appVersion}\n• Platform: ${feedbackData.deviceInfo}\n\n---\nThis feedback was automatically sent from your Drip App.`;
 
-⭐ OVERALL RATING: ${averageRating}/5 stars
+      if (!WEB3FORMS_ACCESS_KEY) {
+        throw new Error('Missing WEB3FORMS_ACCESS_KEY');
+      }
 
-📊 DETAILED RATINGS:
-• Ease of Use: ${feedbackData.easeOfUse}/5 ⭐
-• Drip Rating Accuracy: ${feedbackData.accuracyOfDripRating}/5 ⭐
-• Recommendation Usefulness: ${feedbackData.usefulnessOfRecommendations}/5 ⭐
-
-💬 USER COMMENTS:
-${feedbackData.additionalComments || 'No additional comments provided'}
-
-🔧 TECHNICAL INFO:
-• Feedback ID: ${feedbackData.id}
-• Timestamp: ${feedbackData.timestamp.toLocaleString()}
-• App Version: ${feedbackData.appVersion}
-• Platform: ${feedbackData.deviceInfo}
-
----
-This feedback was automatically sent from your Drip App.`;
-
-      // Using Web3Forms - reliable and free email service
       const formData = new FormData();
-      formData.append('access_key', 'YOUR_WEB3FORMS_ACCESS_KEY'); // You'll need to get this from web3forms.com
+      formData.append('access_key', WEB3FORMS_ACCESS_KEY);
       formData.append('subject', emailSubject);
-      formData.append('email', 'gearr4th@gmail.com');
+      formData.append('to', FEEDBACK_TO_EMAIL);
+      formData.append('email', user?.email ?? 'no-reply@dripapp.local');
       formData.append('message', emailBody);
-      formData.append('from_name', 'Drip App Feedback System');
+      formData.append('from_name', user?.email ?? 'Drip App User');
       formData.append('redirect', 'false');
 
       const response = await fetch('https://api.web3forms.com/submit', {
@@ -106,12 +95,12 @@ This feedback was automatically sent from your Drip App.`;
 
       const result = await response.json();
       
-      if (result.success) {
-        console.log('✅ Feedback email sent successfully to gearr4th@gmail.com');
-        console.log('📧 Email will be sent from: noreply@web3forms.com');
+      if (result?.success) {
+        console.log('Feedback email sent successfully to', FEEDBACK_TO_EMAIL);
+        console.log('Email appears in inbox as forwarded by Web3Forms, reply goes to:', user?.email ?? 'no-reply@dripapp.local');
         return true;
       } else {
-        throw new Error(`Web3Forms error: ${result.message}`);
+        throw new Error(`Web3Forms error: ${result?.message ?? 'Unknown error'}`);
       }
     } catch (error) {
       console.error('❌ Failed to send feedback email:', error);
@@ -123,11 +112,11 @@ This feedback was automatically sent from your Drip App.`;
         };
 
         // This will at least log the feedback for now
-        console.log('📧 FEEDBACK TO SEND TO gearr4th@gmail.com:', webhookData.text);
+        console.log('📧 FEEDBACK TO SEND TO', FEEDBACK_TO_EMAIL, webhookData.text);
         
         // Store in local storage as backup
         const emailBackup = {
-          to: 'gearr4th@gmail.com',
+          to: FEEDBACK_TO_EMAIL,
           subject: `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
           body: webhookData.text,
           timestamp: new Date().toISOString()
