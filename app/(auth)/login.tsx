@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Sparkles, Mail, Lock } from "lucide-react-native";
+import { Sparkles, Mail, Lock, LogIn } from "lucide-react-native";
 import { useAuth } from "@/providers/AuthProvider";
 import { useBudget } from "@/providers/BudgetProvider";
 
@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const { getBudgetForCurrentUser } = useBudget();
 
   const handleLogin = async () => {
@@ -125,6 +125,27 @@ export default function LoginScreen() {
                 }}
               >
                 <Text style={styles.demoButtonText}>Use Demo Account</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                testID="login-google"
+                style={styles.googleButton}
+                onPress={async () => {
+                  try {
+                    await signInWithGoogle();
+                    router.replace("/select-age" as any);
+                    setTimeout(async () => {
+                      const b = await getBudgetForCurrentUser();
+                      if (!b) router.push("/select-budget" as any);
+                    }, 50);
+                  } catch (e: unknown) {
+                    const msg = e instanceof Error ? e.message : 'Google sign-in failed';
+                    Alert.alert('Authentication', msg);
+                  }
+                }}
+              >
+                <LogIn color="#fff" size={18} />
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
               </TouchableOpacity>
 
               <View style={styles.signupContainer}>
@@ -232,6 +253,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 24,
+  },
+  googleButton: {
+    marginTop: 8,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8 as unknown as number,
+  },
+  googleButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
   },
   signupText: {
     color: "#888",

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/utils/config";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import { Platform } from "react-native";
 
 interface User {
   id: string;
@@ -15,6 +18,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, age: number) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -110,6 +114,71 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     await AsyncStorage.setItem("user", JSON.stringify(u));
   }, [supabaseConfigured]);
 
+  const signInWithGoogle = useCallback(async () => {
+    if (!supabaseConfigured) {
+      throw new Error("Supabase not configured for OAuth");
+    }
+
+    const redirectUrl = Linking.createURL("/auth-callback");
+    const authorizeUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+    console.log('[Auth] Google OAuth start', { redirectUrl });
+
+    try {
+      if (Platform.OS === 'web') {
+        const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
+        if (result.type === 'success' && result.url) {
+          const url = result.url;
+          const hash = url.split('#')[1] ?? '';
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token') ?? '';
+          if (!accessToken) throw new Error('No access token returned');
+          const uResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+            headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
+          });
+          if (!uResp.ok) {
+            const txt = await uResp.text();
+            console.error('[Auth] user fetch error', txt);
+            throw new Error('Failed to fetch user');
+          }
+          const uJson = (await uResp.json()) as { id?: string; email?: string };
+          const u: User = { id: uJson.id ?? '', email: uJson.email ?? '' };
+          setUser(u);
+          setIsAuthenticated(true);
+          await AsyncStorage.setItem('user', JSON.stringify(u));
+          return;
+        }
+        throw new Error('Authentication was cancelled or failed');
+      } else {
+        const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
+        if (result.type === 'success' && result.url) {
+          const url = result.url;
+          const hash = url.split('#')[1] ?? '';
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token') ?? '';
+          if (!accessToken) throw new Error('No access token returned');
+          const uResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+            headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
+          });
+          if (!uResp.ok) {
+            const txt = await uResp.text();
+            console.error('[Auth] user fetch error', txt);
+            throw new Error('Failed to fetch user');
+          }
+          const uJson = (await uResp.json()) as { id?: string; email?: string };
+          const u: User = { id: uJson.id ?? '', email: uJson.email ?? '' };
+          setUser(u);
+          setIsAuthenticated(true);
+          await AsyncStorage.setItem('user', JSON.stringify(u));
+          return;
+        }
+        throw new Error('Authentication was cancelled or failed');
+      }
+    } catch (e) {
+      console.error('[Auth] Google OAuth error', e);
+      throw e instanceof Error ? e : new Error('Google OAuth failed');
+    }
+  }, [supabaseConfigured]);
+
   const signOut = useCallback(async () => {
     console.log('[Auth] signOut');
     setUser(null);
@@ -122,6 +191,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     isAuthenticated,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
-  }), [user, isAuthenticated, signIn, signUp, signOut]);
+  }), [user, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 });
