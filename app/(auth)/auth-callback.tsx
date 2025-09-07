@@ -1,24 +1,39 @@
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet, Platform, Alert, Text } from 'react-native';
+import { router } from 'expo-router';
+import { useAuth } from '@/providers/AuthProvider';
 
 export default function AuthCallback() {
-  const params = useLocalSearchParams();
+  const { completeOAuthFromRedirect } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/select-age' as any);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [params]);
+    const run = async () => {
+      try {
+        const url = Platform.OS === 'web' ? (window.location.href as unknown as string) : '';
+        if (!url) {
+          throw new Error('Missing redirect URL');
+        }
+        await completeOAuthFromRedirect(url);
+        router.replace('/select-age' as any);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'OAuth failed';
+        console.error('[AuthCallback] OAuth error', msg);
+        setError(msg);
+        Alert.alert('Authentication', msg);
+      }
+    };
+    void run();
+  }, [completeOAuthFromRedirect]);
 
   return (
     <View style={styles.c} testID="auth-callback-loading">
-      <ActivityIndicator color="#FFD700" />
+      {error ? <Text style={styles.error}>Error: {error}</Text> : <ActivityIndicator color="#FFD700" />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   c: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' },
+  error: { color: '#ff6b6b', fontSize: 14 },
 });

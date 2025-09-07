@@ -19,6 +19,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, age: number) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  completeOAuthFromRedirect: (url: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -114,6 +115,31 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     await AsyncStorage.setItem("user", JSON.stringify(u));
   }, [supabaseConfigured]);
 
+  const completeOAuthFromRedirect = useCallback(async (url: string) => {
+    try {
+      const hash = url.split('#')[1] ?? '';
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token') ?? '';
+      if (!accessToken) throw new Error('No access token returned');
+      const uResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
+      });
+      if (!uResp.ok) {
+        const txt = await uResp.text();
+        console.error('[Auth] user fetch error', txt);
+        throw new Error('Failed to fetch user');
+      }
+      const uJson = (await uResp.json()) as { id?: string; email?: string };
+      const u: User = { id: uJson.id ?? '', email: uJson.email ?? '' };
+      setUser(u);
+      setIsAuthenticated(true);
+      await AsyncStorage.setItem('user', JSON.stringify(u));
+    } catch (e) {
+      console.error('[Auth] completeOAuthFromRedirect error', e);
+      throw e instanceof Error ? e : new Error('OAuth completion failed');
+    }
+  }, []);
+
   const signInWithGoogle = useCallback(async () => {
     if (!supabaseConfigured) {
       throw new Error("Supabase not configured for OAuth");
@@ -121,54 +147,16 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
     const redirectUrl = Linking.createURL("/auth-callback");
     const authorizeUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
-    console.log('[Auth] Google OAuth start', { redirectUrl });
+    console.log('[Auth] Google OAuth start', { redirectUrl, authorizeUrl });
 
     try {
       if (Platform.OS === 'web') {
-        const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
-        if (result.type === 'success' && result.url) {
-          const url = result.url;
-          const hash = url.split('#')[1] ?? '';
-          const params = new URLSearchParams(hash);
-          const accessToken = params.get('access_token') ?? '';
-          if (!accessToken) throw new Error('No access token returned');
-          const uResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-            headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
-          });
-          if (!uResp.ok) {
-            const txt = await uResp.text();
-            console.error('[Auth] user fetch error', txt);
-            throw new Error('Failed to fetch user');
-          }
-          const uJson = (await uResp.json()) as { id?: string; email?: string };
-          const u: User = { id: uJson.id ?? '', email: uJson.email ?? '' };
-          setUser(u);
-          setIsAuthenticated(true);
-          await AsyncStorage.setItem('user', JSON.stringify(u));
-          return;
-        }
-        throw new Error('Authentication was cancelled or failed');
+        window.location.href = authorizeUrl as unknown as string;
+        return;
       } else {
         const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
         if (result.type === 'success' && result.url) {
-          const url = result.url;
-          const hash = url.split('#')[1] ?? '';
-          const params = new URLSearchParams(hash);
-          const accessToken = params.get('access_token') ?? '';
-          if (!accessToken) throw new Error('No access token returned');
-          const uResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-            headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
-          });
-          if (!uResp.ok) {
-            const txt = await uResp.text();
-            console.error('[Auth] user fetch error', txt);
-            throw new Error('Failed to fetch user');
-          }
-          const uJson = (await uResp.json()) as { id?: string; email?: string };
-          const u: User = { id: uJson.id ?? '', email: uJson.email ?? '' };
-          setUser(u);
-          setIsAuthenticated(true);
-          await AsyncStorage.setItem('user', JSON.stringify(u));
+          await completeOAuthFromRedirect(result.url);
           return;
         }
         throw new Error('Authentication was cancelled or failed');
@@ -177,7 +165,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       console.error('[Auth] Google OAuth error', e);
       throw e instanceof Error ? e : new Error('Google OAuth failed');
     }
-  }, [supabaseConfigured]);
+  }, [supabaseConfigured, completeOAuthFromRedirect]);
 
   const signOut = useCallback(async () => {
     console.log('[Auth] signOut');
@@ -192,6 +180,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     signIn,
     signUp,
     signInWithGoogle,
+    completeOAuthFromRedirect,
     signOut,
-  }), [user, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
+  }), [user, isAuthenticated, signIn, signUp, signInWithGoogle, completeOAuthFromRedirect, signOut]);
 });
