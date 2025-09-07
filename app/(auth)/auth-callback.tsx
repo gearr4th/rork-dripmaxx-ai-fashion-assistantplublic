@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform, Alert, Text } from 'react-native';
 import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function AuthCallback() {
@@ -10,7 +11,12 @@ export default function AuthCallback() {
   useEffect(() => {
     const run = async () => {
       try {
-        const url = Platform.OS === 'web' ? (window.location.href as unknown as string) : '';
+        let url: string | null = null;
+        if (Platform.OS === 'web') {
+          url = window.location.href as unknown as string;
+        } else {
+          url = await Linking.getInitialURL();
+        }
         if (!url) {
           throw new Error('Missing redirect URL');
         }

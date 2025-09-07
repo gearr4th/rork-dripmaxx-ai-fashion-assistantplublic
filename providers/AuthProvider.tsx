@@ -6,6 +6,8 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 
+WebBrowser.maybeCompleteAuthSession();
+
 interface User {
   id: string;
   email: string;
@@ -151,15 +153,37 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
     try {
       if (Platform.OS === 'web') {
-        window.location.href = authorizeUrl as unknown as string;
+        window.location.assign(authorizeUrl as unknown as string);
         return;
       } else {
-        const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
-        if (result.type === 'success' && result.url) {
-          await completeOAuthFromRedirect(result.url);
-          return;
+        let handled = false;
+        const onUrl = async ({ url }: { url: string }) => {
+          console.log('[Auth] Deep link event', url?.slice(0, 60));
+          if (url && url.includes('auth-callback')) {
+            handled = true;
+            try {
+              await completeOAuthFromRedirect(url);
+            } catch (err) {
+              console.error('[Auth] complete from deep link failed', err);
+            } finally {
+            }
+          }
+        };
+        const sub = Linking.addEventListener('url', onUrl as unknown as (e: unknown) => void);
+        try {
+          const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
+          console.log('[Auth] WebBrowser result', result.type);
+          if (result.type === 'success' && result.url) {
+            await completeOAuthFromRedirect(result.url);
+            handled = true;
+            return;
+          }
+          if (!handled) {
+            throw new Error('Authentication was cancelled or failed');
+          }
+        } finally {
+          sub.remove();
         }
-        throw new Error('Authentication was cancelled or failed');
       }
     } catch (e) {
       console.error('[Auth] Google OAuth error', e);
