@@ -13,16 +13,18 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Sparkles, Mail, Lock, LogIn } from "lucide-react-native";
+import { Sparkles, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/providers/AuthProvider";
-import { useBudget } from "@/providers/BudgetProvider";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const { signIn, signInWithGoogle } = useAuth();
-  const { getBudgetForCurrentUser } = useBudget();
+  const { signIn } = useAuth();
+
+  const navigateToApp = () => {
+    router.replace("/" as any);
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,16 +35,23 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace("/select-age" as any);
-      setTimeout(async () => {
-        const b = await getBudgetForCurrentUser();
-        if (!b) {
-          router.push("/select-budget" as any);
-        }
-      }, 50);
+      navigateToApp();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to sign in";
       Alert.alert("Error", message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemo = async () => {
+    try {
+      setLoading(true);
+      await signIn("demo@dripmaxx.ai", "password");
+      navigateToApp();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Demo sign-in failed";
+      Alert.alert("Demo", msg);
     } finally {
       setLoading(false);
     }
@@ -117,6 +126,15 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
+                testID="login-demo"
+                style={styles.demoPrimary}
+                onPress={handleDemo}
+                disabled={loading}
+              >
+                <Text style={styles.demoPrimaryText}>Continue with Demo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 testID="login-fill-demo"
                 style={styles.demoButton}
                 onPress={() => {
@@ -124,36 +142,8 @@ export default function LoginScreen() {
                   setPassword("password");
                 }}
               >
-                <Text style={styles.demoButtonText}>Use Demo Account</Text>
+                <Text style={styles.demoButtonText}>Fill Demo Credentials</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                testID="login-google"
-                style={styles.googleButton}
-                onPress={async () => {
-                  try {
-                    await signInWithGoogle();
-                    router.replace("/select-age" as any);
-                    setTimeout(async () => {
-                      const b = await getBudgetForCurrentUser();
-                      if (!b) router.push("/select-budget" as any);
-                    }, 50);
-                  } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : 'Google sign-in failed';
-                    Alert.alert('Authentication', msg);
-                  }
-                }}
-              >
-                <LogIn color="#fff" size={18} />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
-
-              <View style={styles.signupContainer}>
-                <Text style={styles.signupText}>Don't have an account? </Text>
-                <TouchableOpacity testID="go-signup" onPress={() => router.push("/signup" as any)}>
-                  <Text style={styles.signupLink}>Sign Up</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -240,43 +230,26 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
+  demoPrimary: {
+    marginTop: 12,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#FFD700",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  demoPrimaryText: {
+    color: "#000000",
+    fontSize: 16,
+    fontWeight: "700",
+  },
   demoButton: {
-    marginTop: 16,
+    marginTop: 12,
     padding: 12,
     alignItems: "center",
   },
   demoButtonText: {
     color: "#FFD700",
     fontSize: 16,
-  },
-  signupContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 24,
-  },
-  googleButton: {
-    marginTop: 8,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: "#4285F4",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8 as unknown as number,
-  },
-  googleButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  signupText: {
-    color: "#888",
-    fontSize: 14,
-  },
-  signupLink: {
-    color: "#FFD700",
-    fontSize: 14,
-    fontWeight: "600",
   },
 });

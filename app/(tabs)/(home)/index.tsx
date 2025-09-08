@@ -15,26 +15,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Sparkles,
-  TrendingUp,
   MapPin,
   Plus,
   MessageSquare,
 } from "lucide-react-native";
 import { useWeather } from "@/providers/WeatherProvider";
 import { useClothes } from "@/providers/ClothesProvider";
-import { router, Redirect } from "expo-router";
-import { useAuth } from "@/providers/AuthProvider";
+import { router } from "expo-router";
 import OutfitCard from "@/components/OutfitCard";
 import WeatherCard from "@/components/WeatherCard";
-import TrendCard from "@/components/TrendCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
-import { useSession } from "@/providers/SessionProvider";
 import FeedbackModal from "@/components/FeedbackModal";
 
 export default function HomeScreen() {
-  const { isAuthenticated } = useAuth();
-  const { ageGroup } = useSession();
   const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
   const { clothes } = useClothes();
   const [prompt, setPrompt] = useState<string>("");
@@ -49,26 +43,16 @@ export default function HomeScreen() {
   const getTimeBasedGreeting = () => {
     const now = new Date();
     const hour = now.getHours();
-    
-    if (hour >= 5 && hour < 12) {
-      return "Good Morning!";
-    } else if (hour >= 12 && hour < 17) {
-      return "Good Afternoon!";
-    } else if (hour >= 17 && hour < 22) {
-      return "Good Evening!";
-    } else {
-      return "Good Night!";
-    }
+    if (hour >= 5 && hour < 12) return "Good Morning!";
+    if (hour >= 12 && hour < 17) return "Good Afternoon!";
+    if (hour >= 17 && hour < 22) return "Good Evening!";
+    return "Good Night!";
   };
 
   useEffect(() => {
-    const updateGreeting = () => {
-      setCurrentGreeting(getTimeBasedGreeting());
-    };
-    
+    const updateGreeting = () => setCurrentGreeting(getTimeBasedGreeting());
     updateGreeting();
-    const interval = setInterval(updateGreeting, 60000); // Update every minute
-    
+    const interval = setInterval(updateGreeting, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -93,7 +77,6 @@ export default function HomeScreen() {
       if (!weather) {
         await fetchWeather();
       }
-      console.log('Interpreting user request for NL preferences, occasion, budget...');
       const parsedReq = await interpretUserStyleRequest(prompt);
       setParsed(parsedReq);
       const enrichedPrompt = [
@@ -125,14 +108,6 @@ export default function HomeScreen() {
     await fetchWeather();
     setRefreshing(false);
   };
-
-  if (!isAuthenticated) {
-    return <Redirect href="/login" />;
-  }
-
-  if (!ageGroup) {
-    return <Redirect href="/select-age" />;
-  }
 
   return (
     <LinearGradient

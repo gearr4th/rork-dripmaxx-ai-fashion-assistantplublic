@@ -40,13 +40,18 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         const parsed = JSON.parse(userData) as User;
         setUser(parsed);
         setIsAuthenticated(true);
+        return;
       }
+      const demo: User = { id: '1', email: 'demo@dripmaxx.ai', name: 'Demo User', age: 25 };
+      setUser(demo);
+      setIsAuthenticated(true);
+      await AsyncStorage.setItem('user', JSON.stringify(demo));
     } catch (error) {
       console.error("[Auth] Failed to load user", error);
     }
   };
 
-  const supabaseConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
+  const supabaseConfigured = false;
 
   const signIn = useCallback(async (email: string, password: string) => {
     console.log('[Auth] signIn', { email: email?.slice(0, 3) + '***' });
@@ -143,53 +148,8 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!supabaseConfigured) {
-      throw new Error("Supabase not configured for OAuth");
-    }
-
-    const redirectUrl = Linking.createURL("/auth-callback");
-    const authorizeUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
-    console.log('[Auth] Google OAuth start', { redirectUrl, authorizeUrl });
-
-    try {
-      if (Platform.OS === 'web') {
-        window.location.assign(authorizeUrl as unknown as string);
-        return;
-      } else {
-        let handled = false;
-        const onUrl = async ({ url }: { url: string }) => {
-          console.log('[Auth] Deep link event', url?.slice(0, 60));
-          if (url && url.includes('auth-callback')) {
-            handled = true;
-            try {
-              await completeOAuthFromRedirect(url);
-            } catch (err) {
-              console.error('[Auth] complete from deep link failed', err);
-            } finally {
-            }
-          }
-        };
-        const sub = Linking.addEventListener('url', onUrl as unknown as (e: unknown) => void);
-        try {
-          const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUrl);
-          console.log('[Auth] WebBrowser result', result.type);
-          if (result.type === 'success' && result.url) {
-            await completeOAuthFromRedirect(result.url);
-            handled = true;
-            return;
-          }
-          if (!handled) {
-            throw new Error('Authentication was cancelled or failed');
-          }
-        } finally {
-          sub.remove();
-        }
-      }
-    } catch (e) {
-      console.error('[Auth] Google OAuth error', e);
-      throw e instanceof Error ? e : new Error('Google OAuth failed');
-    }
-  }, [supabaseConfigured, completeOAuthFromRedirect]);
+    throw new Error('Google sign-in is disabled in demo mode');
+  }, []);
 
   const signOut = useCallback(async () => {
     console.log('[Auth] signOut');
