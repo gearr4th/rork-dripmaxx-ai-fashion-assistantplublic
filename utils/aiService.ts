@@ -133,85 +133,75 @@ type AnalyzeImageInput = { base64: string; mimeType: string };
 
 export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<ImageAnalysisResult> {
   try {
-    console.log('Analyzing clothing image with Gemini...', { mimeType: input.mimeType, size: input.base64.length });
-    const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
+    console.log('[analyzeClothingImage] start', { mimeType: input.mimeType, size: input.base64.length });
+    type ContentPart = { type: 'text'; text: string } | { type: 'image'; image: string };
+    type CoreMessage = { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] };
 
-    const prompt = `You are a fashion product identifier and trend analyst. Given an image of a clothing item, return ONLY JSON in this shape:
-{
-  "itemName": string, // simple human-friendly name if brand unknown
-  "officialProductName": string, // closest product name from likely brand catalog
-  "brand": string|null,
-  "type": string|null, // hoodie, tee, jeans, sneakers, etc.
-  "style": string|null, // e.g., streetwear, minimalist, smart casual, Y2K
-  "averagePrice": number|null, // average price from brand official store (estimate if exact unavailable)
-  "currency": "USD", // pick currency and keep consistent based on brand region
-  "versatilityScore": number, // 0-100 rating for how many occasions it fits
-  "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip",
-  "reasoning": string, // short justification including comparable products
-  "sources": string[], // likely brand/catalog URLs or search terms
-  "storeLink": string|null, // official store product URL if identifiable
-  "bestOccasion": "casual" | "work" | "party" | "date" | "gym" | "formal" | "travel" | "daily wear",
-  "cheaperAlternatives": [
-    {
-      "name": string, // product name
-      "brand": string, // affordable brand
-      "estimatedPrice": number, // price in same currency
-      "similarity": number, // 0-100 how similar to original
-      "trendAlignment": string, // how it fits current trends
-      "whereToFind": string // store/website suggestion
+    const system: CoreMessage = {
+      role: 'system',
+      content:
+        'You are a precise fashion product identifier. Respond ONLY with valid JSON matching the required schema. No markdown.'
+    };
+
+    const user: CoreMessage = {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text:
+            'Analyze this clothing image and return ONLY JSON with fields: {"itemName": string, "officialProductName": string, "brand": string|null, "type": string|null, "style": string|null, "averagePrice": number|null, "currency": "USD", "versatilityScore": number, "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip", "reasoning": string, "sources": string[], "storeLink": string|null, "bestOccasion": "casual" | "work" | "party" | "date" | "gym" | "formal" | "travel" | "daily wear", "cheaperAlternatives": [{"name": string, "brand": string, "estimatedPrice": number, "similarity": number, "trendAlignment": string, "whereToFind": string}]}\nRules: prefer official store pricing; infer brand if visible; ensure valid JSON only.'
+        },
+        { type: 'image', image: input.base64 },
+      ],
+    };
+
+    const response = await fetch('https://toolkit.rork.com/text/llm/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [system, user] }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`LLM HTTP ${response.status}: ${text}`);
     }
-  ]
-}
-Rules:
-- Prefer official brand pricing, never reseller or aftermarket.
-- If brand uncertain, infer from cues like logos, silhouettes, typical colorways.
-- Be conservative with Maxx Drip; reserve for iconic or high-fashion pieces.
-- For cheaper alternatives, suggest 3-5 similar items from affordable brands (H&M, Zara, Uniqlo, Target, etc.)
-- Alternatives should be 30-70% cheaper than original while maintaining style essence
-- Consider current 2025 fashion trends when suggesting alternatives
-- Do not add extra text, only the JSON. Make sure it is valid JSON.`;
+    const data = (await response.json()) as { completion?: string };
+    const out = String(data.completion ?? '');
+    console.log('[analyzeClothingImage] raw', out.slice(0, 200));
+    const jsonMatch = out.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in LLM response');
+    const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
 
-    const result = await model.generateContent([
-      { text: prompt },
-      {
-        inlineData: {
-          data: input.base64,
-          mimeType: input.mimeType,
-        }
-      } as any,
-    ]);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON in AI response');
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    const dripString = String(parsed.dripLevel ?? parsed.drip ?? 'Lowkey Drip') as DripLevel;
-    const cheaperAlternatives = Array.isArray(parsed.cheaperAlternatives) 
-      ? parsed.cheaperAlternatives.map((alt: any) => ({
-          name: String(alt.name ?? 'Alternative Item'),
-          brand: String(alt.brand ?? 'Unknown Brand'),
-          estimatedPrice: typeof alt.estimatedPrice === 'number' ? alt.estimatedPrice : 0,
-          similarity: Math.max(0, Math.min(100, Number(alt.similarity ?? 70))),
-          trendAlignment: String(alt.trendAlignment ?? 'Trendy'),
-          whereToFind: String(alt.whereToFind ?? 'Online retailers'),
-        })).slice(0, 5)
+    const dripString = String((parsed as any).dripLevel ?? (parsed as any).drip ?? 'Lowkey Drip');
+    const cheaperAlternatives = Array.isArray((parsed as any).cheaperAlternatives)
+      ? ((parsed as any).cheaperAlternatives as any[])
+          .map((alt) => ({
+            name: String(alt?.name ?? 'Alternative Item'),
+            brand: String(alt?.brand ?? 'Unknown Brand'),
+            estimatedPrice: typeof alt?.estimatedPrice === 'number' ? (alt.estimatedPrice as number) : 0,
+            similarity: Math.max(0, Math.min(100, Number(alt?.similarity ?? 70))),
+            trendAlignment: String(alt?.trendAlignment ?? 'Trendy'),
+            whereToFind: String(alt?.whereToFind ?? 'Online retailers'),
+          }))
+          .slice(0, 5)
       : [];
 
     const normalized: ImageAnalysisResult = {
-      itemName: String(parsed.itemName ?? 'Clothing Item'),
-      officialProductName: String(parsed.officialProductName ?? parsed.itemName ?? 'Unknown'),
-      brand: parsed.brand ? String(parsed.brand) : undefined,
-      type: parsed.type ? String(parsed.type) : undefined,
-      style: parsed.style ? String(parsed.style) : undefined,
-      averagePrice: typeof parsed.averagePrice === 'number' ? parsed.averagePrice : null,
-      currency: parsed.currency ? String(parsed.currency) : 'USD',
-      versatilityScore: Math.max(0, Math.min(100, Number(parsed.versatilityScore ?? 60))),
-      dripLevel: (['Maxx Drip','Pure Drip','Certified Drip','Lowkey Drip'].includes(dripString) ? dripString : 'Lowkey Drip') as DripLevel,
-      reasoning: String(parsed.reasoning ?? ''),
-      sources: Array.isArray(parsed.sources) ? parsed.sources.map((s: unknown) => String(s)).slice(0, 5) : [],
+      itemName: String((parsed as any).itemName ?? 'Clothing Item'),
+      officialProductName: String((parsed as any).officialProductName ?? (parsed as any).itemName ?? 'Unknown'),
+      brand: (parsed as any).brand ? String((parsed as any).brand) : undefined,
+      type: (parsed as any).type ? String((parsed as any).type) : undefined,
+      style: (parsed as any).style ? String((parsed as any).style) : undefined,
+      averagePrice: typeof (parsed as any).averagePrice === 'number' ? ((parsed as any).averagePrice as number) : null,
+      currency: (parsed as any).currency ? String((parsed as any).currency) : 'USD',
+      versatilityScore: Math.max(0, Math.min(100, Number((parsed as any).versatilityScore ?? 60))),
+      dripLevel: (['Maxx Drip', 'Pure Drip', 'Certified Drip', 'Lowkey Drip'].includes(dripString) ? dripString : 'Lowkey Drip') as DripLevel,
+      reasoning: String((parsed as any).reasoning ?? ''),
+      sources: Array.isArray((parsed as any).sources) ? ((parsed as any).sources as any[]).map((s) => String(s)).slice(0, 5) : [],
       cheaperAlternatives,
-      storeLink: typeof parsed.storeLink === 'string' ? parsed.storeLink : null,
-      bestOccasion: (['casual','work','party','date','gym','formal','travel','daily wear'].includes(String(parsed.bestOccasion)) ? String(parsed.bestOccasion) : undefined) as any,
+      storeLink: typeof (parsed as any).storeLink === 'string' ? ((parsed as any).storeLink as string) : null,
+      bestOccasion: (['casual','work','party','date','gym','formal','travel','daily wear'].includes(String((parsed as any).bestOccasion))
+        ? (String((parsed as any).bestOccasion) as any)
+        : undefined) as any,
     };
     return normalized;
   } catch (e) {
