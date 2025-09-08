@@ -8,12 +8,14 @@ interface ClothesContextType {
   addClothingItem: (item: Omit<ClothingItem, "id">) => Promise<void>;
   addClothingItemWithAnalysis: (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => Promise<void>;
   removeClothingItem: (id: string) => Promise<void>;
+  removeClothingItems: (ids: string[]) => Promise<void>;
+  clearAll: () => Promise<void>;
   loading: boolean;
 }
 
 export const [ClothesProvider, useClothes] = createContextHook<ClothesContextType>(() => {
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     loadClothes();
@@ -25,7 +27,6 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       if (stored) {
         setClothes(JSON.parse(stored));
       } else {
-        // Add some demo items
         const demoItems: ClothingItem[] = [
           {
             id: "1",
@@ -70,6 +71,11 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     }
   };
 
+  const persist = async (items: ClothingItem[]) => {
+    setClothes(items);
+    await AsyncStorage.setItem("clothes", JSON.stringify(items));
+  };
+
   const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {
     const newItem: ClothingItem = {
       ...item,
@@ -77,8 +83,7 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       dateAdded: new Date(),
     };
     const updated = [...clothes, newItem];
-    setClothes(updated);
-    await AsyncStorage.setItem("clothes", JSON.stringify(updated));
+    await persist(updated);
   }, [clothes]);
 
   const addClothingItemWithAnalysis = useCallback(async (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => {
@@ -90,21 +95,31 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       dateAdded: new Date(),
     };
     const updated = [...clothes, newItem];
-    setClothes(updated);
-    await AsyncStorage.setItem("clothes", JSON.stringify(updated));
+    await persist(updated);
   }, [clothes]);
 
   const removeClothingItem = useCallback(async (id: string) => {
     const updated = clothes.filter(item => item.id !== id);
-    setClothes(updated);
-    await AsyncStorage.setItem("clothes", JSON.stringify(updated));
+    await persist(updated);
   }, [clothes]);
+
+  const removeClothingItems = useCallback(async (ids: string[]) => {
+    const idSet = new Set(ids);
+    const updated = clothes.filter(item => !idSet.has(item.id));
+    await persist(updated);
+  }, [clothes]);
+
+  const clearAll = useCallback(async () => {
+    await persist([]);
+  }, []);
 
   return useMemo(() => ({
     clothes,
     addClothingItem,
     addClothingItemWithAnalysis,
     removeClothingItem,
+    removeClothingItems,
+    clearAll,
     loading,
-  }), [clothes, addClothingItem, addClothingItemWithAnalysis, removeClothingItem, loading]);
+  }), [clothes, addClothingItem, addClothingItemWithAnalysis, removeClothingItem, removeClothingItems, clearAll, loading]);
 });

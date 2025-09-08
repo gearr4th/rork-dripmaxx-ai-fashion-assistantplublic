@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  FlatList,
-  Image,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Plus, Shirt, Filter, TrendingUp, Camera, Sparkles } from "lucide-react-native";
+import { Plus, Shirt, TrendingUp, Camera, Sparkles, Trash2, X, CheckSquare } from "lucide-react-native";
 import { router } from "expo-router";
 import { useClothes } from "@/providers/ClothesProvider";
 import { useWeather } from "@/providers/WeatherProvider";
@@ -18,14 +17,16 @@ import ClothingItem from "@/components/ClothingItem";
 import WardrobeUpliftCard from "@/components/WardrobeUpliftCard";
 import TrendCard from "@/components/TrendCard";
 import ImageAnalysisCard from "@/components/ImageAnalysisCard";
-import { ImageAnalysisResult } from "@/types";
+import { ClothingItem as ClothingItemType, ImageAnalysisResult } from "@/types";
 
 export default function ClothesScreen() {
-  const { clothes } = useClothes();
+  const { clothes, removeClothingItems, clearAll } = useClothes();
   const { weather } = useWeather();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [analysisResults, setAnalysisResults] = useState<ImageAnalysisResult[]>([]);
-  const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist", "Y2K Revival"]);
+  const [analysisResults] = useState<ImageAnalysisResult[]>([]);
+  const [trends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist", "Y2K Revival"]);
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const categories = [
     { id: "all", name: "All", icon: "👔" },
@@ -35,9 +36,60 @@ export default function ClothesScreen() {
     { id: "accessories", name: "Accessories", icon: "👜" },
   ];
 
-  const filteredClothes = selectedCategory === "all" 
+  const filteredClothes = useMemo(() => selectedCategory === "all" 
     ? clothes 
-    : clothes.filter(item => item.type === selectedCategory);
+    : clothes.filter(item => item.type === selectedCategory), [clothes, selectedCategory]);
+
+  const onLongPressItem = useCallback((item: ClothingItemType) => {
+    setSelectionMode(true);
+    setSelectedIds(prev => new Set(prev).add(item.id));
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const exitSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleDeleteSelected = useCallback(async () => {
+    if (selectedIds.size === 0) {
+      Alert.alert("Nothing selected", "Select items to delete by tapping them.");
+      return;
+    }
+    Alert.alert(
+      "Delete items",
+      `Are you sure you want to delete ${selectedIds.size} item(s)?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: async () => {
+          await removeClothingItems(Array.from(selectedIds));
+          exitSelection();
+        } },
+      ]
+    );
+  }, [selectedIds, removeClothingItems, exitSelection]);
+
+  const handleDeleteAll = useCallback(() => {
+    if (filteredClothes.length === 0) return;
+    Alert.alert(
+      "Delete all",
+      `This will delete all ${filteredClothes.length} item(s) in this view. Continue?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete All", style: "destructive", onPress: async () => {
+          await removeClothingItems(filteredClothes.map(i => i.id));
+          exitSelection();
+        }},
+      ]
+    );
+  }, [filteredClothes, removeClothingItems, exitSelection]);
 
   return (
     <LinearGradient
@@ -47,17 +99,30 @@ export default function ClothesScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.title}>My Wardrobe</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push("/scan-clothes" as any)}
-          >
-            <LinearGradient
-              colors={["#FFD700", "#FFA500"]}
-              style={styles.addButtonGradient}
-            >
-              <Plus color="#000" size={24} />
-            </LinearGradient>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            {selectionMode ? (
+              <>
+                <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.headerPill}>
+                  <X color="#000" size={20} />
+                </TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.headerPill, { backgroundColor: "#FF5A5F" }]}>
+                  <Trash2 color="#000" size={20} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => router.push("/scan-clothes" as any)}
+              >
+                <LinearGradient
+                  colors={["#FFD700", "#FFA500"]}
+                  style={styles.addButtonGradient}
+                >
+                  <Plus color="#000" size={24} />
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <ScrollView
@@ -177,6 +242,20 @@ export default function ClothesScreen() {
             </View>
           )}
 
+          <View style={styles.selectionBarWrapper}>
+            {selectionMode && (
+              <View style={styles.selectionBar}>
+                <Text style={styles.selectionText}>{selectedIds.size} selected</Text>
+                <View style={styles.selectionActions}>
+                  <TouchableOpacity testID="delete-all" style={[styles.selectionButton, { backgroundColor: "#FF5A5F" }]} onPress={handleDeleteAll}>
+                    <Trash2 color="#000" size={18} />
+                    <Text style={styles.selectionButtonText}>Delete All</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+
           <View style={styles.wardrobeSection}>
             <Text style={styles.sectionTitle}>
               <Shirt color="#FFD700" size={20} /> My Wardrobe
@@ -191,11 +270,26 @@ export default function ClothesScreen() {
               </View>
             ) : (
               <View style={styles.gridContainer}>
-                {filteredClothes.map((item, index) => (
-                  <View key={item.id} style={styles.gridItem}>
-                    <ClothingItem item={item} />
-                  </View>
-                ))}
+                {filteredClothes.map((item) => {
+                  const isSelected = selectedIds.has(item.id);
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[styles.gridItem, isSelected && styles.gridItemSelected]}
+                      onLongPress={() => onLongPressItem(item)}
+                      delayLongPress={250}
+                      onPress={() => selectionMode ? toggleSelect(item.id) : undefined}
+                      testID={`wardrobe-item-${item.id}`}
+                    >
+                      {selectionMode && (
+                        <View style={[styles.checkOverlay, isSelected ? styles.checkOverlayActive : null]}>
+                          <CheckSquare color={isSelected ? "#000" : "#888"} size={18} />
+                        </View>
+                      )}
+                      <ClothingItem item={item} />
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
           </View>
@@ -218,6 +312,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     paddingBottom: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerPill: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
@@ -273,7 +380,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   statsContainer: {
     flexDirection: "row",
@@ -342,6 +449,44 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 20,
   },
+  selectionBarWrapper: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  selectionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  selectionText: {
+    color: '#EEE',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectionActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  selectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  selectionButtonText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   wardrobeSection: {
     paddingHorizontal: 20,
   },
@@ -353,6 +498,27 @@ const styles = StyleSheet.create({
   gridItem: {
     width: "48%",
     marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  gridItemSelected: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  checkOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkOverlayActive: {
+    backgroundColor: '#FFD700',
   },
   emptyState: {
     alignItems: "center",
@@ -370,5 +536,4 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 8,
   },
-
 });
