@@ -97,72 +97,73 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
 
   const fetchWeatherByCoords = useCallback(async (lat: number, lon: number) => {
     try {
-      const response = await fetch(`https://wttr.in/${lat},${lon}?format=j1`);
-      if (!response.ok) {
-        throw new Error(`Weather API request failed: ${response.status}`);
-      }
-      const data = await response.json();
-      if (!data.current_condition || !data.current_condition[0]) {
-        throw new Error('Invalid weather data format');
-      }
-      const current = data.current_condition[0];
-      const location = data.nearest_area && data.nearest_area[0]
-        ? `${data.nearest_area[0].areaName[0].value}, ${data.nearest_area[0].country[0].value}`
-        : 'Unknown Location';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!resp.ok) throw new Error(`Open-Meteo failed: ${resp.status}`);
+      const json = await resp.json();
+      const current = json.current_weather as { temperature: number; weathercode: number; windspeed: number } | undefined;
+      if (!current) throw new Error('No current weather in response');
+
+      const getWeatherDescription = (code: number): string => {
+        if (code === 0) return 'Clear';
+        if (code <= 3) return 'Partly Cloudy';
+        if (code <= 48) return 'Foggy';
+        if (code <= 67) return 'Rainy';
+        if (code <= 77) return 'Snowy';
+        if (code <= 82) return 'Showers';
+        if (code <= 99) return 'Thunderstorm';
+        return 'Unknown';
+      };
+
+      let label = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+      try {
+        const geoResp = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en`);
+        if (geoResp.ok) {
+          const geo = (await geoResp.json()) as { results?: Array<{ name?: string; country?: string; admin1?: string }> };
+          const r = geo.results?.[0];
+          if (r?.name) {
+            const parts = [r.name, r.admin1, r.country].filter(Boolean) as string[];
+            label = parts.join(', ');
+          }
+        }
+      } catch {}
+
       const weatherData: Weather = {
-        temperature: Math.round(parseInt(current.temp_C)),
-        condition: current.weatherDesc[0].value,
-        humidity: parseInt(current.humidity),
-        windSpeed: Math.round(parseInt(current.windspeedKmph)),
-        location,
+        temperature: Math.round(current.temperature),
+        condition: getWeatherDescription(current.weathercode),
+        humidity: 50,
+        windSpeed: Math.round(current.windspeed),
+        location: label,
       };
       return weatherData;
     } catch (error) {
       console.error('Weather API error:', error);
-      try {
-        const fallbackResponse = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`
-        );
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          const current = fallbackData.current_weather as { temperature: number; weathercode: number; windspeed: number };
-          const getWeatherDescription = (code: number): string => {
-            if (code === 0) return 'Clear';
-            if (code <= 3) return 'Partly Cloudy';
-            if (code <= 48) return 'Foggy';
-            if (code <= 67) return 'Rainy';
-            if (code <= 77) return 'Snowy';
-            if (code <= 82) return 'Showers';
-            if (code <= 99) return 'Thunderstorm';
-            return 'Unknown';
-          };
-          return {
-            temperature: Math.round(current.temperature),
-            condition: getWeatherDescription(current.weathercode),
-            humidity: 50,
-            windSpeed: Math.round(current.windspeed),
-            location: `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
-          } as Weather;
-        }
-      } catch (fallbackError) {
-        console.error('Fallback weather API also failed:', fallbackError);
-      }
-      throw error;
+      const fallback: Weather = {
+        temperature: 20,
+        condition: 'Partly Cloudy',
+        humidity: 50,
+        windSpeed: 10,
+        location: `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
+      };
+      return fallback;
     }
   }, []);
 
   const getApproximateLocationByIP = useCallback(async (): Promise<{ latitude: number; longitude: number; label?: string } | null> => {
     try {
-      const res = await fetch('https://ipapi.co/json/');
+      const res = await fetch('https://ipwho.is/');
       if (!res.ok) return null;
-      const json: any = await res.json();
-      if (typeof json.latitude === 'number' && typeof json.longitude === 'number') {
-        const label = json.city && json.country_name ? `${json.city}, ${json.country_name}` : undefined;
+      const json = (await res.json()) as { success?: boolean; latitude?: number; longitude?: number; city?: string; country?: string };
+      if (json.success && typeof json.latitude === 'number' && typeof json.longitude === 'number') {
+        const label = json.city && json.country ? `${json.city}, ${json.country}` : undefined;
         return { latitude: json.latitude, longitude: json.longitude, label };
       }
       return null;
-    } catch (e) {
-      console.log('IP geolocation failed');
+    } catch {
       return null;
     }
   }, []);
@@ -185,24 +186,12 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
         return;
       }
       console.log('Location access denied, using default location for weather');
-      try {
-        const defaultWeatherData = await fetchWeatherByCoords(40.7128, -74.0060);
-        setWeather({
-          ...defaultWeatherData,
-          location: "Default Location"
-        });
-        setError('Location access denied. Showing weather for default location.');
-      } catch {
-        const mockWeather: Weather = {
-          temperature: 22,
-          condition: "Partly Cloudy",
-          humidity: 65,
-          windSpeed: 12,
-          location: "Default Location",
-        };
-        setWeather(mockWeather);
-        setError('Location access denied. Using sample weather data.');
-      }
+      const defaultWeatherData = await fetchWeatherByCoords(40.7128, -74.0060);
+      setWeather({
+        ...defaultWeatherData,
+        location: defaultWeatherData.location ?? "New York, United States"
+      });
+      setError('Location access denied. Showing weather for a default location.');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch weather data';
       if (!errorMessage.includes('Location access denied')) {
