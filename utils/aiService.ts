@@ -1,4 +1,4 @@
-import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion, CheaperAlternative } from "@/types";
+import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion } from "@/types";
 import { BudgetOption } from '@/providers/BudgetProvider';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GEMINI_API_KEY, CONFIG } from './config';
@@ -185,7 +185,7 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
           .slice(0, 5)
       : [];
 
-    const normalized: ImageAnalysisResult = {
+    const enriched: ImageAnalysisResult = {
       itemName: String((parsed as any).itemName ?? 'Clothing Item'),
       officialProductName: String((parsed as any).officialProductName ?? (parsed as any).itemName ?? 'Unknown'),
       brand: (parsed as any).brand ? String((parsed as any).brand) : undefined,
@@ -203,7 +203,14 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
         ? (String((parsed as any).bestOccasion) as any)
         : undefined) as any,
     };
-    return normalized;
+
+    try {
+      const verified = await verifyOfficialProduct(enriched);
+      return { ...enriched, ...verified } as ImageAnalysisResult;
+    } catch (vErr) {
+      console.log('[verifyOfficialProduct] failed, returning AI-only data', vErr);
+      return enriched;
+    }
   } catch (e) {
     console.log('analyzeClothingImage error, returning fallback', e);
     const fallback: ImageAnalysisResult = {
@@ -223,6 +230,82 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
       bestOccasion: 'casual',
     };
     return fallback;
+  }
+}
+
+async function verifyOfficialProduct(base: ImageAnalysisResult): Promise<Partial<ImageAnalysisResult>> {
+  try {
+    const name = (base.officialProductName || base.itemName).trim();
+    const brandLower = (base.brand || '').toLowerCase().trim();
+    const query = encodeURIComponent(`${brandLower} ${name}`.trim());
+
+    const brandDomains: Record<string, string> = {
+      nike: 'nike.com',
+      adidas: 'adidas.com',
+      zara: 'zara.com',
+      'h&m': 'hm.com',
+      hm: 'hm.com',
+      uniqlo: 'uniqlo.com',
+      puma: 'puma.com',
+      reebok: 'reebok.com',
+      newbalance: 'newbalance.com',
+      'new balance': 'newbalance.com',
+      asos: 'asos.com',
+      boohoo: 'boohoo.com',
+      shein: 'shein.com',
+      cos: 'cos.com',
+      arket: 'arket.com',
+      bershka: 'bershka.com',
+      pullbear: 'pullandbear.com',
+      'pull&bear': 'pullandbear.com',
+    };
+
+    const mappedDomain = Object.entries(brandDomains).find(([k]) => brandLower.includes(k))?.[1] ?? '';
+
+    const candidates: { url: string; source: string }[] = [];
+    if (mappedDomain === 'nike.com') candidates.push({ url: `https://www.nike.com/w?q=${query}`, source: 'nike' });
+    if (mappedDomain === 'adidas.com') candidates.push({ url: `https://www.adidas.com/us/search?q=${query}`, source: 'adidas' });
+    if (mappedDomain === 'zara.com') candidates.push({ url: `https://www.zara.com/us/en/search?searchTerm=${query}`, source: 'zara' });
+    if (mappedDomain === 'hm.com') candidates.push({ url: `https://www2.hm.com/en_us/search-results.html?q=${query}`, source: 'hm' });
+    if (mappedDomain === 'uniqlo.com') candidates.push({ url: `https://www.uniqlo.com/us/en/search?q=${query}`, source: 'uniqlo' });
+
+    if (!mappedDomain) {
+      candidates.push({ url: `https://duckduckgo.com/html/?q=${query}+official`, source: 'duckduckgo' });
+    }
+
+    for (const c of candidates) {
+      try {
+        const res = await fetch(c.url, { headers: { 'Accept': 'text/html,application/xhtml+xml', 'User-Agent': 'WardrobeApp/1.0' } });
+        if (!res.ok) continue;
+        const html = await res.text();
+
+        const links = html.match(/https?:\/\/[\w.-]+\.[\w.-]+[^"'\s<>)]*/g) ?? [];
+        const preferred = links.find((u) => (mappedDomain ? u.includes(mappedDomain) : /nike|adidas|zara|hm|uniqlo|puma|newbalance|reebok|asos|cos|arket|bershka|pullandbear/.test(u)));
+        const verifiedStoreLink = preferred ?? base.storeLink ?? null;
+
+        const priceMatch = html.match(/(US\$|A\$|\$|€|£)\s?\d{1,4}(?:[\.,]\d{2})?/);
+        let verifiedPrice: number | null = base.averagePrice ?? null;
+        let verifiedCurrency: string = base.currency || 'USD';
+        if (priceMatch) {
+          const raw = priceMatch[0];
+          verifiedCurrency = raw.includes('€') ? 'EUR' : raw.includes('£') ? 'GBP' : raw.includes('A$') ? 'AUD' : 'USD';
+          const num = raw.replace(/[^0-9\.]/g, '');
+          const parsed = parseFloat(num);
+          verifiedPrice = Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : verifiedPrice;
+        }
+
+        if (verifiedStoreLink || verifiedPrice != null) {
+          return { verifiedStoreLink, verifiedPrice, verifiedCurrency, verificationSource: c.source };
+        }
+      } catch (err) {
+        console.log('[verifyOfficialProduct] candidate error', c.source, err);
+      }
+    }
+
+    return { verifiedStoreLink: base.storeLink ?? null, verifiedPrice: base.averagePrice ?? null, verifiedCurrency: base.currency, verificationSource: null };
+  } catch (e) {
+    console.log('[verifyOfficialProduct] error', e);
+    return { verifiedStoreLink: base.storeLink ?? null, verifiedPrice: base.averagePrice ?? null, verifiedCurrency: base.currency, verificationSource: null };
   }
 }
 
@@ -400,7 +483,6 @@ function isOccasionMatch(itemAnalysis: ImageAnalysisResult | undefined, occasion
   if (!itemAnalysis) return true;
   
   const style = itemAnalysis.style?.toLowerCase() || '';
-  const type = itemAnalysis.type?.toLowerCase() || '';
   const name = itemAnalysis.itemName.toLowerCase();
   
   switch (occasion) {

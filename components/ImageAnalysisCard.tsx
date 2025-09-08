@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { ImageAnalysisResult, DripLevel, CheaperAlternative } from '@/types';
-import { DollarSign, Sparkles, Shirt, ChevronDown, ChevronUp, TrendingDown, Star, Link as LinkIcon, Calendar } from 'lucide-react-native';
+import { DollarSign, Sparkles, Shirt, ChevronDown, ChevronUp, TrendingDown, Star, Link as LinkIcon, Calendar, CheckCircle2 } from 'lucide-react-native';
 
 interface Props {
   result: ImageAnalysisResult;
@@ -59,31 +59,42 @@ function ImageAnalysisCard({ result }: Props) {
           <Text style={styles.value}>{result.bestOccasion}</Text>
         </View>
       )}
-      {result.storeLink && (
+      {(result.verifiedStoreLink || result.storeLink) && (
         <View style={styles.row}>
           <LinkIcon color="#AAA" size={16} />
           <Text style={styles.label}>Store</Text>
-          <Text style={[styles.value, styles.link]} numberOfLines={1}>{result.storeLink}</Text>
+          <Text style={[styles.value, styles.link]} numberOfLines={1}>{result.verifiedStoreLink || result.storeLink}</Text>
         </View>
       )}
       
-      {hasAlternatives && (
+      {(result.verifiedPrice != null || hasAlternatives) && (
         <>
-          <TouchableOpacity 
-            style={styles.alternativesToggle}
-            onPress={() => setShowAlternatives(!showAlternatives)}
-            testID="alternatives-toggle"
-          >
-            <TrendingDown color="#4CAF50" size={16} />
-            <Text style={styles.alternativesToggleText}>
-              Cheaper Alternatives ({result.cheaperAlternatives!.length})
-            </Text>
-            {showAlternatives ? (
-              <ChevronUp color="#4CAF50" size={16} />
-            ) : (
-              <ChevronDown color="#4CAF50" size={16} />
-            )}
-          </TouchableOpacity>
+          {!!result.verifiedPrice && (
+            <View style={styles.verificationRow}>
+              <CheckCircle2 color="#4CAF50" size={16} />
+              <Text style={styles.verificationText}>
+                Verified price: {formatPrice(result.verifiedPrice ?? null, result.verifiedCurrency || result.currency)}
+              </Text>
+            </View>
+          )}
+
+          {hasAlternatives && (
+            <TouchableOpacity 
+              style={styles.alternativesToggle}
+              onPress={() => setShowAlternatives(!showAlternatives)}
+              testID="alternatives-toggle"
+            >
+              <TrendingDown color="#4CAF50" size={16} />
+              <Text style={styles.alternativesToggleText}>
+                Cheaper Alternatives ({result.cheaperAlternatives!.length})
+              </Text>
+              {showAlternatives ? (
+                <ChevronUp color="#4CAF50" size={16} />
+              ) : (
+                <ChevronDown color="#4CAF50" size={16} />
+              )}
+            </TouchableOpacity>
+          )}
           
           {showAlternatives && (
             <ScrollView 
@@ -226,6 +237,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
+  },
+  verificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  verificationText: {
+    color: '#A5D6A7',
+    fontSize: 13,
+    fontWeight: '600',
   },
   alternativesContainer: {
     maxHeight: 300,

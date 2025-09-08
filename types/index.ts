@@ -70,6 +70,10 @@ export interface ImageAnalysisResult {
   cheaperAlternatives?: CheaperAlternative[];
   storeLink?: string | null;
   bestOccasion?: Occasion;
+  verifiedPrice?: number | null;
+  verifiedCurrency?: string;
+  verifiedStoreLink?: string | null;
+  verificationSource?: string | null;
 }
 
 export interface FeedbackData {
