@@ -68,6 +68,8 @@ export interface ImageAnalysisResult {
   reasoning: string;
   sources: string[];
   cheaperAlternatives?: CheaperAlternative[];
+  storeLink?: string | null;
+  bestOccasion?: Occasion;
 }
 
 export interface FeedbackData {

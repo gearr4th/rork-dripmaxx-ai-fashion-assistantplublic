@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { ImageAnalysisResult, DripLevel, CheaperAlternative } from '@/types';
-import { DollarSign, Sparkles, Shirt, ChevronDown, ChevronUp, TrendingDown, Star } from 'lucide-react-native';
+import { DollarSign, Sparkles, Shirt, ChevronDown, ChevronUp, TrendingDown, Star, Link as LinkIcon, Calendar } from 'lucide-react-native';
 
 interface Props {
   result: ImageAnalysisResult;
@@ -51,6 +51,20 @@ function ImageAnalysisCard({ result }: Props) {
       )}
       {result.style && (
         <Text style={styles.subtle}>Style: {result.style}</Text>
+      )}
+      {result.bestOccasion && (
+        <View style={styles.row}>
+          <Calendar color="#AAA" size={16} />
+          <Text style={styles.label}>Best Occasion</Text>
+          <Text style={styles.value}>{result.bestOccasion}</Text>
+        </View>
+      )}
+      {result.storeLink && (
+        <View style={styles.row}>
+          <LinkIcon color="#AAA" size={16} />
+          <Text style={styles.label}>Store</Text>
+          <Text style={[styles.value, styles.link]} numberOfLines={1}>{result.storeLink}</Text>
+        </View>
       )}
       
       {hasAlternatives && (
@@ -170,6 +184,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 6,
+    flexShrink: 1,
+  },
+  link: {
+    color: '#4AB3FF',
   },
   dripPill: {
     alignSelf: 'flex-start',

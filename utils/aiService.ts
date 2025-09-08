@@ -149,6 +149,8 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
   "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip",
   "reasoning": string, // short justification including comparable products
   "sources": string[], // likely brand/catalog URLs or search terms
+  "storeLink": string|null, // official store product URL if identifiable
+  "bestOccasion": "casual" | "work" | "party" | "date" | "gym" | "formal" | "travel" | "daily wear",
   "cheaperAlternatives": [
     {
       "name": string, // product name
@@ -208,6 +210,8 @@ Rules:
       reasoning: String(parsed.reasoning ?? ''),
       sources: Array.isArray(parsed.sources) ? parsed.sources.map((s: unknown) => String(s)).slice(0, 5) : [],
       cheaperAlternatives,
+      storeLink: typeof parsed.storeLink === 'string' ? parsed.storeLink : null,
+      bestOccasion: (['casual','work','party','date','gym','formal','travel','daily wear'].includes(String(parsed.bestOccasion)) ? String(parsed.bestOccasion) : undefined) as any,
     };
     return normalized;
   } catch (e) {
@@ -225,6 +229,8 @@ Rules:
       reasoning: 'Could not confidently identify. Generic style score applied.',
       sources: [],
       cheaperAlternatives: [],
+      storeLink: null,
+      bestOccasion: 'casual',
     };
     return fallback;
   }
