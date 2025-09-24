@@ -96,13 +96,12 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
   }, []);
 
   const fetchWeatherByCoords = useCallback(async (lat: number, lon: number) => {
+    const controller = new AbortController();
+    const timeoutMs = 20000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
       const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
       if (!resp.ok) throw new Error(`Open-Meteo failed: ${resp.status}`);
       const json = await resp.json();
       const current = json.current_weather as { temperature: number; weathercode: number; windspeed: number } | undefined;
@@ -121,7 +120,10 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
 
       let label = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
       try {
-        const geoResp = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en`);
+        const geoController = new AbortController();
+        const geoTimeoutId = setTimeout(() => geoController.abort(), 15000);
+        const geoResp = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en`, { signal: geoController.signal });
+        clearTimeout(geoTimeoutId);
         if (geoResp.ok) {
           const geo = (await geoResp.json()) as { results?: Array<{ name?: string; country?: string; admin1?: string }> };
           const r = geo.results?.[0];
@@ -130,7 +132,9 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
             label = parts.join(', ');
           }
         }
-      } catch {}
+      } catch (geoErr) {
+        console.log('Reverse geocoding failed or timed out, continuing with coords label');
+      }
 
       const weatherData: Weather = {
         temperature: Math.round(current.temperature),
@@ -141,7 +145,12 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
       };
       return weatherData;
     } catch (error) {
-      console.error('Weather API error:', error);
+      const name = (error as any)?.name ?? '';
+      if (name === 'AbortError') {
+        console.warn('Weather request timed out, using fallback');
+      } else {
+        console.warn('Weather API non-fatal error:', (error as Error)?.message ?? String(error));
+      }
       const fallback: Weather = {
         temperature: 20,
         condition: 'Partly Cloudy',
@@ -150,6 +159,8 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
         location: `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
       };
       return fallback;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }, []);
 
