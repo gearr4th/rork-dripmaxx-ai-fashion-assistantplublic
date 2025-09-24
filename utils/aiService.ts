@@ -1,9 +1,6 @@
 import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion } from "@/types";
 import { BudgetOption } from '@/providers/BudgetProvider';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GEMINI_API_KEY, CONFIG } from './config';
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+import { CONFIG } from './config';
 
 interface GenerateOutfitParams {
   weather: Weather | null;
@@ -17,6 +14,29 @@ export interface ParsedUserRequest {
   budget: number | null;
   preferences: string[];
   location: string | null;
+}
+
+type ContentPart = { type: 'text'; text: string } | { type: 'image'; image: string };
+type CoreMessage = { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] };
+
+async function callLLM(messages: CoreMessage[]): Promise<string> {
+  try {
+    const response = await fetch('https://toolkit.rork.com/text/llm/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`LLM HTTP ${response.status}: ${text}`);
+    }
+    const data = (await response.json()) as { completion?: string };
+    const out = String(data.completion ?? '');
+    return out;
+  } catch (e) {
+    console.log('[callLLM] error', e);
+    throw e;
+  }
 }
 
 async function geocodePlace(place: string): Promise<string | null> {
@@ -43,14 +63,15 @@ async function geocodePlace(place: string): Promise<string | null> {
 
 export async function interpretUserStyleRequest(input: string): Promise<ParsedUserRequest> {
   try {
-    const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
     const sys = `Extract concise structured data from the user's outfit request. Respond with ONLY JSON in this exact shape: {"occasion": string|null, "budget": number|null, "preferences": string[], "location": string|null}.
 - occasion: short phrase like "school", "party", "date", "office", or inferred from place types like mall -> "shopping" if user mentions a venue.
 - budget: total budget in user's currency as a number without symbols. If the user mentions $80 or under 50, return 80 or 50. If no budget mentioned, null.
 - preferences: array of short tokens for styles, colors, fits, brands, fabrics. Keep 3-8 items.
 - location: human-readable location if a place or city is mentioned (e.g., "Chadstone Shopping Centre, Melbourne, Australia"), else null.`;
-    const res = await model.generateContent(`${sys}\nUser: ${input}`);
-    const text = res.response.text();
+    const text = await callLLM([
+      { role: 'system', content: sys },
+      { role: 'user', content: `User: ${input}` },
+    ]);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -110,10 +131,11 @@ export async function fetchSocialTrends(params: { prompt: string; location?: str
   const { prompt, location } = params;
   try {
     console.log('Fetching social trends from AI...', { prompt, location });
-    const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
     const trendPrompt = `You are a fashion trend scout scanning TikTok and Instagram culture. Based on the current month and year, the user's location "${location ?? 'Unknown'}", and the user's intent: "${prompt || 'general daily outfit'}", output ONLY a compact JSON array of 6-10 short trend tags people are wearing right now on TikTok/Instagram. Focus on wearable items (e.g., "oversized vintage tee", "loose carpenter jeans", "adidas sambas", "ballet flats", "quiet luxury", "gorpcore shells"). Avoid influencers or brand names unless iconic. If the location resembles a shopping mall or venue (e.g., "Chadstone Shopping Centre"), bias toward practical shopping-day outfits and Melbourne/AU seasonal context if applicable. No explanation, just JSON array of strings.`;
-    const res = await model.generateContent(trendPrompt);
-    const text = res.response.text();
+    const text = await callLLM([
+      { role: 'system', content: 'Return ONLY JSON arrays when asked. No prose.' },
+      { role: 'user', content: trendPrompt },
+    ]);
     console.log('Trend AI raw:', text);
     const jsonMatch = text.match(/[\[][\s\S]*[\]]/);
     if (jsonMatch) {
@@ -134,8 +156,6 @@ type AnalyzeImageInput = { base64: string; mimeType: string };
 export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<ImageAnalysisResult> {
   try {
     console.log('[analyzeClothingImage] start', { mimeType: input.mimeType, size: input.base64.length });
-    type ContentPart = { type: 'text'; text: string } | { type: 'image'; image: string };
-    type CoreMessage = { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] };
 
     const system: CoreMessage = {
       role: 'system',
@@ -155,17 +175,7 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
       ],
     };
 
-    const response = await fetch('https://toolkit.rork.com/text/llm/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [system, user] }),
-    });
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`LLM HTTP ${response.status}: ${text}`);
-    }
-    const data = (await response.json()) as { completion?: string };
-    const out = String(data.completion ?? '');
+    const out = await callLLM([system, user]);
     console.log('[analyzeClothingImage] raw', out.slice(0, 200));
     const jsonMatch = out.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON in LLM response');
@@ -316,17 +326,17 @@ export async function generateOutfit({
   clothes,
 }: GenerateOutfitParams): Promise<Outfit> {
   try {
-    console.log('Generating outfit with Gemini AI...');
+    console.log('Generating outfit with AI...');
     const aiPrompt = createOutfitPrompt(weather, trends, prompt, clothes);
-    const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
-    const result = await model.generateContent(aiPrompt);
-    const response = await result.response;
-    const text = response.text();
-    console.log('Gemini response:', text);
+    const text = await callLLM([
+      { role: 'system', content: 'You are a professional mobile fashion stylist. Return ONLY JSON as instructed.' },
+      { role: 'user', content: aiPrompt },
+    ]);
+    console.log('AI response:', text);
     const outfit = parseAIResponse(text, clothes, weather, trends, prompt);
     return outfit;
   } catch (error) {
-    console.error('Gemini AI error:', error);
+    console.error('AI generateOutfit error:', error);
     return generateSmartOutfit(clothes, weather, trends, prompt);
   }
 }
