@@ -8,6 +8,7 @@ import { ClothesProvider } from "@/providers/ClothesProvider";
 import { WeatherProvider } from "@/providers/WeatherProvider";
 import { SessionProvider } from "@/providers/SessionProvider";
 import { BudgetProvider } from "@/providers/BudgetProvider";
+import { SavedOutfitsProvider } from "@/providers/SavedOutfitsProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,7 +52,9 @@ export default function RootLayout() {
             <ClothesProvider>
               <SessionProvider>
                 <BudgetProvider>
-                  <RootLayoutNav />
+                  <SavedOutfitsProvider>
+                    <RootLayoutNav />
+                  </SavedOutfitsProvider>
                 </BudgetProvider>
               </SessionProvider>
             </ClothesProvider>

@@ -23,6 +23,7 @@ import { useWeather } from "@/providers/WeatherProvider";
 import { useClothes } from "@/providers/ClothesProvider";
 import { router } from "expo-router";
 import OutfitCard from "@/components/OutfitCard";
+import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import WeatherCard from "@/components/WeatherCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
@@ -35,6 +36,7 @@ export default function HomeScreen() {
   const [generating, setGenerating] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
+  const { saveOutfit } = useSavedOutfits();
   const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist"]);
   const [isFetchingDailyTrends, setIsFetchingDailyTrends] = useState<boolean>(false);
   const [parsed, setParsed] = useState<ParsedUserRequest | null>(null);
@@ -295,8 +297,24 @@ export default function HomeScreen() {
 
           {outfit && (
             <View style={styles.outfitSection}>
-              <Text style={styles.sectionTitle}>Your Perfect Outfit</Text>
+              <Text style={styles.sectionTitle}>Your Outfit</Text>
               <OutfitCard outfit={outfit} />
+              <TouchableOpacity
+                testID="save-outfit-from-home"
+                style={[styles.generateButton, { marginTop: 12 }]}
+                onPress={async () => {
+                  try {
+                    await saveOutfit(outfit);
+                    router.push({ pathname: '/outfit-details', params: { id: outfit.id } } as any);
+                  } catch (e) {
+                    Alert.alert('Error', 'Could not save outfit');
+                  }
+                }}
+              >
+                <LinearGradient colors={["#4CAF50", "#2E7D32"]} style={styles.gradientButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                  <Text style={styles.generateButtonText}>Save to Profile</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>

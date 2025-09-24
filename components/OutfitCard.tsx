@@ -3,16 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { ChevronRight } from "lucide-react-native";
 import { router } from "expo-router";
 import { Outfit } from "@/types";
+import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 
 interface OutfitCardProps {
   outfit: Outfit;
 }
 
 export default function OutfitCard({ outfit }: OutfitCardProps) {
+  const { saveOutfit } = useSavedOutfits();
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => router.push("/outfit-details" as any)}
+      onPress={async () => {
+        try {
+          await saveOutfit(outfit);
+        } catch (e) {
+          // no-op
+        }
+        router.push({ pathname: "/outfit-details", params: { id: outfit.id } } as any);
+      }}
+      testID={`outfit-card-${outfit.id}`}
     >
       <View style={styles.imagesContainer}>
         {outfit.items.slice(0, 3).map((item, index) => (
@@ -24,8 +34,7 @@ export default function OutfitCard({ outfit }: OutfitCardProps) {
         ))}
       </View>
       <View style={styles.details}>
-        <Text style={styles.occasion}>{outfit.occasion}</Text>
-        <Text style={styles.style}>{outfit.style}</Text>
+        <Text style={styles.occasion} numberOfLines={1}>{outfit.style}</Text>
         <Text style={styles.itemCount}>{outfit.items.length} items</Text>
       </View>
       <ChevronRight color="#666" size={20} />
@@ -64,11 +73,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
     marginBottom: 4,
-  },
-  style: {
-    fontSize: 14,
-    color: "#FFD700",
-    marginBottom: 2,
   },
   itemCount: {
     fontSize: 12,

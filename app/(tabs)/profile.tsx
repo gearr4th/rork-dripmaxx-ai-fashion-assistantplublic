@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,10 +24,12 @@ import {
 import { router } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
 import { useBudget } from "@/providers/BudgetProvider";
+import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { budget } = useBudget();
+  const { savedOutfits, removeOutfit } = useSavedOutfits();
 
   const handleUpgrade = () => {
     Alert.alert(
@@ -148,6 +151,29 @@ export default function ProfileScreen() {
                 <Text style={[styles.infoValue, { color: '#FFD700' }]}>Change</Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Saved Outfits</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.savedOutfitsRow}>
+              {savedOutfits.length === 0 ? (
+                <Text style={styles.savedEmpty}>No saved outfits yet</Text>
+              ) : (
+                savedOutfits.map((o) => (
+                  <TouchableOpacity key={o.id} onPress={() => router.push({ pathname: '/outfit-details', params: { id: o.id } } as any)} style={styles.savedOutfitCard} testID={`saved-outfit-${o.id}`}>
+                    <View style={styles.savedThumbRow}>
+                      {o.items.slice(0,3).map((it) => (
+                        <View key={it.id} style={styles.savedThumbWrap}>
+                          <View style={styles.savedThumbShadow} />
+                          <Image source={{ uri: it.imageUrl }} style={styles.savedThumb} />
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={styles.savedOutfitText} numberOfLines={1}>{o.style}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
           </View>
 
           <View style={styles.section}>
@@ -314,4 +340,48 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
   },
+  savedOutfitsRow: {
+    paddingVertical: 8,
+  },
+  savedEmpty: {
+    color: '#888',
+  },
+  savedOutfitCard: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 12,
+    width: 180,
+  },
+  savedThumbRow: {
+    flexDirection: 'row',
+  },
+  savedThumbWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginRight: -10,
+    borderWidth: 2,
+    borderColor: '#0A0A0A',
+  },
+  savedThumb: {
+    width: 36,
+    height: 36,
+  },
+  savedThumbShadow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)'
+  },
+  savedOutfitText: {
+    color: '#FFF',
+    fontSize: 12,
+    marginTop: 8,
+  }
 });

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,38 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, Heart, Share2, Save } from "lucide-react-native";
+import { X, Save } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
+import { useClothes } from "@/providers/ClothesProvider";
+import { Outfit } from "@/types";
 
 export default function OutfitDetailsScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const { savedOutfits, saveOutfit } = useSavedOutfits();
+  const { clothes } = useClothes();
+
+  const outfit: Outfit | null = useMemo(() => {
+    const id = params.id ? String(params.id) : null;
+    if (!id) return null;
+    return savedOutfits.find(o => o.id === id) ?? null;
+  }, [params.id, savedOutfits]);
+
+  const handleSave = async () => {
+    if (!outfit) return;
+    try {
+      await saveOutfit(outfit);
+      Alert.alert("Saved", "Outfit saved to your profile");
+    } catch (e) {
+      Alert.alert("Error", "Could not save outfit");
+    }
+  };
+
+  const resolvedItems = outfit?.items ?? [];
 
   return (
     <LinearGradient
@@ -22,7 +46,7 @@ export default function OutfitDetailsScreen() {
     >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Text style={styles.title}>Outfit Details</Text>
+          <Text style={styles.title}>Outfit</Text>
           <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
             <X color="#FFFFFF" size={24} />
           </TouchableOpacity>
@@ -32,92 +56,26 @@ export default function OutfitDetailsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.outfitImages}>
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-            >
-              <Image
-                source={{ uri: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400" }}
-                style={styles.itemImage}
-              />
-              <Image
-                source={{ uri: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400" }}
-                style={styles.itemImage}
-              />
-              <Image
-                source={{ uri: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400" }}
-                style={styles.itemImage}
-              />
-            </ScrollView>
-          </View>
-
-          <View style={styles.details}>
-            <Text style={styles.occasion}>Office Meeting</Text>
-            <Text style={styles.style}>Business Casual</Text>
-
-            <View style={styles.weatherInfo}>
-              <Text style={styles.weatherText}>Perfect for: Partly Cloudy, 18°C</Text>
-            </View>
-
-            <View style={styles.items}>
-              <Text style={styles.sectionTitle}>Items in this outfit</Text>
-              <View style={styles.itemCard}>
-                <Image
-                  source={{ uri: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=100" }}
-                  style={styles.itemThumb}
-                />
+          <View style={styles.items}>
+            <Text style={styles.sectionTitle}>Items</Text>
+            {resolvedItems.map((it) => (
+              <View key={it.id} style={styles.itemCard}>
+                <Image source={{ uri: it.imageUrl }} style={styles.itemThumb} />
                 <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>Black Blazer</Text>
-                  <Text style={styles.itemBrand}>Zara</Text>
+                  <Text style={styles.itemName}>{it.name}</Text>
+                  <Text style={styles.itemBrand}>{it.brand ?? 'Unknown brand'}</Text>
                 </View>
               </View>
-              <View style={styles.itemCard}>
-                <Image
-                  source={{ uri: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=100" }}
-                  style={styles.itemThumb}
-                />
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>White Shirt</Text>
-                  <Text style={styles.itemBrand}>H&M</Text>
-                </View>
-              </View>
-              <View style={styles.itemCard}>
-                <Image
-                  source={{ uri: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=100" }}
-                  style={styles.itemThumb}
-                />
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>Dark Jeans</Text>
-                  <Text style={styles.itemBrand}>Levi's</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.aiNotes}>
-              <Text style={styles.sectionTitle}>AI Style Notes</Text>
-              <Text style={styles.notesText}>
-                This outfit combines professional elegance with modern comfort. The black blazer adds authority while the white shirt keeps it fresh. Dark jeans provide a contemporary twist on business casual, perfect for creative offices or client meetings.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Heart color="#FF4444" size={24} />
-              <Text style={styles.actionText}>Favorite</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Share2 color="#FFD700" size={24} />
-              <Text style={styles.actionText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Save color="#4CAF50" size={24} />
-              <Text style={styles.actionText}>Save</Text>
-            </TouchableOpacity>
+            ))}
           </View>
         </ScrollView>
+
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleSave} testID="save-outfit-button">
+            <Save color="#4CAF50" size={24} />
+            <Text style={styles.actionText}>Save</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -152,39 +110,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  outfitImages: {
-    height: 400,
-    marginBottom: 24,
-  },
-  itemImage: {
-    width: 375,
-    height: 400,
-    resizeMode: "cover",
-  },
-  details: {
-    padding: 20,
-  },
-  occasion: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 8,
-  },
-  style: {
-    fontSize: 18,
-    color: "#FFD700",
-    marginBottom: 16,
-  },
-  weatherInfo: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 24,
-  },
-  weatherText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -193,6 +118,7 @@ const styles = StyleSheet.create({
   },
   items: {
     marginBottom: 24,
+    paddingHorizontal: 20,
   },
   itemCard: {
     flexDirection: "row",
@@ -220,14 +146,6 @@ const styles = StyleSheet.create({
   itemBrand: {
     fontSize: 14,
     color: "#888",
-  },
-  aiNotes: {
-    marginBottom: 24,
-  },
-  notesText: {
-    fontSize: 14,
-    color: "#AAA",
-    lineHeight: 22,
   },
   actions: {
     flexDirection: "row",
