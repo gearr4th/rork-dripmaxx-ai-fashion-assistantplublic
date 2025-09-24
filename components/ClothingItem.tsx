@@ -1,63 +1,77 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { Sparkles, DollarSign } from "lucide-react-native";
+import { Sparkles, DollarSign, Trash2 } from "lucide-react-native";
 
 import { ClothingItem as ClothingItemType, DripLevel } from "@/types";
 
 interface ClothingItemProps {
   item: ClothingItemType;
+  onDelete?: () => void;
+  showDelete?: boolean;
 }
 
 const DRIP_COLORS: Record<DripLevel, string> = {
-  'Maxx Drip': '#8A2BE2',
-  'Pure Drip': '#1E90FF',
-  'Certified Drip': '#32CD32',
-  'Lowkey Drip': '#999999',
+  "Maxx Drip": "#8A2BE2",
+  "Pure Drip": "#1E90FF",
+  "Certified Drip": "#32CD32",
+  "Lowkey Drip": "#999999",
 };
 
 function formatPrice(price: number | null, currency?: string): string {
-  if (price == null) return '';
-  const sym = currency === 'USD' ? '$' : currency === 'AUD' ? 'A$' : currency === 'EUR' ? '€' : '$';
+  if (price == null) return "";
+  const sym =
+    currency === "USD" ? "$" : currency === "AUD" ? "A$" : currency === "EUR" ? "€" : "$";
   return `${sym}${Math.round(price)}`;
 }
 
-export default function ClothingItem({ item }: ClothingItemProps) {
+export default function ClothingItem({ item, onDelete, showDelete = false }: ClothingItemProps) {
   const analysis = item.analysis;
-  const dripColor = analysis ? DRIP_COLORS[analysis.dripLevel] : '#999999';
-  
+  const dripColor = analysis ? DRIP_COLORS[analysis.dripLevel] : "#999999";
+
   return (
-    <TouchableOpacity style={styles.container}>
+    <View style={styles.container} testID={`clothing-card-${item.id}`}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
+
+      {showDelete && onDelete ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          testID={`delete-item-${item.id}`}
+          onPress={onDelete}
+          style={styles.deleteButton}
+        >
+          <Trash2 color="#FFF" size={14} />
+        </TouchableOpacity>
+      ) : null}
+
       <View style={styles.overlay}>
         <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
-        {analysis && (
+        {analysis ? (
           <View style={[styles.dripBadge, { borderColor: dripColor }]}>
             <Sparkles color={dripColor} size={12} />
           </View>
-        )}
+        ) : null}
       </View>
+
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.name} numberOfLines={1}>
+          {item.name}
+        </Text>
         <View style={styles.details}>
-          {item.brand && <Text style={styles.brand}>{item.brand}</Text>}
-          {analysis && analysis.averagePrice && (
+          {item.brand ? <Text style={styles.brand}>{item.brand}</Text> : <View />}
+          {analysis && analysis.averagePrice ? (
             <View style={styles.priceRow}>
               <DollarSign color="#FFD700" size={12} />
-              <Text style={styles.price}>
-                {formatPrice(analysis.averagePrice, analysis.currency)}
-              </Text>
+              <Text style={styles.price}>{formatPrice(analysis.averagePrice, analysis.currency)}</Text>
             </View>
-          )}
+          ) : null}
         </View>
-        {analysis && (
+        {analysis ? (
           <View style={[styles.dripLevel, { backgroundColor: `${dripColor}20` }]}>
-            <Text style={[styles.dripText, { color: dripColor }]}>
-              {analysis.dripLevel}
-            </Text>
+            <Text style={[styles.dripText, { color: dripColor }]}>{analysis.dripLevel}</Text>
           </View>
-        )}
+        ) : null}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -74,6 +88,20 @@ const styles = StyleSheet.create({
     height: 180,
     resizeMode: "cover",
   },
+  deleteButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 3,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
   overlay: {
     position: "absolute",
     top: 8,
@@ -87,16 +115,16 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
   },
   dripBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -8,
     left: -8,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
     borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   info: {
     padding: 12,
@@ -108,9 +136,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   details: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 6,
   },
   brand: {
@@ -118,17 +146,17 @@ const styles = StyleSheet.create({
     color: "#888",
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
   },
   price: {
     fontSize: 12,
-    color: '#FFD700',
-    fontWeight: '600',
+    color: "#FFD700",
+    fontWeight: "600",
   },
   dripLevel: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -136,7 +164,7 @@ const styles = StyleSheet.create({
   },
   dripText: {
     fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
 });

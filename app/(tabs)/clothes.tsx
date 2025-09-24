@@ -20,7 +20,7 @@ import ImageAnalysisCard from "@/components/ImageAnalysisCard";
 import { ClothingItem as ClothingItemType, ImageAnalysisResult } from "@/types";
 
 export default function ClothesScreen() {
-  const { clothes, removeClothingItems, clearAll } = useClothes();
+  const { clothes, removeClothingItems, removeClothingItem, clearAll } = useClothes();
   const { weather } = useWeather();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [analysisResults] = useState<ImageAnalysisResult[]>([]);
@@ -286,7 +286,23 @@ export default function ClothesScreen() {
                           <CheckSquare color={isSelected ? "#000" : "#888"} size={18} />
                         </View>
                       )}
-                      <ClothingItem item={item} />
+                      <ClothingItem 
+                        item={item} 
+                        onDelete={() => {
+                          Alert.alert(
+                            'Delete item',
+                            `Delete "${item.name}" forever?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Delete', style: 'destructive', onPress: async () => {
+                                  await removeClothingItem(item.id);
+                                } 
+                              },
+                            ]
+                          );
+                        }}
+                        showDelete={!selectionMode}
+                      />
                     </TouchableOpacity>
                   );
                 })}
