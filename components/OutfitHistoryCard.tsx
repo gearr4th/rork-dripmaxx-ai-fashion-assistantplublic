@@ -1,14 +1,19 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { Heart, Star, Calendar } from "lucide-react-native";
+import { Heart, Star, Calendar, CheckCircle, Circle } from "lucide-react-native";
 import { OutfitHistory } from "@/types";
 import { router } from "expo-router";
 
 interface OutfitHistoryCardProps {
   history: OutfitHistory;
+  selectable?: boolean;
+  selected?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  testID?: string;
 }
 
-export default function OutfitHistoryCard({ history }: OutfitHistoryCardProps) {
+export default function OutfitHistoryCard({ history, selectable = false, selected = false, onPress, onLongPress, testID }: OutfitHistoryCardProps) {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", { 
       month: "short", 
@@ -19,12 +24,27 @@ export default function OutfitHistoryCard({ history }: OutfitHistoryCardProps) {
 
   return (
     <TouchableOpacity 
-      style={styles.container}
-      onPress={() => router.push("/outfit-details" as any)}
+      style={[styles.container, selected ? styles.containerSelected : undefined]}
+      onPress={onPress ?? (() => router.push("/outfit-details" as any))}
+      onLongPress={onLongPress}
+      delayLongPress={250}
+      testID={testID}
+      accessibilityRole="button"
     >
-      <View style={styles.dateContainer}>
-        <Calendar color="#666" size={16} />
-        <Text style={styles.date}>{formatDate(history.date)}</Text>
+      <View style={styles.headerRow}>
+        <View style={styles.dateContainer}>
+          <Calendar color="#666" size={16} />
+          <Text style={styles.date}>{formatDate(history.date)}</Text>
+        </View>
+        {selectable && (
+          <View style={styles.selectIcon}>
+            {selected ? (
+              <CheckCircle color="#FFD700" size={22} fill="#FFD700" />
+            ) : (
+              <Circle color="#666" size={22} />
+            )}
+          </View>
+        )}
       </View>
       
       <View style={styles.content}>
@@ -70,11 +90,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },
+  containerSelected: {
+    borderColor: "#FFD700",
+    backgroundColor: "rgba(255, 215, 0, 0.08)",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  selectIcon: {
+    marginLeft: 8,
+  },
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 12,
   },
   date: {
     color: "#888",
