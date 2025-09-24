@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -36,6 +36,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist"]);
+  const [isFetchingDailyTrends, setIsFetchingDailyTrends] = useState<boolean>(false);
   const [parsed, setParsed] = useState<ParsedUserRequest | null>(null);
   const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
   const [currentGreeting, setCurrentGreeting] = useState<string>("");
@@ -59,6 +60,46 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchWeather();
   }, [fetchWeather]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchDailyTrends = async () => {
+      try {
+        setIsFetchingDailyTrends(true);
+        const today = new Date();
+        const dayKey = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+        const lastKey = (global as unknown as { __lastTrendsDay?: string }).__lastTrendsDay;
+        if (lastKey === dayKey && trends.length > 0) {
+          return;
+        }
+        const dynamic = await fetchSocialTrends({
+          prompt: '',
+          location: weather?.location ?? null,
+        });
+        if (!mounted) return;
+        (global as unknown as { __lastTrendsDay?: string }).__lastTrendsDay = dayKey;
+        setTrends(dynamic);
+      } catch (e) {
+        console.log('Daily trends fetch error', e);
+      } finally {
+        setIsFetchingDailyTrends(false);
+      }
+    };
+    fetchDailyTrends();
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const nextKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+      if ((global as unknown as { __lastTrendsDay?: string }).__lastTrendsDay !== nextKey) {
+        fetchDailyTrends();
+      }
+    }, 60 * 1000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [weather?.location]);
 
   const handleCreateSmartOutfit = useCallback(async () => {
     if (clothes.length === 0) {
@@ -127,9 +168,32 @@ export default function HomeScreen() {
           }
         >
           <View style={styles.header}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.greeting}>{currentGreeting}</Text>
               <Text style={styles.title}>What's your vibe today?</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trendChipsRow}
+              >
+                {trends.map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={styles.trendChip}
+                    onPress={() => setPrompt((p) => (p?.length ? `${p} ${t}` : t))}
+                    testID={`trend-chip-${t}`}
+                  >
+                    <Text style={styles.trendChipText}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+                {isFetchingDailyTrends && (
+                  <View style={[styles.trendChip, { opacity: 0.7 }]}
+                    testID="trend-chip-loading"
+                  >
+                    <ActivityIndicator color="#000" />
+                  </View>
+                )}
+              </ScrollView>
             </View>
             <View style={styles.headerButtons}>
               <TouchableOpacity
@@ -246,7 +310,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerButtons: {
     flexDirection: "row",
@@ -291,6 +355,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     color: "#FFFFFF",
+    marginBottom: 8,
   },
   addButton: {
     width: 48,
@@ -309,7 +374,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   promptSection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   promptInput: {
     backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -331,7 +396,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 22,
+    padding: 18,
     gap: 10,
   },
   generateButtonText: {
@@ -358,4 +423,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 4,
   },
+  trendChipsRow: {
+    paddingTop: 10,
+    gap: 8,
+  },
+  trendChip: {
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: '#FFD700',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  trendChipText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
+  }
 });
