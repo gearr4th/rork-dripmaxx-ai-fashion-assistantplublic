@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { Sparkles, DollarSign, Trash2 } from "lucide-react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
+import { Sparkles, DollarSign } from "lucide-react-native";
 
 import { ClothingItem as ClothingItemType, DripLevel } from "@/types";
 
@@ -32,16 +32,6 @@ export default function ClothingItem({ item, onDelete, showDelete = false }: Clo
     <View style={styles.container} testID={`clothing-card-${item.id}`}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
 
-      {showDelete && onDelete ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          testID={`delete-item-${item.id}`}
-          onPress={onDelete}
-          style={styles.deleteButton}
-        >
-          <Trash2 color="#FFF" size={14} />
-        </TouchableOpacity>
-      ) : null}
 
       <View style={styles.overlay}>
         <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
@@ -87,20 +77,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 180,
     resizeMode: "cover",
-  },
-  deleteButton: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    zIndex: 3,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
   },
   overlay: {
     position: "absolute",
