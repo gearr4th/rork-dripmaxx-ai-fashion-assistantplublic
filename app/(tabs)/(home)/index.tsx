@@ -61,37 +61,39 @@ export default function HomeScreen() {
     fetchWeather();
   }, [fetchWeather]);
 
+  const fetchDailyTrends = useCallback(async (force: boolean = false) => {
+    console.log('fetchDailyTrends called', { force, location: weather?.location });
+    try {
+      setIsFetchingDailyTrends(true);
+      const today = new Date();
+      const dayKey = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+      const g = global as unknown as { __lastTrendsDay?: string };
+      if (!force && g.__lastTrendsDay === dayKey && trends.length > 0) {
+        console.log('Skipping trends fetch, already fetched today');
+        return;
+      }
+      const dynamic = await fetchSocialTrends({
+        prompt: '',
+        location: weather?.location ?? null,
+      });
+      g.__lastTrendsDay = dayKey;
+      setTrends(dynamic);
+    } catch (e) {
+      console.log('Daily trends fetch error', e);
+    } finally {
+      setIsFetchingDailyTrends(false);
+    }
+  }, [weather?.location, trends.length]);
+
   useEffect(() => {
     let mounted = true;
-    const fetchDailyTrends = async () => {
-      try {
-        setIsFetchingDailyTrends(true);
-        const today = new Date();
-        const dayKey = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
-        const lastKey = (global as unknown as { __lastTrendsDay?: string }).__lastTrendsDay;
-        if (lastKey === dayKey && trends.length > 0) {
-          return;
-        }
-        const dynamic = await fetchSocialTrends({
-          prompt: '',
-          location: weather?.location ?? null,
-        });
-        if (!mounted) return;
-        (global as unknown as { __lastTrendsDay?: string }).__lastTrendsDay = dayKey;
-        setTrends(dynamic);
-      } catch (e) {
-        console.log('Daily trends fetch error', e);
-      } finally {
-        setIsFetchingDailyTrends(false);
-      }
-    };
     fetchDailyTrends();
 
     const interval = setInterval(() => {
       const now = new Date();
       const nextKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
       if ((global as unknown as { __lastTrendsDay?: string }).__lastTrendsDay !== nextKey) {
-        fetchDailyTrends();
+        if (mounted) fetchDailyTrends();
       }
     }, 60 * 1000);
 
@@ -99,7 +101,7 @@ export default function HomeScreen() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [weather?.location]);
+  }, [fetchDailyTrends]);
 
   const handleCreateSmartOutfit = useCallback(async () => {
     if (clothes.length === 0) {
@@ -146,8 +148,13 @@ export default function HomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchWeather();
-    setRefreshing(false);
+    try {
+      await Promise.all([fetchWeather(), fetchDailyTrends(true)]);
+    } catch (e) {
+      console.log('onRefresh error', e);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -193,6 +200,14 @@ export default function HomeScreen() {
                     <ActivityIndicator color="#000" />
                   </View>
                 )}
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  testID="refresh-trends-button"
+                  onPress={() => fetchDailyTrends(true)}
+                  style={[styles.trendChip, { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#FFD700' }]}
+                >
+                  <Text style={[styles.trendChipText, { color: '#000' }]}>Refresh</Text>
+                </TouchableOpacity>
               </ScrollView>
             </View>
             <View style={styles.headerButtons}>
