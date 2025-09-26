@@ -17,7 +17,7 @@ export interface ParsedUserRequest {
 }
 
 type ContentPart = { type: 'text'; text: string } | { type: 'image'; image: string };
-type CoreMessage = { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] };
+type CoreMessage = { role: 'user' | 'assistant'; content: string | ContentPart[] };
 
 async function callLLM(messages: CoreMessage[]): Promise<string> {
   try {
@@ -69,7 +69,7 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
 - preferences: array of short tokens for styles, colors, fits, brands, fabrics. Keep 3-8 items.
 - location: human-readable location if a place or city is mentioned (e.g., "Chadstone Shopping Centre, Melbourne, Australia"), else null.`;
     const text = await callLLM([
-      { role: 'system', content: sys },
+      { role: 'assistant', content: sys },
       { role: 'user', content: `User: ${input}` },
     ]);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -133,7 +133,7 @@ export async function fetchSocialTrends(params: { prompt: string; location?: str
     console.log('Fetching social trends from AI...', { prompt, location });
     const trendPrompt = `You are a fashion trend scout scanning TikTok and Instagram culture. Based on the current month and year, the user's location "${location ?? 'Unknown'}", and the user's intent: "${prompt || 'general daily outfit'}", output ONLY a compact JSON array of 6-10 short trend tags people are wearing right now on TikTok/Instagram. Focus on wearable items (e.g., "oversized vintage tee", "loose carpenter jeans", "adidas sambas", "ballet flats", "quiet luxury", "gorpcore shells"). Avoid influencers or brand names unless iconic. If the location resembles a shopping mall or venue (e.g., "Chadstone Shopping Centre"), bias toward practical shopping-day outfits and Melbourne/AU seasonal context if applicable. No explanation, just JSON array of strings.`;
     const text = await callLLM([
-      { role: 'system', content: 'Return ONLY JSON arrays when asked. No prose.' },
+      { role: 'assistant', content: 'Return ONLY JSON arrays when asked. No prose.' },
       { role: 'user', content: trendPrompt },
     ]);
     console.log('Trend AI raw:', text);
@@ -158,7 +158,7 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
     console.log('[analyzeClothingImage] start', { mimeType: input.mimeType, size: input.base64.length });
 
     const system: CoreMessage = {
-      role: 'system',
+      role: 'assistant',
       content:
         'You are a precise fashion product identifier. Respond ONLY with valid JSON matching the required schema. No markdown.'
     };
@@ -329,7 +329,7 @@ export async function generateOutfit({
     console.log('Generating outfit with AI...');
     const aiPrompt = createOutfitPrompt(weather, trends, prompt, clothes);
     const text = await callLLM([
-      { role: 'system', content: 'You are a professional mobile fashion stylist. Return ONLY JSON as instructed.' },
+      { role: 'assistant', content: 'You are a professional mobile fashion stylist. Return ONLY JSON as instructed.' },
       { role: 'user', content: aiPrompt },
     ]);
     console.log('AI response:', text);
