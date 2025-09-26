@@ -38,6 +38,10 @@ export default function OutfitDetailsScreen() {
   };
 
   const resolvedItems = outfit?.items ?? [];
+  const wardrobeOther = useMemo(() => {
+    const outfitIds = new Set(resolvedItems.map(i => i.id));
+    return clothes.filter(c => !outfitIds.has(c.id));
+  }, [clothes, resolvedItems]);
 
   return (
     <LinearGradient
@@ -47,7 +51,7 @@ export default function OutfitDetailsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.title}>Outfit</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()} testID="close-outfit-details">
             <X color="#FFFFFF" size={24} />
           </TouchableOpacity>
         </View>
@@ -59,15 +63,36 @@ export default function OutfitDetailsScreen() {
           <View style={styles.items}>
             <Text style={styles.sectionTitle}>Items</Text>
             {resolvedItems.map((it) => (
-              <View key={it.id} style={styles.itemCard}>
+              <View key={it.id} style={styles.itemCard} testID={`outfit-item-${it.id}`}>
                 <Image source={{ uri: it.imageUrl }} style={styles.itemThumb} />
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{it.name}</Text>
-                  <Text style={styles.itemBrand}>{it.brand ?? 'Unknown brand'}</Text>
+                  <Text style={styles.itemMeta} numberOfLines={1}>
+                    {it.brand ?? 'Unknown brand'} • {it.type || '—'} • {it.color}
+                  </Text>
+                  {it.analysis?.dripLevel || it.analysis?.versatilityScore ? (
+                    <Text style={styles.itemMetaSub}>
+                      {it.analysis?.dripLevel ?? 'Drip'} • Versatility {it.analysis?.versatilityScore ?? 60}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             ))}
           </View>
+
+          {wardrobeOther.length > 0 && (
+            <View style={styles.wardrobeSection}>
+              <Text style={styles.sectionTitle}>In Your Wardrobe</Text>
+              <View style={styles.grid}>
+                {wardrobeOther.slice(0, 12).map((w) => (
+                  <View key={w.id} style={styles.gridItem} testID={`wardrobe-item-${w.id}`}>
+                    <Image source={{ uri: w.imageUrl }} style={styles.gridImage} />
+                    <Text style={styles.gridText} numberOfLines={1}>{w.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         <View style={styles.actions}>
@@ -143,9 +168,37 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginBottom: 4,
   },
-  itemBrand: {
-    fontSize: 14,
-    color: "#888",
+  itemMeta: {
+    fontSize: 13,
+    color: "#BBB",
+  },
+  itemMetaSub: {
+    fontSize: 12,
+    color: "#8AC6FF",
+    marginTop: 2,
+  },
+  wardrobeSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  gridItem: {
+    width: 90,
+    alignItems: 'center',
+  },
+  gridImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 10,
+    marginBottom: 6,
+  },
+  gridText: {
+    color: '#EEE',
+    fontSize: 12,
   },
   actions: {
     flexDirection: "row",
