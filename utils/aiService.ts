@@ -425,6 +425,7 @@ function parseAIResponse(
 
 // Keep a short memory of recent picks to increase variety between generations
 const __recentSelectionIds: string[] = [];
+const __recentComboKeys: string[] = [];
 
 function generateSmartOutfit(
   clothes: ClothingItem[],
@@ -437,7 +438,7 @@ function generateSmartOutfit(
   const selectedItems: ClothingItem[] = [];
   const isWarm = !!weather && weather.temperature > CONFIG.TEMPERATURE_THRESHOLDS.WARM;
   const isCold = !!weather && weather.temperature < CONFIG.TEMPERATURE_THRESHOLDS.COLD;
-  const isRainy = !!weather && weather.condition.toLowerCase().includes('rain');
+  const isRainy = !!weather && (weather.condition?.toLowerCase?.().includes('rain') ?? false);
 
   const lowerPrompt = (prompt || '').toLowerCase();
   const isRun = /(\brun|running|jog|jogging|sprint|marathon)\b/.test(lowerPrompt);
@@ -451,78 +452,82 @@ function generateSmartOutfit(
   const shoes = byType('shoes');
 
   const nameIncludes = (item: ClothingItem, patterns: string[]): boolean => {
-    const n = `${item.name} ${item.brand ?? ''}`.toLowerCase();
+    const n = `${item.name} ${item.brand ?? ''} ${item.type ?? ''}`.toLowerCase();
     return patterns.some(p => n.includes(p));
   };
 
   const recentPenalty = (item: ClothingItem): number => {
-    return __recentSelectionIds.includes(item.id) ? -15 : 0;
+    return __recentSelectionIds.includes(item.id) ? -18 : 0;
   };
 
   const sportUnsuitablePenalty = (item: ClothingItem): number => {
     if (!isSporty) return 0;
-    const n = item.name.toLowerCase();
-    if (/(jean|chino|trouser|leather|coat|blazer|oxford|loafer)/.test(n)) return -25;
+    const n = `${item.name} ${item.type ?? ''}`.toLowerCase();
+    if (/(jean|chino|trouser|leather|coat|blazer|oxford|loafer|derby)/.test(n)) return -28;
     return 0;
   };
 
   const scoreItem = (item: ClothingItem, category: 'top' | 'bottom' | 'shoe'): number => {
     let score = 0;
-    if (isSporty) score += 6;
+    if (isSporty) score += 8;
 
     if (isRun) {
-      if (category === 'shoe' && nameIncludes(item, ['runner', 'running', 'pegasus', 'ultraboost', 'trainer', 'sneaker'])) score += 60;
-      if (category === 'bottom' && nameIncludes(item, ['short', 'split short', 'jogger', 'track'])) score += isWarm ? 45 : 28;
-      if (category === 'top' && nameIncludes(item, ['tee', 't-shirt', 'tank', 'singlet', 'dri-fit', 'jersey'])) score += isWarm ? 38 : 22;
-      if (isCold && category === 'top' && nameIncludes(item, ['long sleeve', 'hoodie', 'thermal', 'quarter zip'])) score += 22;
+      if (category === 'shoe' && nameIncludes(item, ['runner', 'running', 'pegasus', 'ultraboost', 'trainer', 'sneaker'])) score += 70;
+      if (category === 'bottom' && nameIncludes(item, ['short', 'split short', 'jogger', 'track'])) score += isWarm ? 50 : 30;
+      if (category === 'top' && nameIncludes(item, ['tee', 't-shirt', 'tank', 'singlet', 'dri-fit', 'jersey'])) score += isWarm ? 42 : 24;
+      if (isCold && category === 'top' && nameIncludes(item, ['long sleeve', 'hoodie', 'thermal', 'quarter zip'])) score += 26;
     }
 
     if (isSoccer) {
-      if (category === 'shoe' && nameIncludes(item, ['cleat', 'boot', 'samba', 'predator', 'tiempo', 'x speed', 'mercurial'])) score += 60;
-      if (category === 'bottom' && nameIncludes(item, ['short', 'kit', 'soccer', 'football'])) score += 48;
-      if (category === 'top' && nameIncludes(item, ['jersey', 'kit', 'tee'])) score += 38;
-      if (isRainy && category === 'top' && nameIncludes(item, ['shell', 'windbreaker', 'jacket'])) score += 16;
+      if (category === 'shoe' && nameIncludes(item, ['cleat', 'boot', 'samba', 'predator', 'tiempo', 'x speed', 'mercurial'])) score += 70;
+      if (category === 'bottom' && nameIncludes(item, ['short', 'kit', 'soccer', 'football'])) score += 52;
+      if (category === 'top' && nameIncludes(item, ['jersey', 'kit', 'tee'])) score += 42;
+      if (isRainy && category === 'top' && nameIncludes(item, ['shell', 'windbreaker', 'jacket'])) score += 20;
     }
 
     if (isGym) {
-      if (category === 'shoe' && nameIncludes(item, ['trainer', 'metcon', 'nobull', 'nano', 'sneaker'])) score += 48;
-      if (category === 'bottom' && nameIncludes(item, ['short', 'compression', 'jogger'])) score += 36;
-      if (category === 'top' && nameIncludes(item, ['tank', 'tee', 'dri-fit'])) score += 32;
+      if (category === 'shoe' && nameIncludes(item, ['trainer', 'metcon', 'nobull', 'nano', 'sneaker'])) score += 54;
+      if (category === 'bottom' && nameIncludes(item, ['short', 'compression', 'jogger'])) score += 38;
+      if (category === 'top' && nameIncludes(item, ['tank', 'tee', 'dri-fit'])) score += 36;
     }
 
     if (isWarm) {
-      if (category === 'bottom' && nameIncludes(item, ['short'])) score += 22;
-      if (category === 'top' && nameIncludes(item, ['tee', 'tank'])) score += 16;
+      if (category === 'bottom' && nameIncludes(item, ['short'])) score += 26;
+      if (category === 'top' && nameIncludes(item, ['tee', 'tank'])) score += 18;
     }
     if (isCold) {
-      if (category === 'top' && nameIncludes(item, ['hoodie', 'sweater', 'jacket', 'long sleeve'])) score += 22;
-      if (category === 'bottom' && nameIncludes(item, ['jogger', 'track', 'thermal'])) score += 16;
+      if (category === 'top' && nameIncludes(item, ['hoodie', 'sweater', 'jacket', 'long sleeve'])) score += 24;
+      if (category === 'bottom' && nameIncludes(item, ['jogger', 'track', 'thermal'])) score += 18;
     }
     if (isRainy) {
-      if (category === 'shoe' && nameIncludes(item, ['boot', 'gore', 'waterproof'])) score += 22;
-      if (category === 'top' && nameIncludes(item, ['shell', 'rain', 'windbreaker', 'jacket'])) score += 16;
+      if (category === 'shoe' && nameIncludes(item, ['boot', 'gore', 'waterproof'])) score += 24;
+      if (category === 'top' && nameIncludes(item, ['shell', 'rain', 'windbreaker', 'jacket'])) score += 18;
     }
 
     if (Array.isArray(trends) && trends.length) {
       const tLower = trends.join(' ').toLowerCase();
-      if (tLower.includes('gorpcore') && nameIncludes(item, ['shell', 'cargo', 'trail'])) score += 8;
-      if (tLower.includes('minimal') && nameIncludes(item, ['tee', 'plain'])) score += 4;
-      if (tLower.includes('athleisure') && nameIncludes(item, ['dri-fit', 'track', 'trainer'])) score += 6;
+      if (tLower.includes('gorpcore') && nameIncludes(item, ['shell', 'cargo', 'trail'])) score += 10;
+      if (tLower.includes('minimal') && nameIncludes(item, ['tee', 'plain'])) score += 6;
+      if (tLower.includes('athleisure') && nameIncludes(item, ['dri-fit', 'track', 'trainer'])) score += 8;
     }
 
-    score += Math.floor(Math.random() * 10);
+    score += Math.floor(Math.random() * 12);
     score += recentPenalty(item);
     score += sportUnsuitablePenalty(item);
     return score;
   };
 
-  const pickBest = (items: ClothingItem[], category: 'top' | 'bottom' | 'shoe'): ClothingItem | null => {
-    if (items.length === 0) return null;
-    const ranked = items
+  const rankItems = (items: ClothingItem[], category: 'top' | 'bottom' | 'shoe') => {
+    return items
       .map(i => ({ i, s: scoreItem(i, category) }))
       .sort((a, b) => b.s - a.s);
-    const topN = ranked.slice(0, Math.min(3, ranked.length));
-    const weights = topN.map((r, idx) => (topN.length - idx));
+  };
+
+  const pickBest = (items: ClothingItem[], category: 'top' | 'bottom' | 'shoe'): ClothingItem | null => {
+    if (items.length === 0) return null;
+    const ranked = rankItems(items, category);
+    const topN = ranked.slice(0, Math.min(4, ranked.length));
+    const weights = topN.map((_, idx) => (topN.length - idx));
     const total = weights.reduce((acc, w) => acc + w, 0);
     let r = Math.random() * total;
     for (let k = 0; k < topN.length; k++) {
@@ -532,24 +537,73 @@ function generateSmartOutfit(
     return topN[0].i;
   };
 
+  const ensureSportSpecific = (current: ClothingItem | null, candidates: ClothingItem[], mustPatterns: string[], category: 'top'|'bottom'|'shoe') => {
+    if (!current) return pickBest(candidates, category);
+    if (nameIncludes(current, mustPatterns)) return current;
+    const filtered = candidates.filter(c => nameIncludes(c, mustPatterns));
+    if (filtered.length === 0) return current;
+    return pickBest(filtered, category) ?? current;
+  };
+
   // Candidate groups with inference if types are noisy
   const topCandidates = tops.length ? tops : clothes.filter(c => nameIncludes(c, ['tee', 'shirt', 'tank', 'jersey', 'hoodie', 'jacket', 'long sleeve']));
   const bottomCandidates = bottoms.length ? bottoms : clothes.filter(c => nameIncludes(c, ['short', 'shorts', 'pant', 'jean', 'jogger', 'track']));
   const shoeCandidates = shoes.length ? shoes : clothes.filter(c => nameIncludes(c, ['shoe', 'sneaker', 'boot', 'runner', 'trainer', 'cleat']));
 
-  const chosenTop = pickBest(topCandidates, 'top');
-  const chosenBottom = pickBest(bottomCandidates, 'bottom');
-  const chosenShoe = pickBest(shoeCandidates, 'shoe');
+  let chosenTop = pickBest(topCandidates, 'top');
+  let chosenBottom = pickBest(bottomCandidates, 'bottom');
+  let chosenShoe = pickBest(shoeCandidates, 'shoe');
 
-  if (chosenTop) selectedItems.push(chosenTop);
-  if (chosenBottom) selectedItems.push(chosenBottom);
-  if (chosenShoe) selectedItems.push(chosenShoe);
+  if (isRun) {
+    chosenShoe = ensureSportSpecific(chosenShoe, shoeCandidates, ['runner','running','pegasus','ultraboost','trainer','sneaker'], 'shoe');
+    chosenBottom = ensureSportSpecific(chosenBottom, bottomCandidates, ['short','split short','jogger','track'], 'bottom');
+  }
+  if (isSoccer) {
+    chosenShoe = ensureSportSpecific(chosenShoe, shoeCandidates, ['cleat','boot','samba','predator','tiempo','x speed','mercurial'], 'shoe');
+    chosenTop = ensureSportSpecific(chosenTop, topCandidates, ['jersey','kit','tee'], 'top');
+    chosenBottom = ensureSportSpecific(chosenBottom, bottomCandidates, ['short','kit','soccer','football'], 'bottom');
+  }
+  if (isGym) {
+    chosenShoe = ensureSportSpecific(chosenShoe, shoeCandidates, ['trainer','metcon','nobull','nano','sneaker'], 'shoe');
+  }
+
+  const pushIf = (i: ClothingItem | null) => { if (i) selectedItems.push(i); };
+  pushIf(chosenTop);
+  pushIf(chosenBottom);
+  pushIf(chosenShoe);
+
+  // Avoid identical combinations back-to-back
+  const comboKey = selectedItems.map(i => i.id).sort().join('-');
+  if (__recentComboKeys.includes(comboKey)) {
+    console.log(`${logPrefix} combo duplicate detected, forcing variation`);
+    // Try swapping one piece for next best alternative
+    const swapOne = () => {
+      const trySwap = (current: ClothingItem | null, candidates: ClothingItem[], category: 'top'|'bottom'|'shoe') => {
+        if (!current) return null;
+        const ranked = rankItems(candidates, category).map(r => r.i).filter(i => i.id !== current.id);
+        const alt = ranked.find(i => !__recentSelectionIds.includes(i.id)) ?? ranked[0] ?? null;
+        return alt ?? current;
+      };
+      if (Math.random() < 0.34) chosenTop = trySwap(chosenTop, topCandidates, 'top');
+      else if (Math.random() < 0.67) chosenBottom = trySwap(chosenBottom, bottomCandidates, 'bottom');
+      else chosenShoe = trySwap(chosenShoe, shoeCandidates, 'shoe');
+    };
+    swapOne();
+    // rebuild selection
+    selectedItems.length = 0;
+    pushIf(chosenTop);
+    pushIf(chosenBottom);
+    pushIf(chosenShoe);
+  }
 
   // Update recent memory for variety
   selectedItems.forEach(i => {
     __recentSelectionIds.push(i.id);
-    if (__recentSelectionIds.length > 10) __recentSelectionIds.shift();
+    if (__recentSelectionIds.length > 15) __recentSelectionIds.shift();
   });
+  const newComboKey = selectedItems.map(i => i.id).sort().join('-');
+  __recentComboKeys.push(newComboKey);
+  if (__recentComboKeys.length > 8) __recentComboKeys.shift();
 
   console.log(`${logPrefix} selection`, selectedItems.map(s => ({ name: s.name, type: s.type })));
 
