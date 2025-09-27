@@ -7,14 +7,15 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, Save } from "lucide-react-native";
+import { X, Save, ExternalLink } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import { useClothes } from "@/providers/ClothesProvider";
-import { Outfit } from "@/types";
+import { Outfit, ClothingItem } from "@/types";
 
 export default function OutfitDetailsScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -42,6 +43,91 @@ export default function OutfitDetailsScreen() {
     const outfitIds = new Set(resolvedItems.map(i => i.id));
     return clothes.filter(c => !outfitIds.has(c.id));
   }, [clothes, resolvedItems]);
+
+  type RecommendedProduct = {
+    name: string;
+    brand: string;
+    estimatedPrice: number;
+    trendAlignment: string;
+    imageUrl: string;
+    url: string;
+    tier: 'budget' | 'upgrade';
+  };
+
+  const makeImageForType = (type: string, tier: 'budget' | 'upgrade'): string => {
+    const base = 'https://images.unsplash.com/';
+    const byType: Record<string, string[]> = {
+      tops: [
+        'photo-1520978792268-5de3c0f0b36b',
+        'photo-1520975731486-c0d71c465fa8',
+        'photo-1489987707025-afc232f7ea0f',
+        'photo-1520975922292-5a74d3e3e9d0',
+      ],
+      bottoms: [
+        'photo-1542272604-787c3835535d',
+        'photo-1520974746431-81b9b9dc2d22',
+        'photo-1512436991641-6745cdb1723f',
+      ],
+      shoes: [
+        'photo-1542291026-7eec264c27ff',
+        'photo-1519741497674-611481863552',
+        'photo-1520974655501-78b99ad3b49e',
+      ],
+    };
+    const list = byType[type as keyof typeof byType] ?? [
+      'photo-1520978792268-5de3c0f0b36b',
+    ];
+    const idx = Math.floor(Math.random() * list.length);
+    const id = list[idx];
+    const w = tier === 'upgrade' ? 800 : 600;
+    return `${base}${id}?w=${w}`;
+  };
+
+  const fashionBrandsBudget = [
+    'H&M', 'Uniqlo', 'Zara', 'ASOS', 'Bershka', 'Pull&Bear', 'COS'
+  ] as const;
+  const fashionBrandsUpgrade = [
+    'Nike', 'Adidas', 'New Balance', 'A.P.C.', 'Acne Studios', 'AMI Paris', 'Arket'
+  ] as const;
+
+  const randomFrom = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+  const toTypeGroup = (item: ClothingItem): 'tops' | 'bottoms' | 'shoes' => {
+    const t = (item.type || '').toLowerCase();
+    if (t.includes('top') || t.includes('jacket') || t.includes('shirt') || t.includes('hoodie')) return 'tops';
+    if (t.includes('shoe') || t.includes('sneaker') || t.includes('boot') || t.includes('cleat')) return 'shoes';
+    return 'bottoms';
+  };
+
+  const generateRecommendations = (item: ClothingItem): { budget: RecommendedProduct; upgrade: RecommendedProduct } => {
+    const typeGroup = toTypeGroup(item);
+    const baseName = item.name.split(' ').slice(0, 2).join(' ');
+
+    const budget: RecommendedProduct = {
+      name: `${baseName} Alt`,
+      brand: randomFrom(fashionBrandsBudget),
+      estimatedPrice: Math.max(25, Math.round((item.analysis?.averagePrice ?? 60) * 0.6)),
+      trendAlignment: item.analysis?.style ?? 'On-trend basic',
+      imageUrl: makeImageForType(typeGroup, 'budget'),
+      url: `https://www.asos.com/search/?q=${encodeURIComponent(baseName)}`,
+      tier: 'budget',
+    };
+    const upgrade: RecommendedProduct = {
+      name: `${baseName} Pro`,
+      brand: randomFrom(fashionBrandsUpgrade),
+      estimatedPrice: Math.max(80, Math.round((item.analysis?.averagePrice ?? 100) * 1.4)),
+      trendAlignment: item.analysis?.style ?? 'Premium contemporary',
+      imageUrl: makeImageForType(typeGroup, 'upgrade'),
+      url: `https://www.nike.com/w?q=${encodeURIComponent(baseName)}`,
+      tier: 'upgrade',
+    };
+
+    const wardrobeNames = new Set(clothes.map(c => c.name.toLowerCase()));
+    if (wardrobeNames.has(budget.name.toLowerCase())) budget.name = `${budget.name} V2`;
+    if (wardrobeNames.has(upgrade.name.toLowerCase())) upgrade.name = `${upgrade.name} Plus`;
+
+    return { budget, upgrade };
+  };
 
   return (
     <LinearGradient
@@ -79,6 +165,46 @@ export default function OutfitDetailsScreen() {
               </View>
             ))}
           </View>
+
+          {resolvedItems.length > 0 && (
+            <View style={styles.recoSection}>
+              <Text style={styles.sectionTitle}>Today’s Fashion Picks for Your Outfit</Text>
+              {resolvedItems.map((it) => {
+                const { budget, upgrade } = generateRecommendations(it);
+                return (
+                  <View key={`reco-${it.id}`} style={styles.recoCard} testID={`reco-row-${it.id}`}>
+                    <Text style={styles.recoItemTitle}>{it.name}</Text>
+                    <View style={styles.recoRow}>
+                      {[budget, upgrade].map((p) => (
+                        <View key={`${it.id}-${p.tier}`} style={styles.recoItem}>
+                          <Image source={{ uri: p.imageUrl }} style={styles.recoImage} />
+                          <View style={styles.recoInfo}>
+                            <Text style={styles.recoTier}>
+                              {p.tier === 'budget' ? 'Budget Pick' : 'Upgrade Pick'}
+                            </Text>
+                            <Text style={styles.recoName} numberOfLines={1}>{p.name}</Text>
+                            <Text style={styles.recoMeta} numberOfLines={1}>{p.brand} • ${p.estimatedPrice}</Text>
+                            <Text style={styles.recoTrend} numberOfLines={1}>{p.trendAlignment}</Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                console.log('Open recommendation', p);
+                                Linking.openURL(p.url).catch(() => Alert.alert('Unable to open link'));
+                              }}
+                              style={styles.shopButton}
+                              testID={`shop-${it.id}-${p.tier}`}
+                            >
+                              <ExternalLink color="#0A84FF" size={16} />
+                              <Text style={styles.shopText}>Shop</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
 
           {wardrobeOther.length > 0 && (
             <View style={styles.wardrobeSection}>
@@ -180,6 +306,76 @@ const styles = StyleSheet.create({
   wardrobeSection: {
     paddingHorizontal: 20,
     marginBottom: 24,
+  },
+  recoSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  recoCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+  },
+  recoItemTitle: {
+    color: '#EAEAEA',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  recoRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  recoItem: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  recoImage: {
+    width: 84,
+    height: 84,
+  },
+  recoInfo: {
+    flex: 1,
+    padding: 10,
+    gap: 2,
+  },
+  recoTier: {
+    color: '#8AC6FF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  recoName: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  recoMeta: {
+    color: '#BBB',
+    fontSize: 12,
+  },
+  recoTrend: {
+    color: '#9AE6B4',
+    fontSize: 11,
+  },
+  shopButton: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(10,132,255,0.12)',
+  },
+  shopText: {
+    color: '#0A84FF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   grid: {
     flexDirection: 'row',
