@@ -20,6 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, age: number) => Promise<void>;
+  sendMagicLink: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   completeOAuthFromRedirect: (url: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -51,7 +52,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
   };
 
-  const supabaseConfigured = false;
+  const supabaseConfigured = Boolean(SUPABASE_URL) && Boolean(SUPABASE_ANON_KEY);
 
   const signIn = useCallback(async (email: string, password: string) => {
     console.log('[Auth] signIn', { email: email?.slice(0, 3) + '***' });
@@ -79,11 +80,12 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     if (!resp.ok) {
       const errText = await resp.text();
       console.error('[Auth] signIn REST error', resp.status, errText);
-      throw new Error(`Supabase auth error: ${resp.status}`);
+      throw new Error(errText || `Supabase auth error: ${resp.status}`);
     }
 
     const json = (await resp.json()) as { user?: { id?: string; email?: string; user_metadata?: Record<string, unknown> } };
     const u: User = { id: json.user?.id ?? '', email: json.user?.email ?? email };
+    if (!u.id) throw new Error('Login failed: invalid user payload');
     setUser(u);
     setIsAuthenticated(true);
     await AsyncStorage.setItem("user", JSON.stringify(u));
@@ -100,26 +102,49 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       return;
     }
 
+    const redirectTo = Linking.createURL('/(auth)/auth-callback');
+
     const resp = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ email, password, data: { name, age } }),
+      body: JSON.stringify({ email, password, data: { name, age }, options: { emailRedirectTo: redirectTo } }),
     });
 
+    const text = await resp.text();
     if (!resp.ok) {
-      const errText = await resp.text();
-      console.error('[Auth] signUp REST error', resp.status, errText);
-      throw new Error(`Supabase signup error: ${resp.status}`);
+      console.error('[Auth] signUp REST error', resp.status, text);
+      throw new Error(text || `Supabase signup error: ${resp.status}`);
     }
 
-    const json = (await resp.json()) as { user?: { id?: string; email?: string } };
-    const u: User = { id: json.user?.id ?? '', email: json.user?.email ?? email, name, age };
+    let json: { user?: { id?: string; email?: string } } = {};
+    try { json = JSON.parse(text) as { user?: { id?: string; email?: string } }; } catch {}
+
+    if (!json.user?.id) {
+      throw new Error('Check your email to verify your account, then open the app again from the link.');
+    }
+
+    const u: User = { id: json.user.id ?? '', email: json.user.email ?? email, name, age };
     setUser(u);
     setIsAuthenticated(true);
     await AsyncStorage.setItem("user", JSON.stringify(u));
+  }, [supabaseConfigured]);
+
+  const sendMagicLink = useCallback(async (email: string) => {
+    if (!supabaseConfigured) throw new Error('Magic link requires Supabase configuration');
+    const redirectTo = Linking.createURL('/(auth)/auth-callback');
+    const resp = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, create_user: true, type: 'magiclink', redirect_to: redirectTo }),
+    });
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error('[Auth] sendMagicLink error', resp.status, err);
+      throw new Error(err || 'Failed to send magic link');
+    }
   }, [supabaseConfigured]);
 
   const completeOAuthFromRedirect = useCallback(async (url: string) => {
@@ -138,6 +163,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       }
       const uJson = (await uResp.json()) as { id?: string; email?: string };
       const u: User = { id: uJson.id ?? '', email: uJson.email ?? '' };
+      if (!u.id) throw new Error('Invalid user');
       setUser(u);
       setIsAuthenticated(true);
       await AsyncStorage.setItem('user', JSON.stringify(u));
@@ -163,8 +189,9 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     isAuthenticated,
     signIn,
     signUp,
+    sendMagicLink,
     signInWithGoogle,
     completeOAuthFromRedirect,
     signOut,
-  }), [user, isAuthenticated, signIn, signUp, signInWithGoogle, completeOAuthFromRedirect, signOut]);
+  }), [user, isAuthenticated, signIn, signUp, sendMagicLink, signInWithGoogle, completeOAuthFromRedirect, signOut]);
 });
