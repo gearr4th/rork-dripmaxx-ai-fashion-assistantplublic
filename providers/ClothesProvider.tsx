@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { ClothingItem, ImageAnalysisResult } from "@/types";
 import { useAuth } from "@/providers/AuthProvider";
+import { useCloudSync } from "@/providers/CloudSyncProvider";
 
 interface ClothesContextType {
   clothes: ClothingItem[];
@@ -18,6 +19,7 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
   const { user } = useAuth();
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { cloud, mergeAndPersist } = useCloudSync();
 
   const STORAGE_KEY_FOR = useCallback((userId: string) => `clothes:${userId}`, []);
 
@@ -25,6 +27,15 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     void loadClothes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  useEffect(() => {
+    if (cloud?.clothes) {
+      console.log('[Clothes] hydrating from cloud');
+      setClothes(cloud.clothes);
+      void AsyncStorage.setItem(STORAGE_KEY_FOR(user?.id ?? 'guest'), JSON.stringify(cloud.clothes));
+      setLoading(false);
+    }
+  }, [cloud?.clothes, STORAGE_KEY_FOR, user?.id]);
 
   const loadClothes = async () => {
     try {
@@ -140,6 +151,7 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     setClothes(items);
     const uid = user?.id ?? 'guest';
     await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), JSON.stringify(items));
+    try { await mergeAndPersist({ clothes: items }); } catch (e) { console.log('[Clothes] cloud persist error', e); }
   };
 
   const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {

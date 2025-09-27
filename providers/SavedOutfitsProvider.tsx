@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { Outfit } from "@/types";
 import { useAuth } from "@/providers/AuthProvider";
+import { useCloudSync } from "@/providers/CloudSyncProvider";
 
 interface SavedOutfitsContextType {
   savedOutfits: Outfit[];
@@ -19,11 +20,22 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
   const { user } = useAuth();
   const [savedOutfits, setSavedOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { cloud, mergeAndPersist } = useCloudSync();
 
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  useEffect(() => {
+    if (cloud?.savedOutfits) {
+      console.log('[SavedOutfits] hydrating from cloud');
+      setSavedOutfits(cloud.savedOutfits);
+      const uid = user?.id ?? 'guest';
+      void AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(cloud.savedOutfits));
+      setLoading(false);
+    }
+  }, [cloud?.savedOutfits, user?.id]);
 
   const load = async () => {
     try {
@@ -56,6 +68,7 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
     setSavedOutfits(arr);
     const uid = user?.id ?? 'guest';
     await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(arr));
+    try { await mergeAndPersist({ savedOutfits: arr }); } catch (e) { console.log('[SavedOutfits] cloud persist error', e); }
   };
 
   const saveOutfit = useCallback(async (outfit: Outfit) => {

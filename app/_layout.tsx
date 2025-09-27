@@ -11,6 +11,7 @@ import { SessionProvider } from "@/providers/SessionProvider";
 import { BudgetProvider } from "@/providers/BudgetProvider";
 import { SavedOutfitsProvider } from "@/providers/SavedOutfitsProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { CloudSyncProvider } from "@/providers/CloudSyncProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -55,14 +56,16 @@ export default function RootLayout() {
               <SessionProvider>
                 <BudgetProvider>
                   <SavedOutfitsProvider>
-                    <ErrorBoundary>
-                      <View style={styles.container} testID="app-root">
-                        <RootLayoutNav />
-                        <View style={styles.debugBadge} pointerEvents="none" testID="debug-badge">
-                          <Text style={styles.debugText}>Preview Ready</Text>
+                    <CloudSyncProvider>
+                      <ErrorBoundary>
+                        <View style={styles.container} testID="app-root">
+                          <RootLayoutNav />
+                          <View style={styles.debugBadge} pointerEvents="none" testID="debug-badge">
+                            <Text style={styles.debugText}>Preview Ready</Text>
+                          </View>
                         </View>
-                      </View>
-                    </ErrorBoundary>
+                      </ErrorBoundary>
+                    </CloudSyncProvider>
                   </SavedOutfitsProvider>
                 </BudgetProvider>
               </SessionProvider>
