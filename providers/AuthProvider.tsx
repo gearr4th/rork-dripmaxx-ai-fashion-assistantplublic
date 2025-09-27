@@ -57,30 +57,43 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   const signIn = useCallback(async (email: string, password: string) => {
     console.log('[Auth] signIn', { email: email?.slice(0, 3) + '***' });
 
+    // Always allow demo credentials regardless of Supabase configuration
+    if (email === 'demo@dripmaxx.ai' && password === 'password') {
+      const mockUser: User = { id: '1', email: 'demo@dripmaxx.ai', name: 'Demo User', age: 25 };
+      setUser(mockUser);
+      setIsAuthenticated(true);
+      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
+      return;
+    }
+
     if (!supabaseConfigured) {
-      if (email === "demo@dripmaxx.ai" && password === "password") {
-        const mockUser: User = { id: "1", email: "demo@dripmaxx.ai", name: "Demo User", age: 25 };
-        setUser(mockUser);
-        setIsAuthenticated(true);
-        await AsyncStorage.setItem("user", JSON.stringify(mockUser));
-        return;
-      }
-      throw new Error("Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in utils/config.ts or use demo account");
+      throw new Error('Supabase not configured. Use the demo account or set SUPABASE_URL and SUPABASE_ANON_KEY in utils/config.ts');
     }
 
     const resp = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
+        apikey: SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({ email, password }),
     });
 
     if (!resp.ok) {
-      const errText = await resp.text();
-      console.error('[Auth] signIn REST error', resp.status, errText);
-      throw new Error(errText || `Supabase auth error: ${resp.status}`);
+      const raw = await resp.text();
+      let friendly = `Supabase auth error: ${resp.status}`;
+      try {
+        const parsed = JSON.parse(raw) as { code?: number; error_code?: string; msg?: string };
+        if (parsed?.error_code === 'invalid_credentials' || (parsed?.msg ?? '').toLowerCase().includes('invalid login credentials')) {
+          friendly = 'Invalid email or password. Please try again.';
+        } else if (typeof parsed?.msg === 'string' && parsed.msg.length > 0) {
+          friendly = parsed.msg;
+        }
+      } catch {
+        if (raw) friendly = raw;
+      }
+      console.error('[Auth] signIn REST error', resp.status, raw);
+      throw new Error(friendly);
     }
 
     const json = (await resp.json()) as { user?: { id?: string; email?: string; user_metadata?: Record<string, unknown> } };
@@ -88,7 +101,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     if (!u.id) throw new Error('Login failed: invalid user payload');
     setUser(u);
     setIsAuthenticated(true);
-    await AsyncStorage.setItem("user", JSON.stringify(u));
+    await AsyncStorage.setItem('user', JSON.stringify(u));
   }, [supabaseConfigured]);
 
   const signUp = useCallback(async (email: string, password: string, name: string, age: number) => {
