@@ -51,12 +51,12 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={styles.flex1}>
         <AuthProvider>
-          <WeatherProvider>
-            <ClothesProvider>
-              <SessionProvider>
-                <BudgetProvider>
-                  <SavedOutfitsProvider>
-                    <CloudSyncProvider>
+          <CloudSyncProvider>
+            <WeatherProvider>
+              <ClothesProvider>
+                <SessionProvider>
+                  <BudgetProvider>
+                    <SavedOutfitsProvider>
                       <ErrorBoundary>
                         <View style={styles.container} testID="app-root">
                           <RootLayoutNav />
@@ -65,12 +65,12 @@ export default function RootLayout() {
                           </View>
                         </View>
                       </ErrorBoundary>
-                    </CloudSyncProvider>
-                  </SavedOutfitsProvider>
-                </BudgetProvider>
-              </SessionProvider>
-            </ClothesProvider>
-          </WeatherProvider>
+                    </SavedOutfitsProvider>
+                  </BudgetProvider>
+                </SessionProvider>
+              </ClothesProvider>
+            </WeatherProvider>
+          </CloudSyncProvider>
         </AuthProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>

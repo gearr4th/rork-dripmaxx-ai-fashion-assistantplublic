@@ -31,14 +31,9 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
     return () => { mountedRef.current = false; };
   }, []);
 
-  useEffect(() => {
-    void fetchCloud();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  const fetchCloud = async () => {
+  const fetchCloud = useCallback(async () => {
     if (!user?.id) {
-      setCloud(null);
+      if (mountedRef.current) setCloud(null);
       return;
     }
     try {
@@ -54,25 +49,31 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       if (!resp.ok) {
         const t = await resp.text();
         console.log('[CloudSync] fetchCloud error', resp.status, t);
-        setLastError(`Cloud fetch failed: ${resp.status}`);
+        if (mountedRef.current) setLastError(`Cloud fetch failed: ${resp.status}`);
         return;
       }
       const rows = (await resp.json()) as Array<{ id: string; data: CloudBlobV1 }>; 
       const blob = rows?.[0]?.data ?? null;
-      if (blob) {
-        setCloud(blob);
-      } else {
-        setCloud({ version: 1, updatedAt: new Date().toISOString() });
+      if (mountedRef.current) {
+        if (blob) {
+          setCloud(blob);
+        } else {
+          setCloud({ version: 1, updatedAt: new Date().toISOString() });
+        }
       }
     } catch (e) {
       console.log('[CloudSync] fetchCloud exception', e);
-      setLastError(e instanceof Error ? e.message : 'Unknown error');
+      if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
     }
-  };
+  }, [user?.id, accessToken]);
+
+  useEffect(() => {
+    void fetchCloud();
+  }, [fetchCloud]);
 
   const mergeAndPersist = useCallback(async (partial: Partial<CloudBlobV1>) => {
     if (!user?.id) return;
-    setIsSyncing(true);
+    if (mountedRef.current) setIsSyncing(true);
     try {
       const next: CloudBlobV1 = {
         version: 1,
@@ -80,7 +81,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         ...(cloud ?? {}),
         ...partial,
       } as CloudBlobV1;
-      setCloud(next);
+      if (mountedRef.current) setCloud(next);
 
       const body = [{ id: user.id, data: next }];
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/user_blobs`, {
@@ -96,13 +97,13 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       if (!resp.ok) {
         const t = await resp.text();
         console.log('[CloudSync] upsert error', resp.status, t);
-        setLastError(t || `Cloud save failed: ${resp.status}`);
+        if (mountedRef.current) setLastError(t || `Cloud save failed: ${resp.status}`);
       } else {
-        setLastError(null);
+        if (mountedRef.current) setLastError(null);
       }
     } catch (e) {
       console.log('[CloudSync] upsert exception', e);
-      setLastError(e instanceof Error ? e.message : 'Unknown error');
+      if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
       if (mountedRef.current) setIsSyncing(false);
     }
