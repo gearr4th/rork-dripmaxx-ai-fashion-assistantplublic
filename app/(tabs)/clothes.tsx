@@ -188,7 +188,21 @@ export default function ClothesScreen() {
             weather={weather}
             occasion="daily wear"
             onItemPress={(item) => {
-              console.log('Suggested item pressed:', item.name);
+              try {
+                const params = {
+                  name: item.name,
+                  brand: item.brand,
+                  price: String(item.price),
+                  imageUrl: item.imageUrl,
+                  reason: item.reason,
+                  category: item.category,
+                  trendScore: String(item.trendScore),
+                  versatilityScore: String(item.versatilityScore),
+                } as const;
+                router.push({ pathname: "/recommendation-details", params });
+              } catch (e) {
+                console.log('[Wardrobe] navigate recommendation error', e);
+              }
             }}
           />
 
@@ -278,8 +292,10 @@ export default function ClothesScreen() {
                       style={[styles.gridItem, isSelected && styles.gridItemSelected]}
                       onLongPress={() => onLongPressItem(item)}
                       delayLongPress={250}
-                      onPress={() => selectionMode ? toggleSelect(item.id) : undefined}
+                      onPress={() => selectionMode ? toggleSelect(item.id) : router.push(`/item/${item.id}` as any)}
                       testID={`wardrobe-item-${item.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open details for ${item.name}`}
                     >
                       {selectionMode && (
                         <View style={[styles.checkOverlay, isSelected ? styles.checkOverlayActive : null]}>

@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import { Sparkles, DollarSign } from "lucide-react-native";
 
-import { ClothingItem as ClothingItemType, DripLevel } from "@/types";
+import { ClothingItem as ClothingItemType, DripLevel, ImageAnalysisResult } from "@/types";
 
 interface ClothingItemProps {
   item: ClothingItemType;
@@ -25,7 +25,34 @@ function formatPrice(price: number | null, currency?: string): string {
 }
 
 export default function ClothingItem({ item, onDelete, showDelete = false }: ClothingItemProps) {
-  const analysis = item.analysis;
+  const analysis: ImageAnalysisResult | undefined = useMemo(() => {
+    if (item.analysis) return item.analysis;
+    const base = (name: string) => name.toLowerCase();
+    const n = base(item.name);
+    const sporty = /(run|soccer|athlet|gym|training|dri-fit|pegasus)/.test(n);
+    const luxe = /(leather|silk|cashmere|premium|designer)/.test(n);
+    const trendy = /(oversized|cropped|vintage|wide|cargo|chunky|platform|ribbed)/.test(n);
+
+    const versatility = Math.min(100, 50 + (trendy ? 15 : 0) + (sporty ? 10 : 0));
+    const score = (sporty ? 70 : 50) + (trendy ? 10 : 0) + (luxe ? 10 : 0);
+
+    const dripLevel: DripLevel = score >= 85 ? 'Maxx Drip' : score >= 75 ? 'Pure Drip' : score >= 65 ? 'Certified Drip' : 'Lowkey Drip';
+
+    const derived: ImageAnalysisResult = {
+      itemName: item.name,
+      officialProductName: item.name,
+      brand: item.brand,
+      type: item.type,
+      style: sporty ? 'athleisure' : trendy ? 'streetwear' : 'casual',
+      averagePrice: null,
+      currency: 'USD',
+      versatilityScore: versatility,
+      dripLevel,
+      reasoning: 'Auto-estimated from item name and attributes.',
+      sources: [],
+    };
+    return derived;
+  }, [item]);
   const dripColor = analysis ? DRIP_COLORS[analysis.dripLevel] : "#999999";
 
   return (
@@ -35,11 +62,9 @@ export default function ClothingItem({ item, onDelete, showDelete = false }: Clo
 
       <View style={styles.overlay}>
         <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
-        {analysis ? (
-          <View style={[styles.dripBadge, { borderColor: dripColor }]}>
-            <Sparkles color={dripColor} size={12} />
-          </View>
-        ) : null}
+        <View style={[styles.dripBadge, { borderColor: dripColor }]}>
+          <Sparkles color={dripColor} size={12} />
+        </View>
       </View>
 
       <View style={styles.info}>
@@ -55,11 +80,9 @@ export default function ClothingItem({ item, onDelete, showDelete = false }: Clo
             </View>
           ) : null}
         </View>
-        {analysis ? (
-          <View style={[styles.dripLevel, { backgroundColor: `${dripColor}20` }]}>
-            <Text style={[styles.dripText, { color: dripColor }]}>{analysis.dripLevel}</Text>
-          </View>
-        ) : null}
+        <View style={[styles.dripLevel, { backgroundColor: `${dripColor}20` }]}>
+          <Text style={[styles.dripText, { color: dripColor }]}>{analysis?.dripLevel ?? 'Lowkey Drip'}</Text>
+        </View>
       </View>
     </View>
   );

@@ -171,6 +171,7 @@ export default function WardrobeUpliftCard({
             />
           </View>
           <Text style={styles.scoreText}>{analysis.overallScore}/100</Text>
+          <Text style={styles.quickTip} testID="wardrobe-quick-tip">{getQuickBoostTip(analysis)}</Text>
         </View>
 
         <Text style={styles.suggestionsTitle}>
@@ -229,6 +230,15 @@ export default function WardrobeUpliftCard({
       </LinearGradient>
     </View>
   );
+}
+
+function getQuickBoostTip(analysis: WardrobeAnalysis): string {
+  if (!analysis.suggestions || analysis.suggestions.length === 0) {
+    return 'Add a versatile basic like a white tee or neutral sneakers to boost versatility.';
+  }
+  const cheapest = [...analysis.suggestions].sort((a, b) => a.price - b.price)[0];
+  const midPrice = Math.round(cheapest.price);
+  return `Quick boost: add ${cheapest.category} like "${cheapest.name}" for around ${midPrice} to raise score fast.`;
 }
 
 async function performWardrobeAnalysis(
@@ -697,5 +707,10 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  quickTip: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#FFFFFF',
   },
 });
