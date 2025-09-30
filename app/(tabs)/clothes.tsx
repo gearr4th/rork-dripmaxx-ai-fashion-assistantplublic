@@ -183,48 +183,11 @@ export default function ClothesScreen() {
             </View>
           </View>
 
-          <WardrobeUpliftCard
-            clothes={clothes}
-            weather={weather}
-            occasion="daily wear"
-            onItemPress={(item) => {
-              try {
-                const params = {
-                  name: item.name,
-                  brand: item.brand,
-                  price: String(item.price),
-                  imageUrl: item.imageUrl,
-                  reason: item.reason,
-                  category: item.category,
-                  trendScore: String(item.trendScore),
-                  versatilityScore: String(item.versatilityScore),
-                } as const;
-                router.push({ pathname: "/recommendation-details", params });
-              } catch (e) {
-                console.log('[Wardrobe] navigate recommendation error', e);
-              }
-            }}
-          />
 
-          <View style={styles.trendsSection}>
-            <Text style={styles.sectionTitle}>
-              <TrendingUp color="#FFD700" size={20} /> Current Trends
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.trendsScroll}
-            >
-              {trends.map((trend, index) => (
-                <TrendCard key={`${trend}-${index}`} trend={trend} />
-              ))}
-            </ScrollView>
-          </View>
+
+
 
           <View style={styles.scanSection}>
-            <Text style={styles.sectionTitle}>
-              <Camera color="#FFD700" size={20} /> Scan & Analyze
-            </Text>
             <TouchableOpacity
               style={styles.scanButton}
               onPress={() => router.push("/scan-clothes" as any)}
@@ -236,25 +199,12 @@ export default function ClothesScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Camera color="#FFF" size={24} />
-                <Text style={styles.scanButtonText}>Scan New Item</Text>
-                <Sparkles color="#FFF" size={20} />
+                <Text style={styles.scanButtonText}>Add New Item</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <Text style={styles.scanDescription}>
-              Get instant analysis: brand, price, drip level & cheaper alternatives
-            </Text>
           </View>
 
-          {analysisResults.length > 0 && (
-            <View style={styles.analysisSection}>
-              <Text style={styles.sectionTitle}>
-                <Sparkles color="#FFD700" size={20} /> Recent Analysis
-              </Text>
-              {analysisResults.map((result, index) => (
-                <ImageAnalysisCard key={index} result={result} />
-              ))}
-            </View>
-          )}
+
 
           <View style={styles.selectionBarWrapper}>
             {selectionMode && (

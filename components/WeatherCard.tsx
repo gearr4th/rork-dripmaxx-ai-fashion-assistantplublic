@@ -42,39 +42,17 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
         </View>
         <Text style={styles.temperature}>{weather.temperature}°C</Text>
       </View>
-      {error && (
-        <View style={styles.warningContainer}>
-          <Text style={styles.warningText}>{error}</Text>
-          {error.includes('Location access denied') && (
-            <TouchableOpacity 
-              style={styles.settingsButton} 
-              onPress={() => {
-                Alert.alert(
-                  "Enable Location Access",
-                  "To get weather for your current location, please enable location permissions in your device settings.",
-                  [
-                    { text: "OK", style: "default" },
-                  ]
-                );
-              }}
-            >
-              <Settings color="#FFD700" size={14} />
-              <Text style={styles.settingsText}>Enable Location</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+      {error ? (
+        <Text style={styles.warningText}>{error}</Text>
+      ) : (
+        <Text style={styles.condition}>{weather.condition}</Text>
       )}
-      <Text style={styles.condition}>{weather.condition}</Text>
-      <View style={styles.details}>
-        <View style={styles.detailItem}>
-          <Droplets color="#666" size={16} />
-          <Text style={styles.detailText}>{weather.humidity}%</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Wind color="#666" size={16} />
-          <Text style={styles.detailText}>{weather.windSpeed} km/h</Text>
-        </View>
-      </View>
+      {onRefresh ? (
+        <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+          <RefreshCw color="#FFD700" size={16} />
+          <Text style={styles.retryText}>Refresh</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -114,19 +92,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginBottom: 12,
   },
-  details: {
-    flexDirection: "row",
-    gap: 24,
-  },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  detailText: {
-    color: "#888",
-    fontSize: 14,
-  },
+
   errorText: {
     color: "#888",
     fontSize: 14,
@@ -156,25 +122,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  warningContainer: {
-    marginBottom: 8,
-  },
-  settingsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.2)",
-    alignSelf: "flex-start",
-  },
-  settingsText: {
-    color: "#FFD700",
-    fontSize: 11,
-    fontWeight: "500",
-  },
+
 });
