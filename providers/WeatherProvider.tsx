@@ -14,7 +14,7 @@ interface WeatherContextType {
 
 export const [WeatherProvider, useWeather] = createContextHook<WeatherContextType>(() => {
   const [weather, setWeather] = useState<Weather | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const getCurrentLocation = useCallback(async (): Promise<{ latitude: number; longitude: number } | null> => {
@@ -22,7 +22,8 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
       if (Platform.OS === 'web') {
         return new Promise((resolve, reject) => {
           if (!navigator.geolocation) {
-            reject(new Error('Geolocation is not supported by this browser'));
+            console.warn('[Weather] Geolocation is not supported in this browser');
+            resolve(null);
             return;
           }
 
@@ -53,13 +54,13 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
                     errorMessage = ge.message || 'Geolocation failed';
                 }
               }
-              if (code === 1 || errorMessage.includes('denied')) {
-                console.warn('Geolocation permission denied. Falling back to approximate location.');
+              if (code === 1 || errorMessage.toLowerCase().includes('denied')) {
+                console.warn('[Weather] Geolocation permission denied on web. Falling back.');
                 resolve(null);
                 return;
               }
-              console.error('Geolocation error:', errorMessage);
-              reject(new Error(errorMessage));
+              console.warn('[Weather] Geolocation error on web:', errorMessage);
+              resolve(null);
             },
             {
               enableHighAccuracy: false,
@@ -68,29 +69,66 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
             }
           );
         });
-      } else {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          console.log('Location permission denied');
+      }
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('[Weather] Location permission denied on native. Falling back.');
+        return null;
+      }
+
+      try {
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+        if (!servicesEnabled) {
+          console.warn('[Weather] Location services disabled. Falling back.');
+          // Try last known location even if services are off (may still exist)
+          const lastKnown = await Location.getLastKnownPositionAsync();
+          if (lastKnown?.coords) {
+            return { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude };
+          }
           return null;
         }
+      } catch (e) {
+        console.warn('[Weather] Unable to verify if services are enabled. Continuing...');
+      }
 
+      const lastKnown = await Location.getLastKnownPositionAsync();
+      if (lastKnown?.coords) {
+        console.log('[Weather] Using last known location');
+        return { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude };
+      }
+
+      try {
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
-        });
-        
+          maximumAge: 300000,
+          timeout: 15000,
+        } as any);
+
         return {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         };
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to get location';
-      if (errorMessage.toLowerCase().includes('denied')) {
-        console.warn('Location access denied. Returning null to allow graceful fallback.');
+      } catch (err) {
+        const msg = (err as Error)?.message ?? '';
+        if (msg.toLowerCase().includes('unavailable') || msg.toLowerCase().includes('timeout')) {
+          console.warn('[Weather] Current location unavailable or timed out. Falling back.');
+          const retryLast = await Location.getLastKnownPositionAsync();
+          if (retryLast?.coords) {
+            return { latitude: retryLast.coords.latitude, longitude: retryLast.coords.longitude };
+          }
+          return null;
+        }
+        console.warn('[Weather] Failed to get current position. Falling back. Reason:', msg);
         return null;
       }
-      console.error('Failed to get location:', errorMessage);
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Failed to get location';
+      if (errorMessage.toLowerCase().includes('denied')) {
+        console.warn('[Weather] Location access denied. Returning null to allow graceful fallback.');
+        return null;
+      }
+      console.warn('[Weather] Non-fatal location error, falling back:', errorMessage);
       return null;
     }
   }, []);
@@ -133,7 +171,7 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
           }
         }
       } catch (geoErr) {
-        console.log('Reverse geocoding failed or timed out, continuing with coords label');
+        console.log('[Weather] Reverse geocoding failed or timed out, continuing with coords label');
       }
 
       const weatherData: Weather = {
@@ -147,9 +185,9 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
     } catch (error) {
       const name = (error as any)?.name ?? '';
       if (name === 'AbortError') {
-        console.warn('Weather request timed out, using fallback');
+        console.warn('[Weather] Weather request timed out, using fallback');
       } else {
-        console.warn('Weather API non-fatal error:', (error as Error)?.message ?? String(error));
+        console.warn('[Weather] Weather API non-fatal error:', (error as Error)?.message ?? String(error));
       }
       const fallback: Weather = {
         temperature: 20,
@@ -193,22 +231,19 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
       if (approx) {
         const weatherData = await fetchWeatherByCoords(approx.latitude, approx.longitude);
         setWeather({ ...weatherData, location: weatherData.location || approx.label || 'Approximate Location' });
-        setError('Using approximate location (permission denied).');
+        setError('Using approximate location (permission or services issue).');
         return;
       }
-      console.log('Location access denied, using default location for weather');
+      console.log('[Weather] Falling back to default location');
       const defaultWeatherData = await fetchWeatherByCoords(40.7128, -74.0060);
       setWeather({
         ...defaultWeatherData,
         location: defaultWeatherData.location ?? "New York, United States"
       });
-      setError('Location access denied. Showing weather for a default location.');
+      setError('Showing weather for a default location.');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch weather data';
-      if (!errorMessage.includes('Location access denied')) {
-        console.error('Failed to fetch weather:', errorMessage);
-        setError(errorMessage);
-      }
+      console.warn('[Weather] Non-fatal fetchWeather error:', errorMessage);
       const fallbackWeather: Weather = {
         temperature: 20,
         condition: "Partly Cloudy",
@@ -217,15 +252,11 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
         location: "Default Location",
       };
       setWeather(fallbackWeather);
-      if (errorMessage.includes('Location access denied')) {
-        setError('Location access denied. Using sample weather data.');
-      }
     } finally {
       setLoading(false);
     }
   }, [getCurrentLocation, fetchWeatherByCoords, getApproximateLocationByIP]);
 
-  // Auto-fetch weather on mount
   useEffect(() => {
     fetchWeather();
   }, [fetchWeather]);
