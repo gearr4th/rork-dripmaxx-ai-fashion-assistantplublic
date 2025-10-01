@@ -16,11 +16,13 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import { useClothes } from "@/providers/ClothesProvider";
 import { Outfit, ClothingItem } from "@/types";
+import { useSession } from "@/providers/SessionProvider";
 
 export default function OutfitDetailsScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const { savedOutfits, saveOutfit } = useSavedOutfits();
   const { clothes } = useClothes();
+  const { ageGroup } = useSession();
 
   const outfit: Outfit | null = useMemo(() => {
     const id = params.id ? String(params.id) : null;
@@ -129,6 +131,32 @@ export default function OutfitDetailsScreen() {
     return { budget, upgrade };
   };
 
+  const dripExplainer = useMemo(() => {
+    const style = outfit?.style ?? 'Contemporary';
+    const occ = outfit?.occasion ?? 'daily wear';
+    const baseTags = ['#ootd', '#fyp', '#streetwear', '#minimal', '#outfitinspo', '#todayfit'];
+    const styleTags: Record<string, string[]> = {
+      streetwear: ['#streetstyle', '#gorpcore', '#techwear'],
+      minimalist: ['#cleanfit', '#normcore', '#quietluxury'],
+      sporty: ['#athleisure', '#sneakerhead', '#gymfit'],
+      casual: ['#casualstyle', '#everydaycarry', '#comfortcore'],
+      formal: ['#menswear', '#suitstyle', '#elevatedbasics'],
+    };
+    const key = Object.keys(styleTags).find(k => style.toLowerCase().includes(k)) ?? 'casual';
+    const tags = [...baseTags.slice(0,3), ...(styleTags[key] ?? []).slice(0,2)];
+    const ageMap: Record<string, { popular: string; why: string }> = {
+      '1-10': { popular: 'bright color pops', why: 'fun palettes and comfy layers' },
+      '11-13': { popular: 'graphic tees and cargos', why: 'TikTok dance-core and comfort' },
+      '13-18': { popular: 'oversized hoodies and Sambas', why: 'creator-driven street vibes' },
+      '18-25': { popular: 'clean sneakers, baggy denim', why: 'effortless campus streetwear' },
+      '25-35': { popular: 'elevated basics, neutral tones', why: 'versatile office-to-out feel' },
+      '35+': { popular: 'tailored casuals, premium staples', why: 'refined comfort and quality' },
+    };
+    const ag = ageMap[ageGroup ?? '18-25'];
+    const reason = `${style} meets ${occ} with balanced color and proportions; ${ag.popular} trend is hot for your group because ${ag.why}.`;
+    return { reason, tags };
+  }, [outfit?.style, outfit?.occasion, ageGroup]);
+
   return (
     <LinearGradient
       colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
@@ -164,6 +192,14 @@ export default function OutfitDetailsScreen() {
                 </View>
               </View>
             ))}
+
+            {resolvedItems.length > 0 && (
+              <View style={styles.explainer} testID="drip-explainer">
+                <Text style={styles.explainerTitle}>Why this hits today</Text>
+                <Text style={styles.explainerText} numberOfLines={3}>{dripExplainer.reason}</Text>
+                <Text style={styles.explainerTags} numberOfLines={2}>{dripExplainer.tags.join(' ')}</Text>
+              </View>
+            )}
           </View>
 
           {resolvedItems.length > 0 && (
@@ -302,6 +338,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#8AC6FF",
     marginTop: 2,
+  },
+  explainer: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+  },
+  explainerTitle: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  explainerText: {
+    color: '#EEE',
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  explainerTags: {
+    color: '#9AE6B4',
+    fontSize: 12,
   },
   wardrobeSection: {
     paddingHorizontal: 20,
