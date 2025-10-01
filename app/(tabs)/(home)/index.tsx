@@ -179,7 +179,38 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.greeting}>{currentGreeting}</Text>
-              <Text style={styles.title}>Get a simple outfit</Text>
+              <Text style={styles.title}>What's your vibe today?</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trendChipsRow}
+              >
+                {trends.map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={styles.trendChip}
+                    onPress={() => setPrompt((p) => (p?.length ? `${p} ${t}` : t))}
+                    testID={`trend-chip-${t}`}
+                  >
+                    <Text style={styles.trendChipText}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+                {isFetchingDailyTrends && (
+                  <View style={[styles.trendChip, { opacity: 0.7 }]}
+                    testID="trend-chip-loading"
+                  >
+                    <ActivityIndicator color="#000" />
+                  </View>
+                )}
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  testID="refresh-trends-button"
+                  onPress={() => fetchDailyTrends(true)}
+                  style={[styles.trendChip, { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#FFD700' }]}
+                >
+                  <Text style={[styles.trendChipText, { color: '#000' }]}>Refresh</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
             <View style={styles.headerButtons}>
               <TouchableOpacity
@@ -236,9 +267,33 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.feedbackButtonLarge}
+            onPress={() => setFeedbackModalVisible(true)}
+            testID="feedback-button"
+          >
+            <LinearGradient
+              colors={["rgba(74, 144, 226, 0.2)", "rgba(74, 144, 226, 0.1)"]}
+              style={styles.feedbackGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <MessageSquare color="#4A90E2" size={24} />
+              <Text style={styles.feedbackButtonLargeText}>💬 Give Feedback</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-
-
+          {parsed && (
+            <View style={styles.outfitSection}>
+              <Text style={styles.sectionTitle}>Chat understanding</Text>
+              <View style={styles.parsedBubble} testID="parsed-summary">
+                <Text style={styles.parsedText}>Occasion: {parsed.occasion ?? '—'}</Text>
+                <Text style={styles.parsedText}>Budget: {parsed.budget != null ? `${parsed.budget}` : '—'}</Text>
+                <Text style={styles.parsedText}>Preferences: {parsed.preferences.length ? parsed.preferences.join(', ') : '—'}</Text>
+                <Text style={styles.parsedText}>Location: {parsed.location ?? '—'}</Text>
+              </View>
+            </View>
+          )}
 
           {outfit && (
             <View style={styles.outfitSection}>
@@ -263,7 +318,11 @@ export default function HomeScreen() {
             </View>
           )}
         </ScrollView>
-
+        
+        <FeedbackModal
+          visible={feedbackModalVisible}
+          onClose={() => setFeedbackModalVisible(false)}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -291,7 +350,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-
+  feedbackButtonLarge: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: "#4A90E2",
+    shadowColor: "#4A90E2",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  feedbackGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    gap: 12,
+  },
+  feedbackButtonLargeText: {
+    color: "#4A90E2",
+    fontSize: 17,
+    fontWeight: "700",
+  },
   greeting: {
     fontSize: 18,
     color: "#FFD700",
@@ -370,5 +456,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 4,
   },
-
+  trendChipsRow: {
+    paddingTop: 10,
+    gap: 8,
+  },
+  trendChip: {
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: '#FFD700',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  trendChipText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
+  }
 });

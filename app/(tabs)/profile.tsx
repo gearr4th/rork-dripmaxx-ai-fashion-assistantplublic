@@ -74,7 +74,23 @@ export default function ProfileScreen() {
             <Text style={styles.email}>{user?.email || "demo@dripmaxx.ai"}</Text>
           </View>
 
-
+          <TouchableOpacity style={styles.premiumCard} onPress={handleUpgrade}>
+            <LinearGradient
+              colors={["#FFD700", "#FFA500"]}
+              style={styles.premiumGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Crown color="#000" size={24} />
+              <View style={styles.premiumContent}>
+                <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
+                <Text style={styles.premiumSubtitle}>
+                  Unlimited outfits & exclusive features
+                </Text>
+              </View>
+              <ChevronRight color="#000" size={24} />
+            </LinearGradient>
+          </TouchableOpacity>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Account Information</Text>
@@ -162,6 +178,18 @@ export default function ProfileScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Settings</Text>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <Settings color="#888" size={20} />
+              <Text style={styles.menuText}>Preferences</Text>
+              <ChevronRight color="#666" size={20} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <CreditCard color="#888" size={20} />
+              <Text style={styles.menuText}>Payment Methods</Text>
+              <ChevronRight color="#666" size={20} />
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/select-budget' as any)}>
               <Wallet color="#888" size={20} />
