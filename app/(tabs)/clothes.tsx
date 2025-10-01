@@ -6,11 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Plus, Shirt, TrendingUp, Camera, Sparkles, Trash2, X, CheckSquare } from "lucide-react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useClothes } from "@/providers/ClothesProvider";
 import { useWeather } from "@/providers/WeatherProvider";
 import ClothingItem from "@/components/ClothingItem";
@@ -18,6 +19,16 @@ import WardrobeUpliftCard from "@/components/WardrobeUpliftCard";
 import TrendCard from "@/components/TrendCard";
 import ImageAnalysisCard from "@/components/ImageAnalysisCard";
 import { ClothingItem as ClothingItemType, ImageAnalysisResult } from "@/types";
+
+interface RecommendedItem {
+  id: string;
+  name: string;
+  imageUrl: string;
+  price: number;
+  linkUrl: string;
+  category: string;
+  reason: string;
+}
 
 export default function ClothesScreen() {
   const { clothes, removeClothingItems, removeClothingItem, clearAll } = useClothes();
@@ -27,6 +38,7 @@ export default function ClothesScreen() {
   const [trends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist", "Y2K Revival"]);
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const params = useLocalSearchParams<{ showRecs?: string }>();
 
   const categories = [
     { id: "all", name: "All", icon: "👔" },
@@ -39,6 +51,27 @@ export default function ClothesScreen() {
   const filteredClothes = useMemo(() => selectedCategory === "all" 
     ? clothes 
     : clothes.filter(item => item.type === selectedCategory), [clothes, selectedCategory]);
+
+  const shouldShowRecommendations = useMemo(() => {
+    const flag = params?.showRecs === '1';
+    return flag || clothes.length <= 4;
+  }, [params?.showRecs, clothes.length]);
+
+  const recommendedItems: RecommendedItem[] = useMemo(() => {
+    const list: RecommendedItem[] = [
+      { id: 'rec-1', name: 'White Oversized Tee', imageUrl: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=800&auto=format&fit=crop', price: 19, linkUrl: 'https://www.asos.com/search/?q=white%20oversized%20t%20shirt', category: 'tops', reason: 'Layerable essential elevates any fit' },
+      { id: 'rec-2', name: 'Black Slim Jeans', imageUrl: 'https://images.unsplash.com/photo-1516826957135-700dedea698c?q=80&w=800&auto=format&fit=crop', price: 39, linkUrl: 'https://www.zara.com/', category: 'bottoms', reason: 'Versatile base, works with sneakers or boots' },
+      { id: 'rec-3', name: 'Clean White Sneakers', imageUrl: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop', price: 59, linkUrl: 'https://www.nike.com/w/white-shoes-3rauvzy7ok', category: 'shoes', reason: 'Certified drip staple that pairs with everything' },
+      { id: 'rec-4', name: 'Neutral Hoodie', imageUrl: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=800&auto=format&fit=crop', price: 35, linkUrl: 'https://www.uniqlo.com/', category: 'tops', reason: 'Cozy streetwear layer, timeless' },
+      { id: 'rec-5', name: 'Black Baseball Cap', imageUrl: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=800&auto=format&fit=crop', price: 15, linkUrl: 'https://www.amazon.com/s?k=black+baseball+cap', category: 'accessories', reason: 'Lowkey drip finisher for casual fits' },
+      { id: 'rec-6', name: 'Silver Chain', imageUrl: 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?q=80&w=800&auto=format&fit=crop', price: 22, linkUrl: 'https://www.etsy.com/search?q=silver+chain+men', category: 'accessories', reason: 'Subtle shine boosts outfit score' },
+      { id: 'rec-7', name: 'Carpenter Pants', imageUrl: 'https://images.unsplash.com/photo-1593030761757-81b0736f9e2d?q=80&w=800&auto=format&fit=crop', price: 49, linkUrl: 'https://www.carhartt-wip.com/en', category: 'bottoms', reason: 'On-trend silhouette with utility vibe' },
+      { id: 'rec-8', name: 'Black Puffer Vest', imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop', price: 55, linkUrl: 'https://www.h&m.com/', category: 'tops', reason: 'Layer for dimension without bulk' },
+      { id: 'rec-9', name: 'Crew Socks (3pk)', imageUrl: 'https://images.unsplash.com/photo-1584530220747-254c9d0d9077?q=80&w=800&auto=format&fit=crop', price: 12, linkUrl: 'https://www.amazon.com/s?k=crew+socks', category: 'accessories', reason: 'Small upgrade that cleans up the silhouette' },
+      { id: 'rec-10', name: 'Classic Belt', imageUrl: 'https://images.unsplash.com/photo-1582860738160-00ddcb6c3d5d?q=80&w=800&auto=format&fit=crop', price: 18, linkUrl: 'https://www.levis.com/', category: 'accessories', reason: 'Polished finish, elevates fit cohesion' },
+    ];
+    return list;
+  }, []);
 
   const onLongPressItem = useCallback((item: ClothingItemType) => {
     setSelectionMode(true);
@@ -189,7 +222,7 @@ export default function ClothesScreen() {
             occasion="daily wear"
             onItemPress={(item) => {
               try {
-                const params = {
+                const params2 = {
                   name: item.name,
                   brand: item.brand,
                   price: String(item.price),
@@ -199,7 +232,7 @@ export default function ClothesScreen() {
                   trendScore: String(item.trendScore),
                   versatilityScore: String(item.versatilityScore),
                 } as const;
-                router.push({ pathname: "/recommendation-details", params });
+                router.push({ pathname: "/recommendation-details", params: params2 });
               } catch (e) {
                 console.log('[Wardrobe] navigate recommendation error', e);
               }
@@ -322,6 +355,50 @@ export default function ClothesScreen() {
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+            )}
+
+            {shouldShowRecommendations && (
+              <View style={{ marginTop: 24 }}>
+                <Text style={styles.sectionTitle} testID="recs-title">10 Certified Drip additions</Text>
+                <Text style={styles.recsSubtext}>
+                  Quick adds that boost your wardrobe score without breaking the bank
+                </Text>
+                <View style={styles.recsGrid}>
+                  {recommendedItems.map((rec) => (
+                    <TouchableOpacity
+                      key={rec.id}
+                      style={styles.recCard}
+                      onPress={() => {
+                        try {
+                          import('react-native').then(({ Linking }) => {
+                            Linking.openURL(rec.linkUrl).catch(() => {
+                              Alert.alert('Link error', 'Could not open link');
+                            });
+                          });
+                        } catch (e) {
+                          Alert.alert('Link error', 'Could not open link');
+                        }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open link for ${rec.name}`}
+                      testID={`rec-item-${rec.id}`}
+                    >
+                      <Image source={{ uri: rec.imageUrl }} style={styles.recImage} />
+                      <View style={styles.recInfoRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.recName} numberOfLines={1}>{rec.name}</Text>
+                          <Text style={styles.recReason} numberOfLines={2}>{rec.reason}</Text>
+                        </View>
+                        <View style={styles.badge}><Text style={styles.badgeText}>Certified Drip</Text></View>
+                      </View>
+                      <View style={styles.recFooter}>
+                        <Text style={styles.recPrice}>${rec.price}</Text>
+                        <Text style={styles.recLink}>View</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             )}
           </View>
@@ -567,5 +644,74 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 8,
+  },
+  recsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  recCard: {
+    width: '48%',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  recImage: {
+    width: '100%',
+    height: 120,
+    backgroundColor: '#111',
+  },
+  recInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    gap: 8,
+  },
+  recName: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  recReason: {
+    color: '#AAA',
+    fontSize: 12,
+  },
+  badge: {
+    backgroundColor: '#FFD700',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    color: '#000',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  recFooter: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  recPrice: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  recLink: {
+    color: '#FFF',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  recsSubtext: {
+    color: '#AAA',
+    fontSize: 12,
+    marginBottom: 8,
   },
 });

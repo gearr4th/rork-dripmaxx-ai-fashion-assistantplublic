@@ -140,13 +140,21 @@ export default function HomeScreen() {
         clothes,
       });
       setOutfit(newOutfit);
+      try {
+        const totalItems = clothes.length;
+        if (totalItems <= 4) {
+          router.push({ pathname: '/(tabs)/clothes', params: { showRecs: '1' } } as any);
+        }
+      } catch (e) {
+        console.log('navigate to wardrobe after generation error', e);
+      }
     } catch (error) {
       console.log('CreateSmartOutfit error', error);
       Alert.alert("Error", "Failed to create outfit. Please try again.");
     } finally {
       setGenerating(false);
     }
-  }, [clothes.length, weather, prompt, clothes, fetchWeather]);
+  }, [clothes.length, weather, prompt, clothes, fetchWeather, router]);
 
   const onRefresh = async () => {
     setRefreshing(true);
