@@ -15,7 +15,7 @@ export const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e
 
 // Public email service (Web3Forms) for feedback delivery
 // Create a free key at https://web3forms.com/ and paste it here
-export const WEB3FORMS_ACCESS_KEY: string = '';
+export const WEB3FORMS_ACCESS_KEY: string = 'ae516279-0274-429a-b537-042ed774a7ca';
 export const FEEDBACK_TO_EMAIL: string = 'gearr4th@gmail.com';
 
 // Other configuration options
