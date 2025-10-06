@@ -87,3 +87,29 @@ export interface FeedbackData {
   appVersion?: string;
   deviceInfo?: string;
 }
+
+export interface OutfitRatingCriteria {
+  creativityAndStyle: number; // 0-100
+  contextAndOccasion: number; // 0-100
+  colorCoordination: number; // 0-100
+  accessoryAndFootwear: number; // 0-100
+  compositionAndFit: number; // 0-100
+}
+
+export interface OutfitRating {
+  id: string;
+  imageUri: string;
+  occasion: string;
+  criteria: OutfitRatingCriteria;
+  compositeDripScore: number; // 0-100
+  dripCategory: 'Lowkey Drip' | 'Certified Drip' | 'Pure Drip' | 'Maxx Drip';
+  detailedFeedback: {
+    creativityFeedback: string;
+    contextFeedback: string;
+    colorFeedback: string;
+    accessoryFeedback: string;
+    compositionFeedback: string;
+  };
+  overallSummary: string;
+  timestamp: Date;
+}

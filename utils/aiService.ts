@@ -1,4 +1,4 @@
-import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion } from "@/types";
+import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion, OutfitRating } from "@/types";
 import { BudgetOption } from '@/providers/BudgetProvider';
 import { CONFIG } from './config';
 
@@ -694,4 +694,107 @@ export function evaluateBudgetAndOccasion(
     occasionMatch,
     occasionMessage
   };
+}
+
+export async function rateOutfit(params: {
+  base64: string;
+  mimeType: string;
+  occasion: string;
+}): Promise<import('@/types').OutfitRating> {
+  try {
+    console.log('[rateOutfit] start', { occasion: params.occasion });
+
+    const system: CoreMessage = {
+      role: 'assistant',
+      content: 'You are a professional fashion critic and stylist. Respond ONLY with valid JSON matching the required schema. No markdown.'
+    };
+
+    const user: CoreMessage = {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `Analyze this complete outfit and rate it based on 5 criteria. The occasion is: "${params.occasion}"
+
+Criteria (each scored 0-100):
+1. Creativity & Style Identity (25% weight): Originality, taste, individuality. Unique combinations vs copy-paste trends.
+2. Context & Occasion Match (15% weight): Does it make sense for "${params.occasion}"? Event-appropriate, seasonally right.
+3. Color Coordination (20% weight): Harmonious tones, contrast, balanced saturation.
+4. Accessory & Footwear Integration (15% weight): How accessories and shoes complete the outfit.
+5. Composition & Fit (25% weight): Proportions, layering, silhouette, tailoring.
+
+Respond ONLY with JSON:
+{
+  "criteria": {
+    "creativityAndStyle": number,
+    "contextAndOccasion": number,
+    "colorCoordination": number,
+    "accessoryAndFootwear": number,
+    "compositionAndFit": number
+  },
+  "detailedFeedback": {
+    "creativityFeedback": "string",
+    "contextFeedback": "string",
+    "colorFeedback": "string",
+    "accessoryFeedback": "string",
+    "compositionFeedback": "string"
+  },
+  "overallSummary": "string (2-3 sentences)"
+}`
+        },
+        { type: 'image', image: params.base64 },
+      ],
+    };
+
+    const out = await callLLM([system, user]);
+    console.log('[rateOutfit] raw', out.slice(0, 200));
+    const jsonMatch = out.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in LLM response');
+    const parsed = JSON.parse(jsonMatch[0]) as any;
+
+    const criteria = {
+      creativityAndStyle: Math.max(0, Math.min(100, Number(parsed.criteria?.creativityAndStyle ?? 50))),
+      contextAndOccasion: Math.max(0, Math.min(100, Number(parsed.criteria?.contextAndOccasion ?? 50))),
+      colorCoordination: Math.max(0, Math.min(100, Number(parsed.criteria?.colorCoordination ?? 50))),
+      accessoryAndFootwear: Math.max(0, Math.min(100, Number(parsed.criteria?.accessoryAndFootwear ?? 50))),
+      compositionAndFit: Math.max(0, Math.min(100, Number(parsed.criteria?.compositionAndFit ?? 50))),
+    };
+
+    const compositeDripScore = Math.round(
+      criteria.creativityAndStyle * 0.25 +
+      criteria.contextAndOccasion * 0.15 +
+      criteria.colorCoordination * 0.20 +
+      criteria.accessoryAndFootwear * 0.15 +
+      criteria.compositionAndFit * 0.25
+    );
+
+    let dripCategory: 'Lowkey Drip' | 'Certified Drip' | 'Pure Drip' | 'Maxx Drip';
+    if (compositeDripScore >= 91) dripCategory = 'Maxx Drip';
+    else if (compositeDripScore >= 71) dripCategory = 'Pure Drip';
+    else if (compositeDripScore >= 51) dripCategory = 'Certified Drip';
+    else dripCategory = 'Lowkey Drip';
+
+    const rating: import('@/types').OutfitRating = {
+      id: Date.now().toString(),
+      imageUri: '',
+      occasion: params.occasion,
+      criteria,
+      compositeDripScore,
+      dripCategory,
+      detailedFeedback: {
+        creativityFeedback: String(parsed.detailedFeedback?.creativityFeedback ?? 'No feedback'),
+        contextFeedback: String(parsed.detailedFeedback?.contextFeedback ?? 'No feedback'),
+        colorFeedback: String(parsed.detailedFeedback?.colorFeedback ?? 'No feedback'),
+        accessoryFeedback: String(parsed.detailedFeedback?.accessoryFeedback ?? 'No feedback'),
+        compositionFeedback: String(parsed.detailedFeedback?.compositionFeedback ?? 'No feedback'),
+      },
+      overallSummary: String(parsed.overallSummary ?? 'Outfit analyzed.'),
+      timestamp: new Date(),
+    };
+
+    return rating;
+  } catch (e) {
+    console.log('[rateOutfit] error', e);
+    throw new Error('Failed to rate outfit');
+  }
 }

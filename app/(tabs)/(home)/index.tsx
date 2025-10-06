@@ -18,6 +18,7 @@ import {
   MapPin,
   Plus,
   MessageSquare,
+  ScanLine,
 } from "lucide-react-native";
 import { useWeather } from "@/providers/WeatherProvider";
 import { useClothes } from "@/providers/ClothesProvider";
@@ -222,6 +223,13 @@ export default function HomeScreen() {
             </View>
             <View style={styles.headerButtons}>
               <TouchableOpacity
+                style={styles.scanOutfitButton}
+                onPress={() => router.push("/scan-outfit" as any)}
+                testID="scan-outfit-button"
+              >
+                <ScanLine color="#9D4EDD" size={24} />
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => router.push("/scan-clothes" as any)}
               >
@@ -397,6 +405,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
     marginBottom: 8,
+  },
+  scanOutfitButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(157, 78, 221, 0.2)",
+    borderWidth: 2,
+    borderColor: "#9D4EDD",
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButton: {
     width: 48,
