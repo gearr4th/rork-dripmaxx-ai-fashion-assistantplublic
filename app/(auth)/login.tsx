@@ -134,16 +134,12 @@ export default function LoginScreen() {
                 <Text style={styles.demoPrimaryText}>Continue with Demo</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                testID="login-fill-demo"
-                style={styles.demoButton}
-                onPress={() => {
-                  setEmail("demo@dripmaxx.ai");
-                  setPassword("password");
-                }}
-              >
-                <Text style={styles.demoButtonText}>Fill Demo Credentials</Text>
-              </TouchableOpacity>
+              <View style={styles.signupContainer}>
+                <Text style={styles.signupText}>Don&apos;t have an account? </Text>
+                <TouchableOpacity onPress={() => router.push("/signup" as any)}>
+                  <Text style={styles.signupLink}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -243,13 +239,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  demoButton: {
-    marginTop: 12,
-    padding: 12,
-    alignItems: "center",
+  signupContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 24,
   },
-  demoButtonText: {
-    color: "#FF6B00",
-    fontSize: 16,
+  signupText: {
+    color: "#888",
+    fontSize: 14,
+  },
+  signupLink: {
+    color: "#FFD700",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
