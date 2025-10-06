@@ -126,7 +126,7 @@ export default function ClothesScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -136,10 +136,10 @@ export default function ClothesScreen() {
             {selectionMode ? (
               <>
                 <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.headerPill}>
-                  <X color="#000" size={20} />
+                  <X color="#0A0A0A" size={20} />
                 </TouchableOpacity>
                 <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.headerPill, { backgroundColor: "#FF5A5F" }]}>
-                  <Trash2 color="#000" size={20} />
+                  <Trash2 color="#0A0A0A" size={20} />
                 </TouchableOpacity>
               </>
             ) : (
@@ -148,10 +148,10 @@ export default function ClothesScreen() {
                 onPress={() => router.push("/scan-clothes" as any)}
               >
                 <LinearGradient
-                  colors={["#FFD700", "#FFA500"]}
+                  colors={["#FF5C00", "#FF8C00"]}
                   style={styles.addButtonGradient}
                 >
-                  <Plus color="#000" size={24} />
+                  <Plus color="#0A0A0A" size={24} />
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -241,7 +241,7 @@ export default function ClothesScreen() {
 
           <View style={styles.trendsSection}>
             <Text style={styles.sectionTitle}>
-              <TrendingUp color="#FFD700" size={20} /> Current Trends
+              <TrendingUp color="#FF5C00" size={20} /> Current Trends
             </Text>
             <ScrollView
               horizontal
@@ -256,7 +256,7 @@ export default function ClothesScreen() {
 
           <View style={styles.scanSection}>
             <Text style={styles.sectionTitle}>
-              <Camera color="#FFD700" size={20} /> Scan & Analyze
+              <Camera color="#FF5C00" size={20} /> Scan & Analyze
             </Text>
             <TouchableOpacity
               style={styles.scanButton}
@@ -281,7 +281,7 @@ export default function ClothesScreen() {
           {analysisResults.length > 0 && (
             <View style={styles.analysisSection}>
               <Text style={styles.sectionTitle}>
-                <Sparkles color="#FFD700" size={20} /> Recent Analysis
+                <Sparkles color="#FF5C00" size={20} /> Recent Analysis
               </Text>
               {analysisResults.map((result, index) => (
                 <ImageAnalysisCard key={index} result={result} />
@@ -295,7 +295,7 @@ export default function ClothesScreen() {
                 <Text style={styles.selectionText}>{selectedIds.size} selected</Text>
                 <View style={styles.selectionActions}>
                   <TouchableOpacity testID="delete-all" style={[styles.selectionButton, { backgroundColor: "#FF5A5F" }]} onPress={handleDeleteAll}>
-                    <Trash2 color="#000" size={18} />
+                    <Trash2 color="#0A0A0A" size={18} />
                     <Text style={styles.selectionButtonText}>Delete All</Text>
                   </TouchableOpacity>
                 </View>
@@ -305,7 +305,7 @@ export default function ClothesScreen() {
 
           <View style={styles.wardrobeSection}>
             <Text style={styles.sectionTitle}>
-              <Shirt color="#FFD700" size={20} /> My Wardrobe
+              <Shirt color="#FF5C00" size={20} /> My Wardrobe
             </Text>
             {filteredClothes.length === 0 ? (
               <View style={styles.emptyState}>
@@ -431,14 +431,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
   },
   addButton: {
     borderRadius: 24,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   },
   categoryButtonActive: {
     backgroundColor: "#FFD700",
-    borderColor: "#FFD700",
+    borderColor: "#FF5C00",
   },
   categoryIcon: {
     fontSize: 20,
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   categoryTextActive: {
-    color: "#000000",
+    color: "#0A0A0A",
   },
   mainContent: {
     flex: 1,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFD700",
+    color: "#FF5C00",
   },
   statLabel: {
     fontSize: 12,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   scanButtonText: {
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   selectionText: {
-    color: '#EEE',
+    color: '#E0E0E0',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -586,13 +586,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   selectionButtonText: {
-    color: '#000',
+    color: '#0A0A0A',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkOverlayActive: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
   },
   emptyState: {
     alignItems: "center",
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginTop: 16,
   },
   emptyStateSubtext: {
@@ -682,13 +682,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   badge: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   badgeText: {
-    color: '#000',
+    color: '#0A0A0A',
     fontSize: 10,
     fontWeight: '800',
   },

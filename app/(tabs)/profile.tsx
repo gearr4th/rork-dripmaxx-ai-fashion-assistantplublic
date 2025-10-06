@@ -58,7 +58,7 @@ export default function ProfileScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
         >
           <View style={styles.header}>
             <View style={styles.avatarContainer}>
-              <User color="#FFD700" size={40} />
+              <User color="#FF5C00" size={40} />
             </View>
             <Text style={styles.name}>{user?.name || "Demo User"}</Text>
             <Text style={styles.email}>{user?.email || "demo@dripmaxx.ai"}</Text>
@@ -76,19 +76,19 @@ export default function ProfileScreen() {
 
           <TouchableOpacity style={styles.premiumCard} onPress={handleUpgrade}>
             <LinearGradient
-              colors={["#FFD700", "#FFA500"]}
+              colors={["#FF5C00", "#FF8C00"]}
               style={styles.premiumGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Crown color="#000" size={24} />
+              <Crown color="#0A0A0A" size={24} />
               <View style={styles.premiumContent}>
                 <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
                 <Text style={styles.premiumSubtitle}>
                   Unlimited outfits & exclusive features
                 </Text>
               </View>
-              <ChevronRight color="#000" size={24} />
+              <ChevronRight color="#0A0A0A" size={24} />
             </LinearGradient>
           </TouchableOpacity>
 
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
                 <Text style={styles.infoValue}>{budget ?? 'Not set'}</Text>
               </View>
               <TouchableOpacity onPress={() => router.push('/select-budget' as any)}>
-                <Text style={[styles.infoValue, { color: '#FFD700' }]}>Change</Text>
+                <Text style={[styles.infoValue, { color: '#FF5C00' }]}>Change</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 4,
   },
   email: {
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   premiumTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#000000",
+    color: "#0A0A0A",
     marginBottom: 4,
   },
   premiumSubtitle: {
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 16,
   },
   infoItem: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 16,
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     fontWeight: "500",
   },
   menuItem: {
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginLeft: 16,
   },
   footer: {

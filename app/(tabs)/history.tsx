@@ -112,7 +112,7 @@ export default function HistoryScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -122,10 +122,10 @@ export default function HistoryScreen() {
             {selectionMode ? (
               <>
                 <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.iconPill}>
-                  <X color="#000" size={20} />
+                  <X color="#0A0A0A" size={20} />
                 </TouchableOpacity>
                 <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.iconPill, { backgroundColor: "#FF5A5F" }]}>
-                  <Trash2 color="#000" size={20} />
+                  <Trash2 color="#0A0A0A" size={20} />
                 </TouchableOpacity>
               </>
             ) : null}
@@ -157,7 +157,7 @@ export default function HistoryScreen() {
             <View style={styles.selectionBar}>
               <Text style={styles.selectionText}>{selectedIds.size} selected</Text>
               <TouchableOpacity testID="delete-all" style={[styles.selectionButton, { backgroundColor: "#FF5A5F" }]} onPress={handleDeleteAll}>
-                <Trash2 color="#000" size={18} />
+                <Trash2 color="#0A0A0A" size={18} />
                 <Text style={styles.selectionButtonText}>Delete All</Text>
               </TouchableOpacity>
             </View>
@@ -216,14 +216,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 16,
   },
   filterContainer: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: "#FFD700",
-    borderColor: "#FFD700",
+    borderColor: "#FF5C00",
   },
   filterButtonText: {
     color: "#888",
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   filterButtonTextActive: {
-    color: "#000000",
+    color: "#0A0A0A",
   },
   scrollContent: {
     padding: 20,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectionText: {
-    color: '#EEE',
+    color: '#E0E0E0',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -278,13 +278,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   selectionButtonText: {
-    color: '#000',
+    color: '#0A0A0A',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginTop: 16,
   },
   emptyStateSubtext: {

@@ -14,7 +14,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator color="#FFD700" />
+        <ActivityIndicator color="#FF5C00" />
       </View>
     );
   }
@@ -25,7 +25,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
         <Text style={styles.errorText}>{error || "Unable to fetch weather"}</Text>
         {onRefresh && (
           <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-            <RefreshCw color="#FFD700" size={16} />
+            <RefreshCw color="#FF5C00" size={16} />
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         )}
@@ -37,7 +37,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.location}>
-          <MapPin color="#FFD700" size={16} />
+          <MapPin color="#FF5C00" size={16} />
           <Text style={styles.locationText}>{weather.location}</Text>
         </View>
         <Text style={styles.temperature}>{weather.temperature}°C</Text>
@@ -58,7 +58,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
                 );
               }}
             >
-              <Settings color="#FFD700" size={14} />
+              <Settings color="#FF5C00" size={14} />
               <Text style={styles.settingsText}>Enable Location</Text>
             </TouchableOpacity>
           )}
@@ -100,18 +100,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: {
-    color: "#FF6B00",
+    color: "#FF5C00",
     fontSize: 14,
     fontWeight: "600",
   },
   temperature: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
   },
   condition: {
     fontSize: 18,
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 12,
   },
   details: {
@@ -146,13 +146,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    backgroundColor: "rgba(255, 92, 0, 0.1)",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.3)",
+    borderColor: "rgba(255, 92, 0, 0.3)",
   },
   retryText: {
-    color: "#FF6B00",
+    color: "#FF5C00",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -166,14 +166,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    backgroundColor: "rgba(255, 92, 0, 0.1)",
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.2)",
+    borderColor: "rgba(255, 92, 0, 0.2)",
     alignSelf: "flex-start",
   },
   settingsText: {
-    color: "#FF6B00",
+    color: "#FF5C00",
     fontSize: 11,
     fontWeight: "500",
   },

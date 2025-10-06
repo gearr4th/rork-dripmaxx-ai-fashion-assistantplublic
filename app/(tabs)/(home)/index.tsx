@@ -170,7 +170,7 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -181,7 +181,7 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#FFD700"
+              tintColor="#FF5C00"
             />
           }
         >
@@ -208,16 +208,16 @@ export default function HomeScreen() {
                   <View style={[styles.trendChip, { opacity: 0.7 }]}
                     testID="trend-chip-loading"
                   >
-                    <ActivityIndicator color="#000" />
+                    <ActivityIndicator color="#0A0A0A" />
                   </View>
                 )}
                 <TouchableOpacity
                   accessibilityRole="button"
                   testID="refresh-trends-button"
                   onPress={() => fetchDailyTrends(true)}
-                  style={[styles.trendChip, { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#FFD700' }]}
+                  style={[styles.trendChip, { backgroundColor: '#E0E0E0', borderWidth: 1, borderColor: '#FF5C00' }]}
                 >
-                  <Text style={[styles.trendChipText, { color: '#000' }]}>Refresh</Text>
+                  <Text style={[styles.trendChipText, { color: '#0A0A0A' }]}>Refresh</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -227,13 +227,13 @@ export default function HomeScreen() {
                 onPress={() => router.push("/scan-outfit" as any)}
                 testID="scan-outfit-button"
               >
-                <ScanLine color="#9D4EDD" size={24} />
+                <ScanLine color="#B17FFF" size={24} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => router.push("/scan-clothes" as any)}
               >
-                <Plus color="#000" size={24} />
+                <Plus color="#0A0A0A" size={24} />
               </TouchableOpacity>
             </View>
           </View>
@@ -247,13 +247,13 @@ export default function HomeScreen() {
 
           <View style={styles.promptSection}>
             <Text style={styles.sectionTitle}>
-              <MapPin color="#FFD700" size={20} /> Where are you going?
+              <MapPin color="#FF5C00" size={20} /> Where are you going?
             </Text>
             <TextInput
               testID="prompt-input"
               style={styles.promptInput}
               placeholder="e.g., Office meeting, Casual brunch, Date night..."
-              placeholderTextColor="#666"
+              placeholderTextColor="#888"
               value={prompt}
               onChangeText={setPrompt}
               multiline
@@ -267,16 +267,16 @@ export default function HomeScreen() {
             disabled={generating}
           >
             <LinearGradient
-              colors={["#FFD700", "#FFA500"]}
+              colors={["#FF5C00", "#FF8C00"]}
               style={styles.gradientButton}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
               {generating ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color="#0A0A0A" />
               ) : (
                 <>
-                  <Sparkles color="#000" size={28} />
+                  <Sparkles color="#0A0A0A" size={28} />
                   <Text style={styles.generateButtonText}>Create Outfit</Text>
                 </>
               )}
@@ -289,13 +289,13 @@ export default function HomeScreen() {
             testID="feedback-button"
           >
             <LinearGradient
-              colors={["rgba(74, 144, 226, 0.2)", "rgba(74, 144, 226, 0.1)"]}
+              colors={["rgba(177, 127, 255, 0.2)", "rgba(177, 127, 255, 0.1)"]}
               style={styles.feedbackGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <MessageSquare color="#4A90E2" size={24} />
-              <Text style={styles.feedbackButtonLargeText}>💬 Give Feedback</Text>
+              <MessageSquare color="#B17FFF" size={24} />
+              <Text style={styles.feedbackButtonLargeText}>Give Feedback</Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -371,8 +371,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: "#4A90E2",
-    shadowColor: "#4A90E2",
+    borderColor: "#B17FFF",
+    shadowColor: "#B17FFF",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -390,29 +390,29 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   feedbackButtonLargeText: {
-    color: "#4A90E2",
+    color: "#B17FFF",
     fontSize: 17,
     fontWeight: "700",
   },
   greeting: {
     fontSize: 18,
-    color: "#FFD700",
+    color: "#FF5C00",
     marginBottom: 4,
     fontWeight: "600",
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 8,
   },
   scanOutfitButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "rgba(157, 78, 221, 0.2)",
+    backgroundColor: "rgba(177, 127, 255, 0.2)",
     borderWidth: 2,
-    borderColor: "#9D4EDD",
+    borderColor: "#B17FFF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -420,14 +420,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#FFD700",
+    backgroundColor: "#FF5C00",
     justifyContent: "center",
     alignItems: "center",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 12,
     padding: 16,
-    color: "#F2F2F2",
+    color: "#E0E0E0",
     fontSize: 16,
     minHeight: 80,
     borderWidth: 1,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   generateButtonText: {
-    color: "#000000",
+    color: "#0A0A0A",
     fontSize: 20,
     fontWeight: "bold",
   },
@@ -471,14 +471,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   parsedBubble: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(224,224,224,0.06)',
+    borderColor: 'rgba(224,224,224,0.12)',
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
   },
   parsedText: {
-    color: '#EEE',
+    color: '#E0E0E0',
     fontSize: 14,
     marginBottom: 4,
   },
@@ -490,13 +490,13 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 12,
     borderRadius: 18,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FF5C00',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
   trendChipText: {
-    color: '#000',
+    color: '#0A0A0A',
     fontSize: 14,
     fontWeight: '700',
   }
