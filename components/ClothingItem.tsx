@@ -75,7 +75,7 @@ export default function ClothingItem({ item, onDelete, showDelete = false }: Clo
           {item.brand ? <Text style={styles.brand}>{item.brand}</Text> : <View />}
           {analysis && analysis.averagePrice ? (
             <View style={styles.priceRow}>
-              <DollarSign color="#FFD700" size={12} />
+              <DollarSign color="#FF6B00" size={12} />
               <Text style={styles.price}>{formatPrice(analysis.averagePrice, analysis.currency)}</Text>
             </View>
           ) : null}
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderColor: "#F2F2F2",
   },
   dripBadge: {
     position: "absolute",
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 4,
   },
   details: {
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 12,
-    color: "#FFD700",
+    color: "#FF6B00",
     fontWeight: "600",
   },
   dripLevel: {

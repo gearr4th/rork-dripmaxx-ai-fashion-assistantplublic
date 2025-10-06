@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 16,
   },
   filterContainer: {
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginTop: 16,
   },
   emptyStateSubtext: {

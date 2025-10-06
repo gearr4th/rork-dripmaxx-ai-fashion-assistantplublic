@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
   },
   addButton: {
     borderRadius: 24,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   scanButtonText: {
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginTop: 16,
   },
   emptyStateSubtext: {

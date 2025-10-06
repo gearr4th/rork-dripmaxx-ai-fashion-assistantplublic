@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 8,
   },
   scanOutfitButton: {
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 12,
     padding: 16,
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     fontSize: 16,
     minHeight: 80,
     borderWidth: 1,

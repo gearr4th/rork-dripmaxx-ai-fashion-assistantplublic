@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 4,
   },
   email: {
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 16,
   },
   infoItem: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 16,
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     fontWeight: "500",
   },
   menuItem: {
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginLeft: 16,
   },
   footer: {

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: "#0A0A0A",
+    borderColor: "#000000",
     marginRight: -15,
   },
   details: {
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   occasion: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 4,
   },
   itemCount: {

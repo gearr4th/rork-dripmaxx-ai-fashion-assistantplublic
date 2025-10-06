@@ -134,14 +134,14 @@ export default function ScanOutfitScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#000000", "#1A1A1A", "#000000"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.title}>Rate Your Outfit</Text>
           <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-            <X color="#FFFFFF" size={24} />
+            <X color="#F2F2F2" size={24} />
           </TouchableOpacity>
         </View>
 
@@ -156,7 +156,7 @@ export default function ScanOutfitScreen() {
                 style={styles.imagePickerButton}
                 onPress={() => pickImage(true)}
               >
-                <Camera color="#FFD700" size={32} />
+                <Camera color="#FF6B00" size={32} />
                 <Text style={styles.imagePickerText}>Take Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -164,7 +164,7 @@ export default function ScanOutfitScreen() {
                 style={styles.imagePickerButton}
                 onPress={() => pickImage(false)}
               >
-                <ImageIcon color="#FFD700" size={32} />
+                <ImageIcon color="#FF6B00" size={32} />
                 <Text style={styles.imagePickerText}>Choose from Gallery</Text>
               </TouchableOpacity>
             </View>
@@ -177,7 +177,7 @@ export default function ScanOutfitScreen() {
                   style={styles.actionButton}
                   onPress={retakePhoto}
                 >
-                  <RotateCcw color="#FFD700" size={20} />
+                  <RotateCcw color="#FF6B00" size={20} />
                   <Text style={styles.actionButtonText}>Retake</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -229,12 +229,12 @@ export default function ScanOutfitScreen() {
               onPress={handleAnalyze}
               disabled={analyzing}
             >
-              <LinearGradient colors={["#FFD700", "#FFA500"]} style={styles.gradientButton}>
+              <LinearGradient colors={["#FF6B00", "#FF8C00"]} style={styles.gradientButton}>
                 {analyzing ? (
                   <ActivityIndicator color="#000" />
                 ) : (
                   <>
-                    <Star color="#000" size={22} />
+                    <Star color="#000000" size={22} />
                     <Text style={styles.analyzeText}>Rate Outfit</Text>
                   </>
                 )}
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
   },
   closeButton: {
     width: 40,
@@ -368,14 +368,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: "rgba(255, 215, 0, 0.3)",
+    borderColor: "rgba(255, 107, 0, 0.3)",
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
   imagePickerText: {
-    color: "#FFD700",
+    color: "#FF6B00",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -402,14 +402,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.3)",
+    borderColor: "rgba(255, 107, 0, 0.3)",
     gap: 6,
   },
   deleteButton: {
     borderColor: "rgba(255, 68, 68, 0.3)",
   },
   actionButtonText: {
-    color: "#FFD700",
+    color: "#FF6B00",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#F2F2F2",
     marginBottom: 12,
   },
   occasionScroll: {
@@ -441,8 +441,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   occasionButtonActive: {
-    backgroundColor: "#FFD700",
-    borderColor: "#FFD700",
+    backgroundColor: "#FF6B00",
+    borderColor: "#FF6B00",
   },
   occasionIcon: {
     fontSize: 16,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   analyzeText: {
-    color: '#000',
+    color: '#000000',
     fontSize: 18,
     fontWeight: '700',
   },
@@ -486,9 +486,9 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: 'rgba(255, 107, 0, 0.1)',
     borderWidth: 4,
-    borderColor: '#FFD700',
+    borderColor: '#FF6B00',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   scoreNumber: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#FF6B00',
   },
   scoreOutOf: {
     fontSize: 16,
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   criteriaScore: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#FF6B00',
   },
   progressBar: {
     height: 8,
@@ -566,15 +566,15 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     padding: 16,
-    backgroundColor: 'rgba(255, 215, 0, 0.05)',
+    backgroundColor: 'rgba(255, 107, 0, 0.05)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: 'rgba(255, 107, 0, 0.2)',
   },
   summaryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#FF6B00',
     marginBottom: 8,
   },
   summaryText: {
