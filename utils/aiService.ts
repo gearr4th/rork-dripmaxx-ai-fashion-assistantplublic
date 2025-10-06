@@ -1,6 +1,7 @@
 import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion, OutfitRating } from "@/types";
 import { BudgetOption } from '@/providers/BudgetProvider';
 import { CONFIG } from './config';
+import { Platform } from 'react-native';
 
 interface GenerateOutfitParams {
   weather: Weather | null;
@@ -127,11 +128,61 @@ export async function interpretUserStyleRequest(input: string): Promise<ParsedUs
   return { occasion, budget, preferences: Array.from(new Set(prefs)), location };
 }
 
+function buildLocalTrends(prompt: string, location?: string | null): string[] {
+  const month = new Date().getMonth();
+  const isWarmSeason = month >= 4 && month <= 9;
+  const p = (prompt || '').toLowerCase();
+  const base: string[] = [
+    'minimalist basics',
+    'oversized graphic tee',
+    'loose carpenter jeans',
+    'retro sneakers',
+    'wide-leg trousers',
+    'ballet flats',
+    'quiet luxury',
+    'gorpcore shell',
+    'tech fleece',
+    'cropped puffer',
+    'linen shirt',
+    'boxy oxford',
+    'chunky loafers',
+    'sleek tracksuit',
+    'utility cargo pants',
+  ];
+  const sporty: string[] = [
+    'performance runner sneakers',
+    'soccer jersey',
+    'dri-fit tee',
+    'trail running shell',
+    'compression shorts',
+  ];
+  const warmAdds: string[] = ['5-inch shorts', 'mesh jersey', 'linen trousers', 'cropped tee'];
+  const coldAdds: string[] = ['merino base layer', 'hooded shell', 'beanie', 'thermal joggers'];
+
+  const out = new Set<string>();
+  base.forEach((t) => out.add(t));
+  if (/run|gym|sport|soccer|football/.test(p)) sporty.forEach((t) => out.add(t));
+  (isWarmSeason ? warmAdds : coldAdds).forEach((t) => out.add(t));
+  if (location && /melbourne|sydney|au|australia|chadstone/i.test(location)) {
+    out.add('sambas');
+    out.add('baggy denim');
+  }
+  return Array.from(out).slice(0, 10);
+}
+
 export async function fetchSocialTrends(params: { prompt: string; location?: string | null }): Promise<string[]> {
   const { prompt, location } = params;
   try {
-    console.log('Fetching social trends from AI...', { prompt, location });
+    console.log('Fetching social trends...', { prompt, location, platform: Platform.OS });
+
+    if (Platform.OS === 'web') {
+      const local = buildLocalTrends(prompt, location);
+      console.log('Using local web trends fallback', local);
+      return local.length ? local : CONFIG.DEFAULT_TRENDS;
+    }
+
     const trendPrompt = `You are a fashion trend scout scanning TikTok and Instagram culture. Based on the current month and year, the user's location "${location ?? 'Unknown'}", and the user's intent: "${prompt || 'general daily outfit'}", output ONLY a compact JSON array of 6-10 short trend tags people are wearing right now on TikTok/Instagram. Focus on wearable items (e.g., "oversized vintage tee", "loose carpenter jeans", "adidas sambas", "ballet flats", "quiet luxury", "gorpcore shells"). Avoid influencers or brand names unless iconic. If the location resembles a shopping mall or venue (e.g., "Chadstone Shopping Centre"), bias toward practical shopping-day outfits and Melbourne/AU seasonal context if applicable. No explanation, just JSON array of strings.`;
+
     const text = await callLLM([
       { role: 'assistant', content: 'Return ONLY JSON arrays when asked. No prose.' },
       { role: 'user', content: trendPrompt },
@@ -146,7 +197,9 @@ export async function fetchSocialTrends(params: { prompt: string; location?: str
       }
     }
   } catch (error) {
-    console.error('fetchSocialTrends error:', error);
+    console.log('fetchSocialTrends error (falling back to local):', error);
+    const local = buildLocalTrends(prompt, location);
+    if (local.length) return local;
   }
   return CONFIG.DEFAULT_TRENDS;
 }
