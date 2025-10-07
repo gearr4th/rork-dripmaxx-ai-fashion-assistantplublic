@@ -12,6 +12,7 @@ import { BudgetProvider } from "@/providers/BudgetProvider";
 import { SavedOutfitsProvider } from "@/providers/SavedOutfitsProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { CloudSyncProvider } from "@/providers/CloudSyncProvider";
+import { trpc, trpcClient } from "@/lib/trpc";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,32 +49,34 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={styles.flex1}>
-        <AuthProvider>
-          <CloudSyncProvider>
-            <WeatherProvider>
-              <ClothesProvider>
-                <SessionProvider>
-                  <BudgetProvider>
-                    <SavedOutfitsProvider>
-                      <ErrorBoundary>
-                        <View style={styles.container} testID="app-root">
-                          <RootLayoutNav />
-                          <View style={styles.debugBadge} pointerEvents="none" testID="debug-badge">
-                            <Text style={styles.debugText}>Preview Ready</Text>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={styles.flex1}>
+          <AuthProvider>
+            <CloudSyncProvider>
+              <WeatherProvider>
+                <ClothesProvider>
+                  <SessionProvider>
+                    <BudgetProvider>
+                      <SavedOutfitsProvider>
+                        <ErrorBoundary>
+                          <View style={styles.container} testID="app-root">
+                            <RootLayoutNav />
+                            <View style={styles.debugBadge} pointerEvents="none" testID="debug-badge">
+                              <Text style={styles.debugText}>Preview Ready</Text>
+                            </View>
                           </View>
-                        </View>
-                      </ErrorBoundary>
-                    </SavedOutfitsProvider>
-                  </BudgetProvider>
-                </SessionProvider>
-              </ClothesProvider>
-            </WeatherProvider>
-          </CloudSyncProvider>
-        </AuthProvider>
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+                        </ErrorBoundary>
+                      </SavedOutfitsProvider>
+                    </BudgetProvider>
+                  </SessionProvider>
+                </ClothesProvider>
+              </WeatherProvider>
+            </CloudSyncProvider>
+          </AuthProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
 
