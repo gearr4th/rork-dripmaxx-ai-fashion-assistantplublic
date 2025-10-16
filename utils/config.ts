@@ -10,8 +10,8 @@ export const WEATHER_API_KEY = 'your-weather-api-key-here';
 // Example:
 // export const SUPABASE_URL = 'https://your-project-ref.supabase.co';
 // export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';
-export const SUPABASE_URL: string = 'https://sjficpnclhtkqnerqnwe.supabase.co';
-export const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmljcG5jbGh0a3FuZXJxbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2MzUyMjYsImV4cCI6MjA3MjIxMTIyNn0.60Erd_5qqkd_1KqDxdVfQkGhCPBysxa-9cHwAZJ_Gmk';
+export const SUPABASE_URL: string = 'https://qfvwpchklysqgmylhqvn.supabase.co';
+export const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdndwY2hrbHlzcWdteWxocXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTUxNzQsImV4cCI6MjA3NjEzMTE3NH0.5Z3BZyanLVSuB_yCwjvEnPtpXdA2oNMAsqcuBpA-8Z0';
 
 // Public email service (Web3Forms) for feedback delivery
 // Create a free key at https://web3forms.com/ and paste it here
