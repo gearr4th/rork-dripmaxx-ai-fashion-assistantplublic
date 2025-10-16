@@ -139,7 +139,9 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       return;
     }
 
-    const redirectTo = Linking.createURL('/(auth)/auth-callback');
+    const redirectTo = Platform.OS === 'web'
+      ? `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081'}/(auth)/auth-callback`
+      : Linking.createURL('/(auth)/auth-callback');
 
     const resp = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
@@ -175,7 +177,9 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
   const sendMagicLink = useCallback(async (email: string) => {
     if (!supabaseConfigured) throw new Error('Magic link requires Supabase configuration');
-    const redirectTo = Linking.createURL('/(auth)/auth-callback');
+    const redirectTo = Platform.OS === 'web'
+      ? `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081'}/(auth)/auth-callback`
+      : Linking.createURL('/(auth)/auth-callback');
     const resp = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
