@@ -46,6 +46,7 @@ export default function ClothesScreen() {
     { id: "bottoms", name: "Bottoms", icon: "👖" },
     { id: "shoes", name: "Shoes", icon: "👟" },
     { id: "accessories", name: "Accessories", icon: "👜" },
+    { id: "jewelry", name: "Jewelry", icon: "💎" },
   ];
 
   const filteredClothes = useMemo(() => selectedCategory === "all" 
@@ -213,6 +214,12 @@ export default function ClothesScreen() {
                 {clothes.filter(c => c.type === "shoes").length}
               </Text>
               <Text style={styles.statLabel}>Shoes</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {clothes.filter(c => c.type === "jewelry").length}
+              </Text>
+              <Text style={styles.statLabel}>Jewelry</Text>
             </View>
           </View>
 

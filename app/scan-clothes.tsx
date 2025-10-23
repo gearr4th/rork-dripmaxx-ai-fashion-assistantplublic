@@ -23,7 +23,7 @@ import ImageAnalysisCard from "@/components/ImageAnalysisCard";
 import BudgetRecommendationCard from "@/components/BudgetRecommendationCard";
 import { ImageAnalysisResult, BudgetRecommendation, Occasion } from "@/types";
 
-const clothingTypes = ["tops", "bottoms", "shoes", "accessories"];
+const clothingTypes = ["tops", "bottoms", "shoes", "accessories", "jewelry"];
 const occasions: { id: Occasion; name: string; icon: string }[] = [
   { id: 'casual', name: 'Casual', icon: '👕' },
   { id: 'work', name: 'Work', icon: '💼' },
@@ -55,6 +55,7 @@ export default function ScanClothesScreen() {
   const [brand, setBrand] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("tops");
   const [selectedColor, setSelectedColor] = useState<string>("#000000");
+  const [selectedJewelrySubtype, setSelectedJewelrySubtype] = useState<'watch' | 'chain' | 'bracelet' | 'ring' | 'earrings' | 'other'>('watch');
   const [saving, setSaving] = useState<boolean>(false);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [analysis, setAnalysis] = useState<ImageAnalysisResult | null>(null);
@@ -163,6 +164,7 @@ export default function ScanClothesScreen() {
         type: selectedType,
         color: selectedColor,
         imageUrl: imageUri,
+        ...(selectedType === 'jewelry' && { jewelrySubtype: selectedJewelrySubtype }),
       }, analysis);
       Alert.alert("Success", "Item added to your wardrobe with analysis!", [
         { text: "OK", onPress: () => router.back() },
@@ -355,6 +357,37 @@ export default function ScanClothesScreen() {
                 ))}
               </ScrollView>
             </View>
+
+            {selectedType === 'jewelry' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Jewelry Type</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.typeScroll}
+                >
+                  {(['watch', 'chain', 'bracelet', 'ring', 'earrings', 'other'] as const).map((subtype) => (
+                    <TouchableOpacity
+                      key={subtype}
+                      style={[
+                        styles.typeButton,
+                        selectedJewelrySubtype === subtype && styles.typeButtonActive,
+                      ]}
+                      onPress={() => setSelectedJewelrySubtype(subtype)}
+                    >
+                      <Text
+                        style={[
+                          styles.typeButtonText,
+                          selectedJewelrySubtype === subtype && styles.typeButtonTextActive,
+                        ]}
+                      >
+                        {subtype.charAt(0).toUpperCase() + subtype.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Primary Color</Text>

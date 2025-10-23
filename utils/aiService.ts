@@ -222,7 +222,7 @@ export async function analyzeClothingImage(input: AnalyzeImageInput): Promise<Im
         {
           type: 'text',
           text:
-            'Analyze this clothing image and return ONLY JSON with fields: {"itemName": string, "officialProductName": string, "brand": string|null, "type": string|null, "style": string|null, "averagePrice": number|null, "currency": "USD", "versatilityScore": number, "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip", "reasoning": string, "sources": string[], "storeLink": string|null, "bestOccasion": "casual" | "work" | "party" | "date" | "gym" | "formal" | "travel" | "daily wear", "cheaperAlternatives": [{"name": string, "brand": string, "estimatedPrice": number, "similarity": number, "trendAlignment": string, "whereToFind": string}]}\nRules: prefer official store pricing; infer brand if visible; ensure valid JSON only.'
+            'Analyze this clothing/jewelry image and return ONLY JSON with fields: {"itemName": string, "officialProductName": string, "brand": string|null, "type": string|null ("tops"|"bottoms"|"shoes"|"accessories"|"jewelry"), "style": string|null, "averagePrice": number|null, "currency": "USD", "versatilityScore": number, "dripLevel": "Maxx Drip" | "Pure Drip" | "Certified Drip" | "Lowkey Drip", "reasoning": string, "sources": string[], "storeLink": string|null, "bestOccasion": "casual" | "work" | "party" | "date" | "gym" | "formal" | "travel" | "daily wear", "cheaperAlternatives": [{"name": string, "brand": string, "estimatedPrice": number, "similarity": number, "trendAlignment": string, "whereToFind": string}]}\nSPECIAL RULES FOR JEWELRY (watches, chains, bracelets, rings, earrings): Pay attention to luxury brands (Rolex, Cartier, Tiffany, Omega, AP, Patek Philippe), materials (gold, silver, platinum, stainless steel, diamonds), and craftsmanship. High-end jewelry = "Pure Drip" or "Maxx Drip". Versatility reflects how well it pairs with different outfits. Return type="jewelry" for jewelry items. General rules: prefer official store pricing; infer brand if visible; ensure valid JSON only.'
         },
         { type: 'image', image: input.base64 },
       ],
@@ -503,6 +503,7 @@ function generateSmartOutfit(
   const tops = byType('tops');
   const bottoms = byType('bottoms');
   const shoes = byType('shoes');
+  const jewelry = byType('jewelry');
 
   const nameIncludes = (item: ClothingItem, patterns: string[]): boolean => {
     const n = `${item.name} ${item.brand ?? ''} ${item.type ?? ''}`.toLowerCase();
@@ -620,10 +621,13 @@ function generateSmartOutfit(
     chosenShoe = ensureSportSpecific(chosenShoe, shoeCandidates, ['trainer','metcon','nobull','nano','sneaker'], 'shoe');
   }
 
+  const chosenJewelry = jewelry.length > 0 && !isSporty && Math.random() > 0.3 ? pickBest(jewelry, 'shoe') : null;
+
   const pushIf = (i: ClothingItem | null) => { if (i) selectedItems.push(i); };
   pushIf(chosenTop);
   pushIf(chosenBottom);
   pushIf(chosenShoe);
+  pushIf(chosenJewelry);
 
   // Avoid identical combinations back-to-back
   const comboKey = selectedItems.map(i => i.id).sort().join('-');
@@ -773,7 +777,7 @@ Criteria (each scored 0-100):
 1. Creativity & Style Identity (25% weight): Originality, taste, individuality. Unique combinations vs copy-paste trends.
 2. Context & Occasion Match (15% weight): Does it make sense for "${params.occasion}"? Event-appropriate, seasonally right.
 3. Color Coordination (20% weight): Harmonious tones, contrast, balanced saturation.
-4. Accessory & Footwear Integration (15% weight): How accessories and shoes complete the outfit.
+4. Accessory & Footwear Integration (15% weight): How accessories, jewelry (watches, chains, bracelets, rings), and shoes complete the outfit. Jewelry adds sophistication and personality - premium jewelry significantly boosts score.
 5. Composition & Fit (25% weight): Proportions, layering, silhouette, tailoring.
 
 Respond ONLY with JSON:

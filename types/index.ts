@@ -8,6 +8,7 @@ export interface ClothingItem {
   analysis?: ImageAnalysisResult;
   addedToWardrobe?: boolean;
   dateAdded?: Date;
+  jewelrySubtype?: 'watch' | 'chain' | 'bracelet' | 'ring' | 'earrings' | 'other';
 }
 
 export interface Weather {
