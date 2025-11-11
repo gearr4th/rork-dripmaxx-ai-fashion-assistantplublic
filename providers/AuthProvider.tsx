@@ -155,7 +155,12 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     const text = await resp.text();
     if (!resp.ok) {
       console.error('[Auth] signUp REST error', resp.status, text);
-      throw new Error(text || `Supabase signup error: ${resp.status}`);
+      let errorMessage = text;
+      try {
+        const errorJson = JSON.parse(text) as { message?: string; msg?: string; error_description?: string };
+        errorMessage = errorJson.message || errorJson.msg || errorJson.error_description || text;
+      } catch {}
+      throw new Error(errorMessage || `Network error during signup. Check your connection and try again.`);
     }
 
     let json: { user?: { id?: string; email?: string; email_confirmed_at?: string | null } } = {};
