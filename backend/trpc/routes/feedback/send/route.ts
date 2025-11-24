@@ -76,7 +76,7 @@ TECHNICAL INFO:
 ---
 This feedback was automatically sent from your Drip App.`;
 
-    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY;
+    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || process.env.EXPO_PUBLIC_WEB3FORMS_ACCESS_KEY;
 
     console.log("[Feedback] WEB3FORMS_ACCESS_KEY:", WEB3FORMS_ACCESS_KEY ? `${WEB3FORMS_ACCESS_KEY.substring(0, 8)}...` : "NOT SET");
 
