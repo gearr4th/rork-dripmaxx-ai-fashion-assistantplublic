@@ -60,9 +60,24 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      await signUp(email, password, name, ageNum);
-      router.replace("/select-age" as any);
-      setTimeout(() => router.push("/select-budget" as any), 50);
+      const result = await signUp(email, password, name, ageNum);
+      
+      if (result && result.message && result.message.includes("check your email")) {
+        Alert.alert(
+          "Account Created!",
+          result.message,
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/login" as any)
+            }
+          ]
+        );
+      } else {
+        Alert.alert("Success", "Account created successfully!");
+        router.replace("/select-age" as any);
+        setTimeout(() => router.push("/select-budget" as any), 50);
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to create account";
       Alert.alert("Error", message);

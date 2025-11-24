@@ -11,13 +11,19 @@ interface User {
   emailVerified?: boolean;
 }
 
+interface SignUpResult {
+  success: boolean;
+  message?: string;
+  user: User;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string, age: number) => Promise<void>;
+  signUp: (email: string, password: string, name: string, age: number) => Promise<SignUpResult | undefined>;
   signOut: () => Promise<void>;
   reloadUser: () => Promise<void>;
 }
@@ -115,7 +121,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
   }, [loginMutation]);
 
-  const signUp = useCallback(async (email: string, password: string, name: string, age: number) => {
+  const signUp = useCallback(async (email: string, password: string, name: string, age: number): Promise<SignUpResult | undefined> => {
     console.log('[Auth] signUp started', { email: email?.slice(0, 3) + '***' });
 
     try {
@@ -156,6 +162,12 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       if (result.message && !result.user.emailVerified) {
         console.log('[Auth] Email verification required:', result.message);
       }
+
+      return {
+        success: true,
+        message: result.message,
+        user: u,
+      };
     } catch (error: unknown) {
       console.error('[Auth] signUp error:', error);
       

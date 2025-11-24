@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { TRPCError } from "@trpc/server";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/utils/config";
+import { supabase } from "@/lib/supabase";
 
 export default publicProcedure
   .input(
@@ -15,129 +15,81 @@ export default publicProcedure
   .mutation(async ({ input }) => {
     console.log("[Backend Auth] Signup request for:", input.email);
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "Authentication service is not configured. Please contact support.",
-      });
-    }
-
     try {
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          email: input.email,
-          password: input.password,
+      const { data, error } = await supabase.auth.signUp({
+        email: input.email,
+        password: input.password,
+        options: {
           data: {
             name: input.name,
             age: input.age,
           },
-        }),
+          emailRedirectTo: undefined,
+        },
       });
 
-      const responseText = await response.text();
-      console.log("[Backend Auth] Signup response status:", response.status);
-
-      if (!response.ok) {
-        console.error("[Backend Auth] Signup failed:", responseText);
+      if (error) {
+        console.error("[Backend Auth] Signup failed:", error);
         
-        let errorMessage = "Failed to create account";
-        
-        try {
-          const errorData = JSON.parse(responseText);
-          
-          if (errorData.message?.includes("already registered") || 
-              errorData.msg?.includes("already registered") ||
-              errorData.error_description?.includes("already registered")) {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message: "An account with this email already exists. Please sign in instead.",
-            });
-          }
-          
-          if (errorData.message?.includes("email rate limit")) {
-            throw new TRPCError({
-              code: "TOO_MANY_REQUESTS",
-              message: "Too many signup attempts. Please try again later.",
-            });
-          }
-          
-          if (errorData.message?.includes("password")) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Password must be at least 6 characters long.",
-            });
-          }
-          
-          if (errorData.message?.includes("invalid email")) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Please enter a valid email address.",
-            });
-          }
-          
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.msg) {
-            errorMessage = errorData.msg;
-          } else if (errorData.error_description) {
-            errorMessage = errorData.error_description;
-          }
-        } catch (parseError) {
-          if (parseError instanceof TRPCError) {
-            throw parseError;
-          }
-          
-          if (responseText.includes("already registered")) {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message: "An account with this email already exists. Please sign in instead.",
-            });
-          }
-        }
-
-        if (response.status >= 500) {
+        if (error.message.toLowerCase().includes("already registered") || 
+            error.message.toLowerCase().includes("already exists")) {
           throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Server error. Please try again in a moment.",
+            code: "CONFLICT",
+            message: "An account with this email already exists. Please sign in instead.",
           });
         }
         
-        if (response.status === 429) {
+        if (error.message.toLowerCase().includes("email rate limit")) {
           throw new TRPCError({
             code: "TOO_MANY_REQUESTS",
-            message: "Too many attempts. Please try again later.",
+            message: "Too many signup attempts. Please try again in a few minutes.",
           });
         }
-
+        
+        if (error.message.toLowerCase().includes("password")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Password must be at least 6 characters long.",
+          });
+        }
+        
+        if (error.message.toLowerCase().includes("invalid email")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Please enter a valid email address.",
+          });
+        }
+        
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: errorMessage,
+          message: error.message || "Failed to create account. Please try again.",
         });
       }
 
-      const data = JSON.parse(responseText);
+      if (!data.user) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Account creation failed. Please try again.",
+        });
+      }
+
       console.log("[Backend Auth] Signup successful for:", input.email);
+      console.log("[Backend Auth] Email confirmed:", Boolean(data.user.email_confirmed_at));
 
       return {
         success: true,
         user: {
-          id: data.user?.id || "",
-          email: data.user?.email || input.email,
+          id: data.user.id,
+          email: data.user.email || input.email,
           name: input.name,
           age: input.age,
-          emailVerified: Boolean(data.user?.email_confirmed_at),
+          emailVerified: Boolean(data.user.email_confirmed_at),
         },
-        accessToken: data.access_token || null,
-        refreshToken: data.refresh_token || null,
-        message: data.user?.email_confirmed_at 
+        accessToken: data.session?.access_token || null,
+        refreshToken: data.session?.refresh_token || null,
+        message: data.user.email_confirmed_at 
           ? "Account created successfully!" 
-          : "Please check your email to verify your account.",
+          : "✅ Account created! Please check your email to verify your account before signing in.",
       };
     } catch (error) {
       if (error instanceof TRPCError) {
@@ -147,7 +99,7 @@ export default publicProcedure
       console.error("[Backend Auth] Signup error:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Unable to connect to authentication server. Please check your internet connection and try again.",
+        message: "Unable to create account. Please check your connection and try again.",
       });
     }
   });
