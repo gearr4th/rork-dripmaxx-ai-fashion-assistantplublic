@@ -79,17 +79,21 @@ export default publicProcedure
           });
         }
         
-        if (errorMsg.includes("confirmation email") ||
-            errorMsg.includes("email service") ||
+        if (errorMsg.includes("sending confirmation") ||
             errorMsg.includes("error sending") ||
-            errorMsg.includes("sending") ||
-            errorMsg.includes("smtp")) {
+            errorMsg.includes("smtp") ||
+            errorMsg.includes("email service") ||
+            errorMsg.includes("mail service")) {
           
-          const userData = response.data as any;
-          if (userData && userData.user) {
-            console.log("[Backend Auth] User was created despite email error. Returning user data.");
+          console.log("[Backend Auth] Email error detected. Checking if user was created...");
+          console.log("[Backend Auth] Response data:", JSON.stringify(response.data, null, 2));
+          
+          if (response.data?.user) {
+            console.log("[Backend Auth] User was created despite email error!");
+            const userData: any = response.data;
             const user = userData.user;
             const session = userData.session;
+            
             return {
               success: true,
               user: {
@@ -101,13 +105,13 @@ export default publicProcedure
               },
               accessToken: session?.access_token || null,
               refreshToken: session?.refresh_token || null,
-              message: "✅ Account created! Email verification is temporarily unavailable. You can log in now.",
+              message: "✅ Account created successfully! Email verification is temporarily unavailable, but you can log in now.",
             };
           }
           
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Email service is temporarily unavailable. Please try again later or contact support.",
+            message: "Unable to send confirmation email. Please contact support or try again later.",
           });
         }
         

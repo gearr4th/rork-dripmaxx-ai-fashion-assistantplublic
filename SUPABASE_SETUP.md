@@ -14,7 +14,21 @@ This guide will help you set up Supabase authentication with email verification 
 
 ## Step 2: Configure Email Authentication
 
-### Enable Email Confirmation
+### IMPORTANT: Email Configuration Options
+
+You have two options:
+
+**Option A: Disable Email Confirmation (Recommended for Testing)**
+
+1. Go to your Supabase Dashboard
+2. Navigate to **Authentication** → **Settings**
+3. Under **Email Auth**:
+   - ✅ **Enable email signup**
+   - ❌ **DISABLE email confirmations** (turn this OFF)
+4. Click **Save**
+5. Users can signup and login immediately without email verification
+
+**Option B: Enable Email Confirmation (For Production)**
 
 1. Go to your Supabase Dashboard
 2. Navigate to **Authentication** → **Settings**
@@ -22,6 +36,9 @@ This guide will help you set up Supabase authentication with email verification 
    - ✅ **Enable email confirmations**
    - ✅ **Enable email signup**
 4. Click **Save**
+5. Configure SMTP settings (see below) OR accept rate limits on free tier
+
+⚠️ **Note**: Supabase free tier has email sending rate limits. If you hit the limit, the app will still create accounts but show a message about email being unavailable.
 
 ### Configure Email Templates (Optional but Recommended)
 
