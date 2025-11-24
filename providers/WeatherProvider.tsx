@@ -63,9 +63,9 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
               resolve(null);
             },
             {
-              enableHighAccuracy: false,
-              timeout: 15000,
-              maximumAge: 600000,
+              enableHighAccuracy: true,
+              timeout: 20000,
+              maximumAge: 300000,
             }
           );
         });
@@ -100,9 +100,9 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
 
       try {
         const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+          accuracy: Location.Accuracy.High,
           maximumAge: 300000,
-          timeout: 15000,
+          timeout: 20000,
         } as any);
 
         return {
@@ -160,14 +160,46 @@ export const [WeatherProvider, useWeather] = createContextHook<WeatherContextTyp
       try {
         const geoController = new AbortController();
         const geoTimeoutId = setTimeout(() => geoController.abort(), 15000);
-        const geoResp = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en`, { signal: geoController.signal });
+        const geoResp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1&zoom=18`, { 
+          signal: geoController.signal,
+          headers: {
+            'User-Agent': 'OutfitApp/1.0'
+          }
+        });
         clearTimeout(geoTimeoutId);
         if (geoResp.ok) {
-          const geo = (await geoResp.json()) as { results?: Array<{ name?: string; country?: string; admin1?: string }> };
-          const r = geo.results?.[0];
-          if (r?.name) {
-            const parts = [r.name, r.admin1, r.country].filter(Boolean) as string[];
-            label = parts.join(', ');
+          const geo = (await geoResp.json()) as { 
+            address?: { 
+              suburb?: string;
+              town?: string;
+              city?: string;
+              village?: string;
+              hamlet?: string;
+              county?: string;
+              state?: string;
+              country?: string;
+            };
+            display_name?: string;
+          };
+          
+          if (geo.address) {
+            const addr = geo.address;
+            const locality = addr.suburb || addr.town || addr.village || addr.hamlet || addr.city;
+            const region = addr.state || addr.county;
+            const country = addr.country;
+            
+            if (locality) {
+              if (region && locality !== region) {
+                label = country ? `${locality}, ${region}, ${country}` : `${locality}, ${region}`;
+              } else {
+                label = country ? `${locality}, ${country}` : locality;
+              }
+            } else if (region) {
+              label = country ? `${region}, ${country}` : region;
+            } else if (country) {
+              label = country;
+            }
+            console.log('[Weather] Reverse geocoding successful:', label);
           }
         }
       } catch (geoErr) {
