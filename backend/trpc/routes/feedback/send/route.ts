@@ -76,9 +76,9 @@ TECHNICAL INFO:
 ---
 This feedback was automatically sent from your Drip App.`;
 
-    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || "09abc3b3-dd8c-44c5-bd78-117cfcb2eb7e";
+    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY;
 
-    console.log("[Feedback] WEB3FORMS_ACCESS_KEY available:", !!WEB3FORMS_ACCESS_KEY);
+    console.log("[Feedback] WEB3FORMS_ACCESS_KEY:", WEB3FORMS_ACCESS_KEY ? `${WEB3FORMS_ACCESS_KEY.substring(0, 8)}...` : "NOT SET");
 
     if (!WEB3FORMS_ACCESS_KEY) {
       console.error("WEB3FORMS_ACCESS_KEY is not set in environment variables");
