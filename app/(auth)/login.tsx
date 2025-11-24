@@ -39,8 +39,28 @@ export default function LoginScreen() {
       await signIn(email, password);
       navigateToApp();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to sign in";
-      Alert.alert("Error", message);
+      let message = "Failed to sign in";
+      let title = "Login Failed";
+      
+      if (error instanceof Error) {
+        message = error.message;
+        
+        if (message.includes("Invalid") || message.includes("incorrect")) {
+          title = "Invalid Credentials";
+          message = "The email or password you entered is incorrect. Please try again.";
+        } else if (message.includes("not found") || message.includes("does not exist")) {
+          title = "Account Not Found";
+          message = "No account found with this email. Please sign up first.";
+        } else if (message.includes("verify") || message.includes("confirm")) {
+          title = "Email Not Verified";
+          message = "Please check your email and verify your account before signing in.";
+        } else if (message.includes("Too many") || message.includes("rate limit")) {
+          title = "Too Many Attempts";
+          message = "You've tried to log in too many times. Please wait a few minutes and try again.";
+        }
+      }
+      
+      Alert.alert(title, message);
     } finally {
       setLoading(false);
     }

@@ -101,15 +101,29 @@ export default function SignupScreen() {
     } catch (error: unknown) {
       console.error('[Signup Screen] Error:', error);
       let message = "Failed to create account";
+      let title = "Signup Failed";
       
       if (error instanceof Error) {
         message = error.message;
+        
+        if (message.includes("Too many signup attempts") || message.includes("rate limit")) {
+          title = "Too Many Attempts";
+          message = "You've tried to sign up too many times. Please wait a few minutes and try again.";
+        } else if (message.includes("already exists") || message.includes("already registered")) {
+          title = "Account Exists";
+          message = "An account with this email already exists. Please sign in instead.";
+        } else if (message.includes("Invalid email")) {
+          title = "Invalid Email";
+          message = "Please enter a valid email address.";
+        } else if (message.includes("Password")) {
+          title = "Invalid Password";
+        }
       } else if (error && typeof error === 'object' && 'message' in error) {
         message = String(error.message);
       }
       
       Alert.alert(
-        "Signup Failed",
+        title,
         message,
         [
           {
