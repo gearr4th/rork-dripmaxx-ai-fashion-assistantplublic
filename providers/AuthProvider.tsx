@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/utils/config";
@@ -86,28 +86,56 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       throw new Error('Supabase not configured. Use the demo account or set SUPABASE_URL and SUPABASE_ANON_KEY in utils/config.ts');
     }
 
-    const resp = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch (fetchError) {
+      console.error('[Auth] signIn fetch error', fetchError);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('No internet connection. Please check your network and try again.');
+      }
+      throw new Error('Unable to connect to the server. Please check your internet connection.');
+    }
 
     if (!resp.ok) {
       const raw = await resp.text();
-      let friendly = `Supabase auth error: ${resp.status}`;
+      let friendly = 'Failed to sign in';
       try {
-        const parsed = JSON.parse(raw) as { code?: number; error_code?: string; msg?: string };
-        if (parsed?.error_code === 'invalid_credentials' || (parsed?.msg ?? '').toLowerCase().includes('invalid login credentials')) {
+        const parsed = JSON.parse(raw) as { code?: number; error_code?: string; msg?: string; message?: string; error_description?: string };
+        if (parsed?.error_code === 'invalid_credentials' || (parsed?.msg ?? '').toLowerCase().includes('invalid login credentials') || (parsed?.message ?? '').toLowerCase().includes('invalid login credentials')) {
           friendly = 'Invalid email or password. Please try again.';
+        } else if ((parsed?.msg ?? '').toLowerCase().includes('email not confirmed')) {
+          friendly = 'Please verify your email address before signing in. Check your inbox for the verification link.';
+        } else if (typeof parsed?.message === 'string' && parsed.message.length > 0) {
+          friendly = parsed.message;
         } else if (typeof parsed?.msg === 'string' && parsed.msg.length > 0) {
           friendly = parsed.msg;
+        } else if (typeof parsed?.error_description === 'string' && parsed.error_description.length > 0) {
+          friendly = parsed.error_description;
         }
       } catch {
-        if (raw) friendly = raw;
+        if (raw.includes('invalid login credentials')) {
+          friendly = 'Invalid email or password. Please try again.';
+        } else if (raw.includes('email not confirmed')) {
+          friendly = 'Please verify your email address before signing in. Check your inbox for the verification link.';
+        } else if (raw && raw.length < 200) {
+          friendly = raw;
+        }
       }
+      
+      if (resp.status >= 500) {
+        friendly = 'Server error. Please try again in a moment.';
+      } else if (resp.status === 429) {
+        friendly = 'Too many login attempts. Please try again later.';
+      }
+      
       console.error('[Auth] signIn REST error', resp.status, raw);
       throw new Error(friendly);
     }
@@ -143,24 +171,71 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       ? `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081'}/(auth)/auth-callback`
       : Linking.createURL('/(auth)/auth-callback');
 
-    const resp = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({ email, password, data: { name, age }, options: { emailRedirectTo: redirectTo } }),
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password, data: { name, age }, options: { emailRedirectTo: redirectTo } }),
+      });
+    } catch (fetchError) {
+      console.error('[Auth] signUp fetch error', fetchError);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('No internet connection. Please check your network and try again.');
+      }
+      throw new Error('Unable to connect to the server. Please check your internet connection.');
+    }
 
     const text = await resp.text();
     if (!resp.ok) {
       console.error('[Auth] signUp REST error', resp.status, text);
-      let errorMessage = text;
+      let errorMessage = 'Failed to create account';
       try {
-        const errorJson = JSON.parse(text) as { message?: string; msg?: string; error_description?: string };
-        errorMessage = errorJson.message || errorJson.msg || errorJson.error_description || text;
-      } catch {}
-      throw new Error(errorMessage || `Network error during signup. Check your connection and try again.`);
+        const errorJson = JSON.parse(text) as { message?: string; msg?: string; error_description?: string; error?: string; code?: string };
+        
+        if (errorJson.message?.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (errorJson.msg?.includes('already registered') || errorJson.error_description?.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (errorJson.message?.includes('email rate limit')) {
+          errorMessage = 'Too many signup attempts. Please try again later.';
+        } else if (errorJson.message?.includes('password')) {
+          errorMessage = 'Password must be at least 6 characters long.';
+        } else if (errorJson.message?.includes('invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (errorJson.message) {
+          errorMessage = errorJson.message;
+        } else if (errorJson.msg) {
+          errorMessage = errorJson.msg;
+        } else if (errorJson.error_description) {
+          errorMessage = errorJson.error_description;
+        } else if (errorJson.error) {
+          errorMessage = errorJson.error;
+        }
+      } catch {
+        if (text.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (text.includes('email rate limit')) {
+          errorMessage = 'Too many signup attempts. Please try again later.';
+        } else if (text.includes('password')) {
+          errorMessage = 'Password must be at least 6 characters long.';
+        } else if (text && text.length < 200) {
+          errorMessage = text;
+        }
+      }
+      
+      if (resp.status >= 500) {
+        errorMessage = 'Server error. Please try again in a moment.';
+      } else if (resp.status === 429) {
+        errorMessage = 'Too many attempts. Please try again later.';
+      } else if (!navigator.onLine && typeof navigator !== 'undefined') {
+        errorMessage = 'No internet connection. Please check your network.';
+      }
+      
+      throw new Error(errorMessage);
     }
 
     let json: { user?: { id?: string; email?: string; email_confirmed_at?: string | null } } = {};
