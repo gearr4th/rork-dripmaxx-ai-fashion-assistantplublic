@@ -42,25 +42,36 @@ export default function SignupScreen() {
   }, []);
 
   const handleSignup = async () => {
-    if (!name || !email || !password || !age) {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+    const trimmedAge = age.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword || !trimmedAge) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
-    const ageNum = parseInt(age, 10);
-    if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
-      Alert.alert("Error", "Please enter a valid age");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address (e.g., user@example.com)");
       return;
     }
 
-    if (password.length < 6) {
+    const ageNum = parseInt(trimmedAge, 10);
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+      Alert.alert("Error", "Please enter a valid age between 1 and 120");
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
       Alert.alert("Error", "Password must be at least 6 characters long");
       return;
     }
 
     setLoading(true);
     try {
-      const result = await signUp(email, password, name, ageNum);
+      const result = await signUp(trimmedEmail, trimmedPassword, trimmedName, ageNum);
       
       if (result && result.message) {
         if (result.message.includes("check your email") || result.message.includes("verify your account")) {

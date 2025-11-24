@@ -29,14 +29,23 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
       Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address (e.g., user@example.com)");
       return;
     }
 
     setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(trimmedEmail, trimmedPassword);
       navigateToApp();
     } catch (error: unknown) {
       let message = "Failed to sign in";
