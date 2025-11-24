@@ -93,13 +93,13 @@ This feedback was automatically sent from your Drip App.`;
       const payload = {
         access_key: WEB3FORMS_ACCESS_KEY,
         subject: emailSubject,
-        to: FEEDBACK_TO_EMAIL,
+        name: user.email,
         email: user.email,
         message: emailBody,
-        from_name: user.email,
       };
 
       console.log("[Feedback] Sending feedback with payload:", {
+        access_key_length: WEB3FORMS_ACCESS_KEY?.length,
         to: FEEDBACK_TO_EMAIL,
         from: user.email,
         subject: emailSubject,
@@ -109,32 +109,47 @@ This feedback was automatically sent from your Drip App.`;
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
         },
         body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
-
-      console.log("[Feedback] Web3Forms full response:", JSON.stringify(result, null, 2));
+      const responseText = await response.text();
+      console.log("[Feedback] Raw response:", responseText);
       console.log("[Feedback] Response status:", response.status);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        console.error("[Feedback] Failed to parse response as JSON");
+        throw new Error(`Invalid response from email service: ${responseText}`);
+      }
 
-      if (result?.success) {
-        console.log(`[Feedback] Email sent successfully to ${FEEDBACK_TO_EMAIL} from user ${user.email}`);
+      console.log("[Feedback] Web3Forms parsed response:", JSON.stringify(result, null, 2));
+
+      if (result?.success === true) {
+        console.log(`[Feedback] ✅ Email sent successfully to ${FEEDBACK_TO_EMAIL} from user ${user.email}`);
         return {
           success: true,
           message: "Feedback sent successfully",
         };
       } else {
-        console.error(`[Feedback] Web3Forms error:`, result);
+        console.error(`[Feedback] ❌ Web3Forms error:`, result);
         
-        let errorMessage = "Failed to send feedback";
+        let errorMessage = "Failed to send feedback. ";
         
         if (result?.message) {
-          errorMessage = result.message;
-          
-          if (result.message.includes("not allowed") || result.message.includes("method")) {
-            errorMessage = "Email service configuration issue. Please verify your Web3Forms access key at https://web3forms.com";
-          }
+          errorMessage += result.message;
+          console.error("[Feedback] Error message from Web3Forms:", result.message);
+        }
+        
+        if (response.status === 403) {
+          errorMessage = "Web3Forms access key is invalid or not activated. Please verify at https://web3forms.com";
+        }
+        
+        if (response.status === 422) {
+          errorMessage = "Web3Forms validation error: " + (result?.message || "Invalid request format");
         }
         
         throw new TRPCError({
