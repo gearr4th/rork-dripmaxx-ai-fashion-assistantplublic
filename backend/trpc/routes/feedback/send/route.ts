@@ -76,24 +76,35 @@ TECHNICAL INFO:
 ---
 This feedback was automatically sent from your Drip App.`;
 
-    console.log("[Feedback] WEB3FORMS_ACCESS_KEY:", WEB3FORMS_ACCESS_KEY ? `${WEB3FORMS_ACCESS_KEY.substring(0, 8)}...` : "NOT SET");
+    console.log("[Feedback] Checking WEB3FORMS_ACCESS_KEY...");
+    console.log("[Feedback] Key value:", WEB3FORMS_ACCESS_KEY);
+    console.log("[Feedback] Key length:", WEB3FORMS_ACCESS_KEY?.length);
+    console.log("[Feedback] Key type:", typeof WEB3FORMS_ACCESS_KEY);
 
-    if (!WEB3FORMS_ACCESS_KEY) {
-      console.error("WEB3FORMS_ACCESS_KEY is not set in environment variables");
+    const accessKey = String(WEB3FORMS_ACCESS_KEY);
+    
+    if (!accessKey || accessKey === '' || accessKey === 'undefined') {
+      console.error("[Feedback] ❌ WEB3FORMS_ACCESS_KEY is not properly configured:", { 
+        value: WEB3FORMS_ACCESS_KEY,
+        type: typeof WEB3FORMS_ACCESS_KEY 
+      });
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
         message: "Email service not configured. Please contact support.",
       });
     }
 
+    console.log("[Feedback] ✅ WEB3FORMS_ACCESS_KEY is configured:", `${WEB3FORMS_ACCESS_KEY.substring(0, 8)}...`);
+
     try {
       const payload = {
-        access_key: WEB3FORMS_ACCESS_KEY,
+        access_key: String(WEB3FORMS_ACCESS_KEY),
         subject: emailSubject,
-        name: user.email,
-        email: user.email,
+        name: user.email || 'Anonymous User',
+        email: user.email || 'noreply@dripapp.com',
         message: emailBody,
         from_name: "Drip App Feedback",
+        replyto: user.email || undefined,
       };
 
       console.log("[Feedback] Sending feedback with payload:", {
