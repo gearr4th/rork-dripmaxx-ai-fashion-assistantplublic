@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -20,26 +20,24 @@ import {
   Crown,
   ChevronRight,
   Wallet,
+  MessageSquare,
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
 import { useBudget } from "@/providers/BudgetProvider";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
+import FeedbackModal from "@/components/FeedbackModal";
+import { useSubscription } from "@/providers/SubscriptionProvider";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { budget } = useBudget();
-  const { savedOutfits, removeOutfit } = useSavedOutfits();
+  const { savedOutfits } = useSavedOutfits();
+  const { tier, subscription, getRemainingGenerations } = useSubscription();
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
 
   const handleUpgrade = () => {
-    Alert.alert(
-      "Upgrade to Premium",
-      "Get unlimited outfit generations, exclusive trends, and priority support for $9.99/month",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Subscribe", onPress: () => console.log("Subscribe to premium") },
-      ]
-    );
+    router.push('/subscription' as any);
   };
 
   const handleSignOut = () => {
@@ -129,15 +127,26 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View style={styles.infoItem}>
+            <TouchableOpacity style={styles.infoItem} onPress={() => router.push('/subscription' as any)}>
               <View style={styles.infoIcon}>
                 <CreditCard color="#666" size={20} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Subscription</Text>
-                <Text style={styles.infoValue}>Free Plan</Text>
+                <Text style={styles.infoValue}>
+                  {tier === 'free' && 'Free Plan'}
+                  {tier === 'premium' && 'Premium'}
+                  {tier === 'pro' && 'Pro'}
+                  {tier !== 'free' && subscription?.cancelAtPeriodEnd && ' (Canceling)'}
+                </Text>
+                {tier === 'free' && (
+                  <Text style={styles.infoSubtext}>
+                    {getRemainingGenerations()} generations remaining
+                  </Text>
+                )}
               </View>
-            </View>
+              <ChevronRight color="#666" size={20} />
+            </TouchableOpacity>
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
@@ -197,6 +206,12 @@ export default function ProfileScreen() {
               <ChevronRight color="#666" size={20} />
             </TouchableOpacity>
 
+            <TouchableOpacity style={styles.menuItem} onPress={() => setFeedbackModalVisible(true)}>
+              <MessageSquare color="#888" size={20} />
+              <Text style={styles.menuText}>Give Feedback</Text>
+              <ChevronRight color="#666" size={20} />
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
               <LogOut color="#FF4444" size={20} />
               <Text style={[styles.menuText, { color: "#FF4444" }]}>
@@ -211,6 +226,10 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <FeedbackModal
+        visible={feedbackModalVisible}
+        onClose={() => setFeedbackModalVisible(false)}
+      />
     </LinearGradient>
   );
 }
@@ -313,6 +332,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#E0E0E0",
     fontWeight: "500",
+  },
+  infoSubtext: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 4,
   },
   menuItem: {
     flexDirection: "row",

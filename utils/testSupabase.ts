@@ -25,7 +25,7 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
   }
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   
   try {
     const url = `${SUPABASE_URL}/auth/v1/health`;
@@ -37,6 +37,7 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
       method: 'GET',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       signal: controller.signal,
     });
@@ -70,7 +71,7 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
     console.error('Error message:', errorMsg);
     
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error('Connection timed out after 8 seconds');
+      console.error('Connection timed out after 10 seconds');
     }
     
     if (typeof navigator !== 'undefined') {

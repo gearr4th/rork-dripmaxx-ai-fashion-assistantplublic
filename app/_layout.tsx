@@ -12,6 +12,7 @@ import { BudgetProvider } from "@/providers/BudgetProvider";
 import { SavedOutfitsProvider } from "@/providers/SavedOutfitsProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { CloudSyncProvider } from "@/providers/CloudSyncProvider";
+import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
 
 SplashScreen.preventAutoHideAsync();
@@ -25,6 +26,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="select-age" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="select-budget" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="subscription" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen 
         name="scan-clothes" 
         options={{ 
@@ -53,12 +55,13 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.flex1}>
           <AuthProvider>
-            <CloudSyncProvider>
-              <WeatherProvider>
-                <ClothesProvider>
-                  <SessionProvider>
-                    <BudgetProvider>
-                      <SavedOutfitsProvider>
+            <SubscriptionProvider>
+              <CloudSyncProvider>
+                <WeatherProvider>
+                  <ClothesProvider>
+                    <SessionProvider>
+                      <BudgetProvider>
+                        <SavedOutfitsProvider>
                         <ErrorBoundary>
                           <View style={styles.container} testID="app-root">
                             <RootLayoutNav />
@@ -67,12 +70,13 @@ export default function RootLayout() {
                             </View>
                           </View>
                         </ErrorBoundary>
-                      </SavedOutfitsProvider>
-                    </BudgetProvider>
-                  </SessionProvider>
-                </ClothesProvider>
-              </WeatherProvider>
-            </CloudSyncProvider>
+                        </SavedOutfitsProvider>
+                      </BudgetProvider>
+                    </SessionProvider>
+                  </ClothesProvider>
+                </WeatherProvider>
+              </CloudSyncProvider>
+            </SubscriptionProvider>
           </AuthProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

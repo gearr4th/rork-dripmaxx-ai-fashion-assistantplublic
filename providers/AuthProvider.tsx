@@ -90,15 +90,17 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     console.log('[Auth] Attempting sign in to:', url);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     let resp: Response;
     try {
+      console.log('[Auth] Sending request with body:', { email, password: '***' });
       resp = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({ email, password }),
         signal: controller.signal,
@@ -109,36 +111,19 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       clearTimeout(timeoutId);
       console.error('[Auth] signIn fetch error:', fetchError);
       console.error('[Auth] Error type:', fetchError?.constructor?.name);
-      console.error('[Auth] Error details:', JSON.stringify(fetchError, null, 2));
       
       const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
       console.error('[Auth] Error message:', errorMsg);
       
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Connection timed out. Please check your internet connection and try again.');
+        throw new Error('Connection timed out (15s). Your network may be slow or the server is unreachable.');
       }
       
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('No internet connection detected. Please check your network and try again.');
       }
       
-      if (errorMsg.toLowerCase().includes('network request failed') || errorMsg.toLowerCase().includes('network error')) {
-        throw new Error('Cannot connect to authentication server. This could be due to:\n\n• Network connectivity issues\n• Firewall blocking the connection\n• Server temporarily unavailable\n\nPlease try the demo account instead: demo@dripmaxx.ai / password');
-      }
-      
-      if (errorMsg.toLowerCase().includes('failed to fetch')) {
-        throw new Error('Failed to connect to server. Please check your internet connection or try the demo account: demo@dripmaxx.ai / password');
-      }
-      
-      if (errorMsg.toLowerCase().includes('timeout')) {
-        throw new Error('Connection timed out. Please check your internet connection and try again.');
-      }
-      
-      if (errorMsg.toLowerCase().includes('cors')) {
-        throw new Error('Server access denied (CORS). Please use demo account: demo@dripmaxx.ai / password');
-      }
-      
-      throw new Error(`Authentication failed: ${errorMsg}\n\nTry demo account: demo@dripmaxx.ai / password`);
+      throw new Error('Unable to connect to authentication server. Please check:\n\n1. Your internet connection\n2. Try the demo account: demo@dripmaxx.ai / password\n3. Contact support if issue persists');
     }
 
     if (!resp.ok) {
@@ -213,15 +198,17 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     console.log('[Auth] Attempting signup to:', url);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     let resp: Response;
     try {
+      console.log('[Auth] Sending signup request with body:', { email, name, age });
       resp = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({ email, password, data: { name, age }, options: { emailRedirectTo: redirectTo } }),
         signal: controller.signal,
@@ -232,36 +219,19 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       clearTimeout(timeoutId);
       console.error('[Auth] signUp fetch error:', fetchError);
       console.error('[Auth] Error type:', fetchError?.constructor?.name);
-      console.error('[Auth] Error details:', JSON.stringify(fetchError, null, 2));
       
       const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
       console.error('[Auth] Error message:', errorMsg);
       
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Connection timed out. Please check your internet connection and try again.');
+        throw new Error('Connection timed out (15s). Your network may be slow or the server is unreachable.');
       }
       
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('No internet connection detected. Please check your network and try again.');
       }
       
-      if (errorMsg.toLowerCase().includes('network request failed') || errorMsg.toLowerCase().includes('network error')) {
-        throw new Error('Cannot connect to authentication server. This could be due to:\n\n• Network connectivity issues\n• Firewall blocking the connection\n• Server temporarily unavailable\n\nPlease check your internet connection and try again.');
-      }
-      
-      if (errorMsg.toLowerCase().includes('failed to fetch')) {
-        throw new Error('Failed to connect to server. Please check your internet connection and try again.');
-      }
-      
-      if (errorMsg.toLowerCase().includes('timeout')) {
-        throw new Error('Connection timed out. Please check your internet connection and try again.');
-      }
-      
-      if (errorMsg.toLowerCase().includes('cors')) {
-        throw new Error('Server access denied (CORS). Please contact support.');
-      }
-      
-      throw new Error(`Signup failed: ${errorMsg}`);
+      throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
     }
 
     const text = await resp.text();
