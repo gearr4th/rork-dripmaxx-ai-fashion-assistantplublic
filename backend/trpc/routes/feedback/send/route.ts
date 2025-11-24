@@ -80,6 +80,7 @@ This feedback was automatically sent from your Drip App.`;
     console.log("[Feedback] Key value:", WEB3FORMS_ACCESS_KEY);
     console.log("[Feedback] Key length:", WEB3FORMS_ACCESS_KEY?.length);
     console.log("[Feedback] Key type:", typeof WEB3FORMS_ACCESS_KEY);
+    console.log("[Feedback] Full key (for debugging):", WEB3FORMS_ACCESS_KEY);
 
     const accessKey = String(WEB3FORMS_ACCESS_KEY);
     
