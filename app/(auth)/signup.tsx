@@ -62,25 +62,62 @@ export default function SignupScreen() {
     try {
       const result = await signUp(email, password, name, ageNum);
       
-      if (result && result.message && result.message.includes("check your email")) {
-        Alert.alert(
-          "Account Created!",
-          result.message,
-          [
-            {
-              text: "OK",
-              onPress: () => router.replace("/login" as any)
-            }
-          ]
-        );
+      if (result && result.message) {
+        if (result.message.includes("check your email") || result.message.includes("verify your account")) {
+          Alert.alert(
+            "Account Created!",
+            result.message,
+            [
+              {
+                text: "OK",
+                onPress: () => router.replace("/login" as any)
+              }
+            ]
+          );
+        } else if (result.message.includes("temporarily unavailable")) {
+          Alert.alert(
+            "Account Created!",
+            result.message,
+            [
+              {
+                text: "Continue",
+                onPress: () => {
+                  router.replace("/select-age" as any);
+                  setTimeout(() => router.push("/select-budget" as any), 50);
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert("Success", result.message || "Account created successfully!");
+          router.replace("/select-age" as any);
+          setTimeout(() => router.push("/select-budget" as any), 50);
+        }
       } else {
         Alert.alert("Success", "Account created successfully!");
         router.replace("/select-age" as any);
         setTimeout(() => router.push("/select-budget" as any), 50);
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to create account";
-      Alert.alert("Error", message);
+      console.error('[Signup Screen] Error:', error);
+      let message = "Failed to create account";
+      
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        message = String(error.message);
+      }
+      
+      Alert.alert(
+        "Signup Failed",
+        message,
+        [
+          {
+            text: "OK",
+            style: "cancel"
+          }
+        ]
+      );
     } finally {
       setLoading(false);
     }

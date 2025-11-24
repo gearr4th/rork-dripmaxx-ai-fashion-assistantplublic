@@ -16,7 +16,7 @@ export default publicProcedure
     console.log("[Backend Auth] Signup request for:", input.email);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const signUpOptions = {
         email: input.email,
         password: input.password,
         options: {
@@ -24,79 +24,144 @@ export default publicProcedure
             name: input.name,
             age: input.age,
           },
-          emailRedirectTo: undefined,
         },
+      };
+
+      console.log("[Backend Auth] Attempting signup with options:", {
+        email: input.email,
+        hasPassword: Boolean(input.password),
+        metadata: signUpOptions.options.data,
       });
 
-      if (error) {
-        console.error("[Backend Auth] Signup failed:", error);
+      const response = await supabase.auth.signUp(signUpOptions);
+
+      console.log("[Backend Auth] Supabase response:", {
+        hasData: Boolean(response.data),
+        hasUser: Boolean(response.data?.user),
+        hasSession: Boolean(response.data?.session),
+        hasError: Boolean(response.error),
+        errorMessage: response.error?.message,
+        errorStatus: response.error?.status,
+      });
+
+      if (response.error) {
+        console.error("[Backend Auth] Signup error from Supabase:", response.error);
+        const errorMsg = response.error.message.toLowerCase();
         
-        if (error.message.toLowerCase().includes("already registered") || 
-            error.message.toLowerCase().includes("already exists")) {
+        if (errorMsg.includes("already registered") || 
+            errorMsg.includes("already exists") ||
+            errorMsg.includes("user already registered")) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "An account with this email already exists. Please sign in instead.",
           });
         }
         
-        if (error.message.toLowerCase().includes("email rate limit")) {
+        if (errorMsg.includes("email rate limit") ||
+            errorMsg.includes("rate limit")) {
           throw new TRPCError({
             code: "TOO_MANY_REQUESTS",
             message: "Too many signup attempts. Please try again in a few minutes.",
           });
         }
         
-        if (error.message.toLowerCase().includes("password")) {
+        if (errorMsg.includes("password")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Password must be at least 6 characters long.",
           });
         }
         
-        if (error.message.toLowerCase().includes("invalid email")) {
+        if (errorMsg.includes("invalid email")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Please enter a valid email address.",
           });
         }
         
+        if (errorMsg.includes("confirmation email") ||
+            errorMsg.includes("email service") ||
+            errorMsg.includes("error sending") ||
+            errorMsg.includes("sending") ||
+            errorMsg.includes("smtp")) {
+          
+          const userData = response.data as any;
+          if (userData && userData.user) {
+            console.log("[Backend Auth] User was created despite email error. Returning user data.");
+            const user = userData.user;
+            const session = userData.session;
+            return {
+              success: true,
+              user: {
+                id: user.id,
+                email: user.email || input.email,
+                name: input.name,
+                age: input.age,
+                emailVerified: Boolean(user.email_confirmed_at),
+              },
+              accessToken: session?.access_token || null,
+              refreshToken: session?.refresh_token || null,
+              message: "✅ Account created! Email verification is temporarily unavailable. You can log in now.",
+            };
+          }
+          
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Email service is temporarily unavailable. Please try again later or contact support.",
+          });
+        }
+        
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: error.message || "Failed to create account. Please try again.",
+          message: response.error.message || "Failed to create account. Please try again.",
         });
       }
 
-      if (!data.user) {
+      if (!response.data || !response.data.user) {
+        console.error("[Backend Auth] No user data returned from Supabase");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Account creation failed. Please try again.",
         });
       }
 
+      const user = response.data.user;
+      const session = response.data.session;
+
       console.log("[Backend Auth] Signup successful for:", input.email);
-      console.log("[Backend Auth] Email confirmed:", Boolean(data.user.email_confirmed_at));
+      console.log("[Backend Auth] User ID:", user.id);
+      console.log("[Backend Auth] Email confirmed:", Boolean(user.email_confirmed_at));
+      console.log("[Backend Auth] Has session:", Boolean(session));
+
+      const hasSession = Boolean(session);
+      const isEmailConfirmed = Boolean(user.email_confirmed_at);
+
+      let message = "Account created successfully!";
+      if (!isEmailConfirmed && hasSession) {
+        message = "✅ Account created! You can start using the app now.";
+      } else if (!isEmailConfirmed && !hasSession) {
+        message = "✅ Account created! Please check your email to verify your account before signing in.";
+      }
 
       return {
         success: true,
         user: {
-          id: data.user.id,
-          email: data.user.email || input.email,
+          id: user.id,
+          email: user.email || input.email,
           name: input.name,
           age: input.age,
-          emailVerified: Boolean(data.user.email_confirmed_at),
+          emailVerified: isEmailConfirmed,
         },
-        accessToken: data.session?.access_token || null,
-        refreshToken: data.session?.refresh_token || null,
-        message: data.user.email_confirmed_at 
-          ? "Account created successfully!" 
-          : "✅ Account created! Please check your email to verify your account before signing in.",
+        accessToken: session?.access_token || null,
+        refreshToken: session?.refresh_token || null,
+        message,
       };
     } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
       }
 
-      console.error("[Backend Auth] Signup error:", error);
+      console.error("[Backend Auth] Unexpected signup error:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Unable to create account. Please check your connection and try again.",
