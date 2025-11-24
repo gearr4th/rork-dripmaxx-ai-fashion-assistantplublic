@@ -118,7 +118,10 @@ This feedback was automatically sent from your Drip App.`;
       }
     } catch (error) {
       console.error("[Feedback] Error sending email:", error);
-      throw new Error("Failed to send feedback. Please try again later.");
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to send feedback. Please try again later.",
+      });
     }
   });
 
