@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { TRPCError } from "@trpc/server";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/utils/config";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, WEB3FORMS_ACCESS_KEY } from "@/utils/config";
 
 const feedbackSchema = z.object({
   accessToken: z.string(),
@@ -75,8 +75,6 @@ TECHNICAL INFO:
 
 ---
 This feedback was automatically sent from your Drip App.`;
-
-    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || process.env.EXPO_PUBLIC_WEB3FORMS_ACCESS_KEY;
 
     console.log("[Feedback] WEB3FORMS_ACCESS_KEY:", WEB3FORMS_ACCESS_KEY ? `${WEB3FORMS_ACCESS_KEY.substring(0, 8)}...` : "NOT SET");
 
