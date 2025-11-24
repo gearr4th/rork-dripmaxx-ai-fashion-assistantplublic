@@ -76,7 +76,7 @@ TECHNICAL INFO:
 ---
 This feedback was automatically sent from your Drip App.`;
 
-    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || "ae516279-0274-429a-b537-042ed774a7ca";
+    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || "09abc3b3-dd8c-44c5-bd78-117cfcb2eb7e";
     const FEEDBACK_TO_EMAIL = "gearr4th@gmail.com";
 
     console.log("[Feedback] WEB3FORMS_ACCESS_KEY available:", !!WEB3FORMS_ACCESS_KEY);
