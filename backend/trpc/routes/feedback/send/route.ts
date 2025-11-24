@@ -76,14 +76,17 @@ TECHNICAL INFO:
 ---
 This feedback was automatically sent from your Drip App.`;
 
-    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY;
+    const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || "ae516279-0274-429a-b537-042ed774a7ca";
     const FEEDBACK_TO_EMAIL = "gearr4th@gmail.com";
+
+    console.log("[Feedback] WEB3FORMS_ACCESS_KEY available:", !!WEB3FORMS_ACCESS_KEY);
 
     if (!WEB3FORMS_ACCESS_KEY) {
       console.error("WEB3FORMS_ACCESS_KEY is not set in environment variables");
-      throw new Error(
-        "Email service not configured. Please contact support."
-      );
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Email service not configured. Please contact support.",
+      });
     }
 
     try {
