@@ -23,10 +23,22 @@ export default function SignupScreen() {
   const [password, setPassword] = useState<string>("");
   const [age, setAge] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] = useState<string>("");
   const { signUp } = useAuth();
 
   useEffect(() => {
-    testSupabaseConnection().catch(console.error);
+    const checkConnection = async () => {
+      setConnectionStatus("Checking connection...");
+      const result = await testSupabaseConnection();
+      if (result.success) {
+        setConnectionStatus("");
+      } else if (result.error === 'Supabase not configured') {
+        setConnectionStatus("Demo mode: Use demo@dripmaxx.ai / password");
+      } else {
+        setConnectionStatus("Connection issue detected. Use demo account.");
+      }
+    };
+    checkConnection().catch(console.error);
   }, []);
 
   const handleSignup = async () => {
@@ -79,6 +91,11 @@ export default function SignupScreen() {
               </View>
               <Text style={styles.title}>Join DripMaxx AI</Text>
               <Text style={styles.subtitle}>Create your fashion profile</Text>
+              {connectionStatus ? (
+                <View style={styles.connectionStatus}>
+                  <Text style={styles.connectionStatusText}>{connectionStatus}</Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.form}>
@@ -258,5 +275,19 @@ const styles = StyleSheet.create({
     color: "#FFD700",
     fontSize: 14,
     fontWeight: "600",
+  },
+  connectionStatus: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255, 165, 0, 0.15)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 165, 0, 0.3)",
+  },
+  connectionStatusText: {
+    color: "#FFA500",
+    fontSize: 12,
+    textAlign: "center",
   },
 });

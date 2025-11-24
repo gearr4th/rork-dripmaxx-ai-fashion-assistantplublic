@@ -83,11 +83,14 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
 
     if (!supabaseConfigured) {
-      throw new Error('Supabase not configured. Use demo@dripmaxx.ai / password or configure Supabase.');
+      throw new Error('Authentication service not configured. Please use demo account: demo@dripmaxx.ai / password');
     }
 
     const url = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
     console.log('[Auth] Attempting sign in to:', url);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     let resp: Response;
     try {
@@ -98,31 +101,44 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
           'apikey': SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       console.log('[Auth] signIn response status:', resp.status);
     } catch (fetchError) {
+      clearTimeout(timeoutId);
       console.error('[Auth] signIn fetch error:', fetchError);
+      console.error('[Auth] Error type:', fetchError?.constructor?.name);
+      console.error('[Auth] Error details:', JSON.stringify(fetchError, null, 2));
       
       const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
       console.error('[Auth] Error message:', errorMsg);
       
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        throw new Error('No internet connection. Please check your network.');
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Connection timed out. Please check your internet connection and try again.');
       }
       
-      if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('failed to fetch')) {
-        throw new Error('Cannot connect to authentication server. Check your internet connection or use demo account (demo@dripmaxx.ai / password).');
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('No internet connection detected. Please check your network and try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('network request failed') || errorMsg.toLowerCase().includes('network error')) {
+        throw new Error('Cannot connect to authentication server. This could be due to:\n\n• Network connectivity issues\n• Firewall blocking the connection\n• Server temporarily unavailable\n\nPlease try the demo account instead: demo@dripmaxx.ai / password');
+      }
+      
+      if (errorMsg.toLowerCase().includes('failed to fetch')) {
+        throw new Error('Failed to connect to server. Please check your internet connection or try the demo account: demo@dripmaxx.ai / password');
       }
       
       if (errorMsg.toLowerCase().includes('timeout')) {
-        throw new Error('Connection timed out. Please try again or use demo account.');
+        throw new Error('Connection timed out. Please check your internet connection and try again.');
       }
       
       if (errorMsg.toLowerCase().includes('cors')) {
-        throw new Error('Server access denied. Please use demo account (demo@dripmaxx.ai / password).');
+        throw new Error('Server access denied (CORS). Please use demo account: demo@dripmaxx.ai / password');
       }
       
-      throw new Error(`Sign in failed: ${errorMsg}. Try demo account (demo@dripmaxx.ai / password).`);
+      throw new Error(`Authentication failed: ${errorMsg}\n\nTry demo account: demo@dripmaxx.ai / password`);
     }
 
     if (!resp.ok) {
@@ -196,6 +212,9 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     const url = `${SUPABASE_URL}/auth/v1/signup`;
     console.log('[Auth] Attempting signup to:', url);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     let resp: Response;
     try {
       resp = await fetch(url, {
@@ -205,28 +224,41 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
           'apikey': SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({ email, password, data: { name, age }, options: { emailRedirectTo: redirectTo } }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       console.log('[Auth] signUp response status:', resp.status);
     } catch (fetchError) {
+      clearTimeout(timeoutId);
       console.error('[Auth] signUp fetch error:', fetchError);
+      console.error('[Auth] Error type:', fetchError?.constructor?.name);
+      console.error('[Auth] Error details:', JSON.stringify(fetchError, null, 2));
       
       const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
       console.error('[Auth] Error message:', errorMsg);
       
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        throw new Error('No internet connection. Please check your network.');
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Connection timed out. Please check your internet connection and try again.');
       }
       
-      if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('failed to fetch')) {
-        throw new Error('Cannot connect to authentication server. Check your internet connection.');
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('No internet connection detected. Please check your network and try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('network request failed') || errorMsg.toLowerCase().includes('network error')) {
+        throw new Error('Cannot connect to authentication server. This could be due to:\n\n• Network connectivity issues\n• Firewall blocking the connection\n• Server temporarily unavailable\n\nPlease check your internet connection and try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('failed to fetch')) {
+        throw new Error('Failed to connect to server. Please check your internet connection and try again.');
       }
       
       if (errorMsg.toLowerCase().includes('timeout')) {
-        throw new Error('Connection timed out. Please try again.');
+        throw new Error('Connection timed out. Please check your internet connection and try again.');
       }
       
       if (errorMsg.toLowerCase().includes('cors')) {
-        throw new Error('Server access denied. Please contact support.');
+        throw new Error('Server access denied (CORS). Please contact support.');
       }
       
       throw new Error(`Signup failed: ${errorMsg}`);
