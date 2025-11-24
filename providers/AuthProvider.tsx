@@ -98,10 +98,26 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       });
     } catch (fetchError) {
       console.error('[Auth] signIn fetch error', fetchError);
+      
+      const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('No internet connection. Please check your network and try again.');
       }
-      throw new Error('Unable to connect to the server. Please check your internet connection.');
+      
+      if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('failed to fetch')) {
+        throw new Error('Cannot connect to server. Please check your internet connection and try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('timeout')) {
+        throw new Error('Connection timeout. Please try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('cors')) {
+        throw new Error('Server configuration error. Please contact support.');
+      }
+      
+      throw new Error('Unable to complete sign in. Please check your connection and try again.');
     }
 
     if (!resp.ok) {
@@ -183,10 +199,26 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       });
     } catch (fetchError) {
       console.error('[Auth] signUp fetch error', fetchError);
+      
+      const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('No internet connection. Please check your network and try again.');
       }
-      throw new Error('Unable to connect to the server. Please check your internet connection.');
+      
+      if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('failed to fetch')) {
+        throw new Error('Cannot connect to server. Please check your internet connection and try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('timeout')) {
+        throw new Error('Connection timeout. Please try again.');
+      }
+      
+      if (errorMsg.toLowerCase().includes('cors')) {
+        throw new Error('Server configuration error. Please contact support.');
+      }
+      
+      throw new Error('Unable to complete signup. Please check your connection and try again.');
     }
 
     const text = await resp.text();
