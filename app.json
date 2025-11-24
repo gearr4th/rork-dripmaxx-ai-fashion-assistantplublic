@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DripMaxx AI Fashion Assistant",
-    "slug": "dripmaxx-ai-fashion-assistant",
+    "name": "DripMaxx AI",
+    "slug": "dripmaxx-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
