@@ -14,8 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { X, Star, Send } from 'lucide-react-native';
 import { FeedbackData } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FEEDBACK_TO_EMAIL, WEB3FORMS_ACCESS_KEY } from '@/utils/config';
-import { useAuth } from '@/providers/AuthProvider';
+import { trpcClient } from '@/lib/trpc';
 
 interface FeedbackModalProps {
   visible: boolean;
@@ -66,20 +65,14 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
     setAdditionalComments('');
   };
 
-  const { user } = useAuth();
+
 
   const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
-    const backupAndSucceed = async () => {
-      const webhookData = {
-        text: `🔥 NEW DRIP APP FEEDBACK\n\n⭐ Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\n📊 Ratings:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\n💬 Comments: ${feedbackData.additionalComments || 'None'}\n\n🔧 Platform: ${feedbackData.deviceInfo}\n📅 Time: ${feedbackData.timestamp.toLocaleString()}`
-      };
-
-      console.log('📧 FEEDBACK TO SEND TO', FEEDBACK_TO_EMAIL, webhookData.text);
-
+    const backupLocally = async () => {
       const emailBackup = {
-        to: FEEDBACK_TO_EMAIL,
+        to: 'gearr4th@gmail.com',
         subject: `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
-        body: webhookData.text,
+        body: `Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\nRatings:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\nComments: ${feedbackData.additionalComments || 'None'}`,
         timestamp: new Date().toISOString()
       };
 
@@ -88,48 +81,37 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
       emailArray.push(emailBackup);
       await AsyncStorage.setItem('pending_emails', JSON.stringify(emailArray));
 
-      console.log('📧 Email backed up locally - will be sent when email service is configured');
-      return true;
+      console.log('[Feedback] Backed up locally - will retry when connection improves');
+      return false;
     };
 
     try {
-      const emailSubject = `Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`;
-      const averageRating = ((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1);
+      const accessToken = await AsyncStorage.getItem('accessToken');
       
-      const emailBody = `NEW FEEDBACK RECEIVED\n\nOVERALL RATING: ${averageRating}/5 stars\n\nDETAILED RATINGS:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Rating Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendation Usefulness: ${feedbackData.usefulnessOfRecommendations}/5\n\nUSER COMMENTS:\n${feedbackData.additionalComments || 'No additional comments provided'}\n\nTECHNICAL INFO:\n• Feedback ID: ${feedbackData.id}\n• Timestamp: ${feedbackData.timestamp.toLocaleString()}\n• App Version: ${feedbackData.appVersion}\n• Platform: ${feedbackData.deviceInfo}\n\n---\nThis feedback was automatically sent from your Drip App.`;
-
-      if (!WEB3FORMS_ACCESS_KEY) {
-        console.warn('WEB3FORMS_ACCESS_KEY is missing. Using local backup.');
-        return await backupAndSucceed();
+      if (!accessToken) {
+        console.warn('[Feedback] No access token, backing up locally');
+        return await backupLocally();
       }
 
-      const formData = new FormData();
-      formData.append('access_key', WEB3FORMS_ACCESS_KEY);
-      formData.append('subject', emailSubject);
-      formData.append('to', FEEDBACK_TO_EMAIL);
-      formData.append('email', user?.email ?? 'no-reply@dripapp.local');
-      formData.append('message', emailBody);
-      formData.append('from_name', user?.email ?? 'Drip App User');
-      formData.append('redirect', 'false');
-
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        body: formData
+      const result = await trpcClient.feedback.send.mutate({
+        accessToken,
+        easeOfUse: feedbackData.easeOfUse,
+        accuracyOfDripRating: feedbackData.accuracyOfDripRating,
+        usefulnessOfRecommendations: feedbackData.usefulnessOfRecommendations,
+        additionalComments: feedbackData.additionalComments || undefined,
+        appVersion: feedbackData.appVersion || '1.0.0',
+        deviceInfo: feedbackData.deviceInfo || Platform.OS,
       });
 
-      const result = await response.json();
-      
-      if (result?.success) {
-        console.log('Feedback email sent successfully to', FEEDBACK_TO_EMAIL);
-        console.log('Email appears in inbox as forwarded by Web3Forms, reply goes to:', user?.email ?? 'no-reply@dripapp.local');
+      if (result.success) {
+        console.log('[Feedback] Email sent successfully to gearr4th@gmail.com');
         return true;
-      } else {
-        console.warn(`Web3Forms error: ${result?.message ?? 'Unknown error'}`);
-        return await backupAndSucceed();
       }
+      
+      return await backupLocally();
     } catch (error) {
-      console.warn('Failed to send feedback email. Falling back to local backup.', error);
-      return await backupAndSucceed();
+      console.error('[Feedback] Error sending feedback:', error);
+      return await backupLocally();
     }
   };
 
@@ -166,8 +148,8 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
       Alert.alert(
         'Thank You! 🙏',
         emailSent 
-          ? 'Your feedback has been sent successfully! It helps us improve the app.' 
-          : 'Your feedback has been saved locally. We\'ll sync it when connection improves.',
+          ? 'Your feedback has been sent! We appreciate your input.' 
+          : 'Your feedback has been saved. We\'ll send it when connection improves.',
         [{ text: 'OK', onPress: () => {
           resetForm();
           onClose();

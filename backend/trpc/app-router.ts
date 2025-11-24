@@ -3,6 +3,7 @@ import hiRoute from "./routes/example/hi/route";
 import signupRoute from "./routes/auth/signup/route";
 import loginRoute from "./routes/auth/login/route";
 import getUserRoute from "./routes/auth/getUser/route";
+import sendFeedbackRoute from "./routes/feedback/send/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -12,6 +13,9 @@ export const appRouter = createTRPCRouter({
     signup: signupRoute,
     login: loginRoute,
     getUser: getUserRoute,
+  }),
+  feedback: createTRPCRouter({
+    send: sendFeedbackRoute,
   }),
 });
 
