@@ -115,7 +115,8 @@ This feedback was automatically sent from your Drip App.`;
 
       const result = await response.json();
 
-      console.log("[Feedback] Web3Forms response:", result);
+      console.log("[Feedback] Web3Forms full response:", JSON.stringify(result, null, 2));
+      console.log("[Feedback] Response status:", response.status);
 
       if (result?.success) {
         console.log(`[Feedback] Email sent successfully to ${FEEDBACK_TO_EMAIL} from user ${user.email}`);
@@ -125,9 +126,20 @@ This feedback was automatically sent from your Drip App.`;
         };
       } else {
         console.error(`[Feedback] Web3Forms error:`, result);
+        
+        let errorMessage = "Failed to send feedback";
+        
+        if (result?.message) {
+          errorMessage = result.message;
+          
+          if (result.message.includes("not allowed") || result.message.includes("method")) {
+            errorMessage = "Email service configuration issue. Please verify your Web3Forms access key at https://web3forms.com";
+          }
+        }
+        
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: result?.message || "Failed to send feedback",
+          message: errorMessage,
         });
       }
     } catch (error) {
