@@ -107,8 +107,8 @@ export default function SignupScreen() {
         message = error.message;
         
         if (message.includes("Too many signup attempts") || message.includes("rate limit")) {
-          title = "Rate Limit Reached";
-          message = "Too many signup attempts detected. Please wait 15-30 minutes before trying again.\n\nIn the meantime, you can:\n• Check if your account was already created and try logging in\n• Use the demo account: demo@dripmaxx.ai";
+          title = "⏰ Rate Limit Reached";
+          message = "Supabase email rate limit exceeded. This happens when creating multiple accounts in a short time.\n\n✅ Solutions:\n1️⃣ Wait 15-30 minutes and try again\n2️⃣ Check if your account exists - try logging in\n3️⃣ Contact support to disable email verification\n4️⃣ Use demo: demo@dripmaxx.ai / password";
         } else if (message.includes("already exists") || message.includes("already registered")) {
           title = "Account Exists";
           message = "An account with this email already exists. Please sign in instead.";
