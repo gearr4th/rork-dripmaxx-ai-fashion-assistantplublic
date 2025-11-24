@@ -107,8 +107,8 @@ export default function SignupScreen() {
         message = error.message;
         
         if (message.includes("Too many signup attempts") || message.includes("rate limit")) {
-          title = "Too Many Attempts";
-          message = "You've tried to sign up too many times. Please wait a few minutes and try again.";
+          title = "Rate Limit Reached";
+          message = "Too many signup attempts detected. Please wait 15-30 minutes before trying again.\n\nIn the meantime, you can:\n• Check if your account was already created and try logging in\n• Use the demo account: demo@dripmaxx.ai";
         } else if (message.includes("already exists") || message.includes("already registered")) {
           title = "Account Exists";
           message = "An account with this email already exists. Please sign in instead.";
