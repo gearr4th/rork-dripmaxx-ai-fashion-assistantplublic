@@ -90,21 +90,32 @@ This feedback was automatically sent from your Drip App.`;
     }
 
     try {
-      const formData = new FormData();
-      formData.append("access_key", WEB3FORMS_ACCESS_KEY);
-      formData.append("subject", emailSubject);
-      formData.append("to", FEEDBACK_TO_EMAIL);
-      formData.append("email", user.email);
-      formData.append("message", emailBody);
-      formData.append("from_name", user.email);
-      formData.append("redirect", "false");
+      const payload = {
+        access_key: WEB3FORMS_ACCESS_KEY,
+        subject: emailSubject,
+        to: FEEDBACK_TO_EMAIL,
+        email: user.email,
+        message: emailBody,
+        from_name: user.email,
+      };
+
+      console.log("[Feedback] Sending feedback with payload:", {
+        to: FEEDBACK_TO_EMAIL,
+        from: user.email,
+        subject: emailSubject,
+      });
 
       const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
+
+      console.log("[Feedback] Web3Forms response:", result);
 
       if (result?.success) {
         console.log(`[Feedback] Email sent successfully to ${FEEDBACK_TO_EMAIL} from user ${user.email}`);
@@ -114,13 +125,16 @@ This feedback was automatically sent from your Drip App.`;
         };
       } else {
         console.error(`[Feedback] Web3Forms error:`, result);
-        throw new Error(result?.message || "Failed to send feedback");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: result?.message || "Failed to send feedback",
+        });
       }
     } catch (error) {
       console.error("[Feedback] Error sending email:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to send feedback. Please try again later.",
+        message: error instanceof Error ? error.message : "Failed to send feedback. Please try again later.",
       });
     }
   });
