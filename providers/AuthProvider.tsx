@@ -67,10 +67,10 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   const supabaseConfigured = Boolean(SUPABASE_URL) && Boolean(SUPABASE_ANON_KEY);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    console.log('[Auth] signIn', { email: email?.slice(0, 3) + '***' });
+    console.log('[Auth] signIn started', { email: email?.slice(0, 3) + '***', supabaseConfigured });
 
-    // Always allow demo credentials regardless of Supabase configuration
     if (email === 'demo@dripmaxx.ai' && password === 'password') {
+      console.log('[Auth] Using demo credentials');
       const mockUser: User = { id: '1', email: 'demo@dripmaxx.ai', name: 'Demo User', age: 25, emailVerified: true };
       setUser(mockUser);
       setIsAuthenticated(true);
@@ -83,41 +83,46 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
 
     if (!supabaseConfigured) {
-      throw new Error('Supabase not configured. Use the demo account or set SUPABASE_URL and SUPABASE_ANON_KEY in utils/config.ts');
+      throw new Error('Supabase not configured. Use demo@dripmaxx.ai / password or configure Supabase.');
     }
+
+    const url = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+    console.log('[Auth] Attempting sign in to:', url);
 
     let resp: Response;
     try {
-      resp = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      resp = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
+          'apikey': SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({ email, password }),
       });
+      console.log('[Auth] signIn response status:', resp.status);
     } catch (fetchError) {
-      console.error('[Auth] signIn fetch error', fetchError);
+      console.error('[Auth] signIn fetch error:', fetchError);
       
       const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      console.error('[Auth] Error message:', errorMsg);
       
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        throw new Error('No internet connection. Please check your network and try again.');
+        throw new Error('No internet connection. Please check your network.');
       }
       
       if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('failed to fetch')) {
-        throw new Error('Cannot connect to server. Please check your internet connection and try again.');
+        throw new Error('Cannot connect to authentication server. Check your internet connection or use demo account (demo@dripmaxx.ai / password).');
       }
       
       if (errorMsg.toLowerCase().includes('timeout')) {
-        throw new Error('Connection timeout. Please try again.');
+        throw new Error('Connection timed out. Please try again or use demo account.');
       }
       
       if (errorMsg.toLowerCase().includes('cors')) {
-        throw new Error('Server configuration error. Please contact support.');
+        throw new Error('Server access denied. Please use demo account (demo@dripmaxx.ai / password).');
       }
       
-      throw new Error('Unable to complete sign in. Please check your connection and try again.');
+      throw new Error(`Sign in failed: ${errorMsg}. Try demo account (demo@dripmaxx.ai / password).`);
     }
 
     if (!resp.ok) {
@@ -169,9 +174,10 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   }, [supabaseConfigured]);
 
   const signUp = useCallback(async (email: string, password: string, name: string, age: number) => {
-    console.log('[Auth] signUp', { email: email?.slice(0, 3) + '***' });
+    console.log('[Auth] signUp started', { email: email?.slice(0, 3) + '***', supabaseConfigured });
 
     if (!supabaseConfigured) {
+      console.log('[Auth] Using local signup (no Supabase)');
       const mockUser: User = { id: Date.now().toString(), email, name, age, emailVerified: true };
       setUser(mockUser);
       setIsAuthenticated(true);
@@ -187,9 +193,12 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       ? `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081'}/(auth)/auth-callback`
       : Linking.createURL('/(auth)/auth-callback');
 
+    const url = `${SUPABASE_URL}/auth/v1/signup`;
+    console.log('[Auth] Attempting signup to:', url);
+
     let resp: Response;
     try {
-      resp = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      resp = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,28 +206,30 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         },
         body: JSON.stringify({ email, password, data: { name, age }, options: { emailRedirectTo: redirectTo } }),
       });
+      console.log('[Auth] signUp response status:', resp.status);
     } catch (fetchError) {
-      console.error('[Auth] signUp fetch error', fetchError);
+      console.error('[Auth] signUp fetch error:', fetchError);
       
       const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      console.error('[Auth] Error message:', errorMsg);
       
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        throw new Error('No internet connection. Please check your network and try again.');
+        throw new Error('No internet connection. Please check your network.');
       }
       
       if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('failed to fetch')) {
-        throw new Error('Cannot connect to server. Please check your internet connection and try again.');
+        throw new Error('Cannot connect to authentication server. Check your internet connection.');
       }
       
       if (errorMsg.toLowerCase().includes('timeout')) {
-        throw new Error('Connection timeout. Please try again.');
+        throw new Error('Connection timed out. Please try again.');
       }
       
       if (errorMsg.toLowerCase().includes('cors')) {
-        throw new Error('Server configuration error. Please contact support.');
+        throw new Error('Server access denied. Please contact support.');
       }
       
-      throw new Error('Unable to complete signup. Please check your connection and try again.');
+      throw new Error(`Signup failed: ${errorMsg}`);
     }
 
     const text = await resp.text();

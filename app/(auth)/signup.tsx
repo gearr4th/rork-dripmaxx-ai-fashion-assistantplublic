@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sparkles, Mail, Lock, User, Calendar } from "lucide-react-native";
 import { useAuth } from "@/providers/AuthProvider";
+import { testSupabaseConnection } from "@/utils/testSupabase";
 
 export default function SignupScreen() {
   const [name, setName] = useState<string>("");
@@ -24,15 +25,30 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState<boolean>(false);
   const { signUp } = useAuth();
 
+  useEffect(() => {
+    testSupabaseConnection().catch(console.error);
+  }, []);
+
   const handleSignup = async () => {
     if (!name || !email || !password || !age) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
+    const ageNum = parseInt(age, 10);
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+      Alert.alert("Error", "Please enter a valid age");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long");
+      return;
+    }
+
     setLoading(true);
     try {
-      await signUp(email, password, name, parseInt(age, 10));
+      await signUp(email, password, name, ageNum);
       router.replace("/select-age" as any);
       setTimeout(() => router.push("/select-budget" as any), 50);
     } catch (error: unknown) {

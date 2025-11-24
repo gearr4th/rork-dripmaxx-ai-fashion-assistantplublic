@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sparkles, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/providers/AuthProvider";
+import { testSupabaseConnection } from "@/utils/testSupabase";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
@@ -43,6 +44,10 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    testSupabaseConnection().catch(console.error);
+  }, []);
 
   const handleDemo = async () => {
     try {
