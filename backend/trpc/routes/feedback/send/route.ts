@@ -77,7 +77,6 @@ TECHNICAL INFO:
 This feedback was automatically sent from your Drip App.`;
 
     const WEB3FORMS_ACCESS_KEY = process.env.WEB3FORMS_ACCESS_KEY || "09abc3b3-dd8c-44c5-bd78-117cfcb2eb7e";
-    const FEEDBACK_TO_EMAIL = "gearr4th@gmail.com";
 
     console.log("[Feedback] WEB3FORMS_ACCESS_KEY available:", !!WEB3FORMS_ACCESS_KEY);
 
@@ -96,11 +95,11 @@ This feedback was automatically sent from your Drip App.`;
         name: user.email,
         email: user.email,
         message: emailBody,
+        from_name: "Drip App Feedback",
       };
 
       console.log("[Feedback] Sending feedback with payload:", {
         access_key_length: WEB3FORMS_ACCESS_KEY?.length,
-        to: FEEDBACK_TO_EMAIL,
         from: user.email,
         subject: emailSubject,
       });
@@ -129,7 +128,7 @@ This feedback was automatically sent from your Drip App.`;
       console.log("[Feedback] Web3Forms parsed response:", JSON.stringify(result, null, 2));
 
       if (result?.success === true) {
-        console.log(`[Feedback] ✅ Email sent successfully to ${FEEDBACK_TO_EMAIL} from user ${user.email}`);
+        console.log(`[Feedback] ✅ Email sent successfully from user ${user.email}`);
         return {
           success: true,
           message: "Feedback sent successfully",
