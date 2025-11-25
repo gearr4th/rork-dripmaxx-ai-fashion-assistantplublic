@@ -17,6 +17,7 @@ interface CloudSyncContextType {
   mergeAndPersist: (partial: Partial<CloudBlobV1>) => Promise<void>;
   isSyncing: boolean;
   lastError?: string | null;
+  isInitialLoadComplete: boolean;
 }
 
 export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncContextType>(() => {
@@ -24,6 +25,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
   const [cloud, setCloud] = useState<CloudBlobV1 | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState<boolean>(false);
   const mountedRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -59,10 +61,17 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
           console.log('[CloudSync] No cloud data found, creating empty');
           setCloud({ version: 1, updatedAt: new Date().toISOString() });
         }
+        setIsInitialLoadComplete(true);
       }
     } catch (e) {
       console.log('[CloudSync] fetchCloud exception', e);
       if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setIsInitialLoadComplete(true);
     }
   }, [user?.id]);
 
@@ -103,5 +112,5 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
     }
   }, [user?.id, cloud]);
 
-  return useMemo(() => ({ cloud, mergeAndPersist, isSyncing, lastError }), [cloud, mergeAndPersist, isSyncing, lastError]);
+  return useMemo(() => ({ cloud, mergeAndPersist, isSyncing, lastError, isInitialLoadComplete }), [cloud, mergeAndPersist, isSyncing, lastError, isInitialLoadComplete]);
 });

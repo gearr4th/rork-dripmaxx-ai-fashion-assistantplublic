@@ -19,23 +19,25 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
   const { user } = useAuth();
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const { cloud, mergeAndPersist } = useCloudSync();
+  const { cloud, mergeAndPersist, isInitialLoadComplete } = useCloudSync();
 
   const STORAGE_KEY_FOR = useCallback((userId: string) => `clothes:${userId}`, []);
 
   useEffect(() => {
-    void loadClothes();
+    if (isInitialLoadComplete) {
+      void loadClothes();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isInitialLoadComplete]);
 
   useEffect(() => {
-    if (cloud?.clothes) {
+    if (isInitialLoadComplete && cloud?.clothes) {
       console.log('[Clothes] hydrating from cloud');
       setClothes(cloud.clothes);
       void AsyncStorage.setItem(STORAGE_KEY_FOR(user?.id ?? 'guest'), JSON.stringify(cloud.clothes));
       setLoading(false);
     }
-  }, [cloud?.clothes, STORAGE_KEY_FOR, user?.id]);
+  }, [cloud?.clothes, STORAGE_KEY_FOR, user?.id, isInitialLoadComplete]);
 
   const loadClothes = async () => {
     try {

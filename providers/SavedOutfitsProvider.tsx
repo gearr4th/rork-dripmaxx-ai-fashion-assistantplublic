@@ -20,22 +20,24 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
   const { user } = useAuth();
   const [savedOutfits, setSavedOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const { cloud, mergeAndPersist } = useCloudSync();
+  const { cloud, mergeAndPersist, isInitialLoadComplete } = useCloudSync();
 
   useEffect(() => {
-    void load();
+    if (isInitialLoadComplete) {
+      void load();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isInitialLoadComplete]);
 
   useEffect(() => {
-    if (cloud?.savedOutfits) {
+    if (isInitialLoadComplete && cloud?.savedOutfits) {
       console.log('[SavedOutfits] hydrating from cloud');
       setSavedOutfits(cloud.savedOutfits);
       const uid = user?.id ?? 'guest';
       void AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(cloud.savedOutfits));
       setLoading(false);
     }
-  }, [cloud?.savedOutfits, user?.id]);
+  }, [cloud?.savedOutfits, user?.id, isInitialLoadComplete]);
 
   const load = async () => {
     try {
