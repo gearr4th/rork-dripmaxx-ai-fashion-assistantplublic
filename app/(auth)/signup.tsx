@@ -93,21 +93,18 @@ export default function SignupScreen() {
               {
                 text: "Continue",
                 onPress: () => {
-                  router.replace("/select-age" as any);
-                  setTimeout(() => router.push("/select-budget" as any), 50);
+                  router.replace("/select-budget" as any);
                 }
               }
             ]
           );
         } else {
           Alert.alert("Success", result.message || "Account created successfully!");
-          router.replace("/select-age" as any);
-          setTimeout(() => router.push("/select-budget" as any), 50);
+          router.replace("/select-budget" as any);
         }
       } else {
         Alert.alert("Success", "Account created successfully!");
-        router.replace("/select-age" as any);
-        setTimeout(() => router.push("/select-budget" as any), 50);
+        router.replace("/select-budget" as any);
       }
     } catch (error: unknown) {
       console.error('[Signup Screen] Error:', error);

@@ -14,6 +14,15 @@ interface SessionContextType {
 
 const KEY_FOR = (userId: string) => `session:${userId}` as const;
 
+function ageToAgeGroup(age: number): AgeGroup {
+  if (age <= 10) return '1-10';
+  if (age <= 13) return '11-13';
+  if (age <= 18) return '13-18';
+  if (age <= 25) return '18-25';
+  if (age <= 35) return '25-35';
+  return '35+';
+}
+
 export const [SessionProvider, useSession] = createContextHook<SessionContextType>(() => {
   const { user } = useAuth();
   const { cloud, mergeAndPersist } = useCloudSync();
@@ -41,6 +50,11 @@ export const [SessionProvider, useSession] = createContextHook<SessionContextTyp
       if (raw) {
         const parsed = JSON.parse(raw) as { ageGroup?: AgeGroup | null };
         setAgeGroupState(parsed.ageGroup ?? null);
+      } else if (user?.age) {
+        const derivedGroup = ageToAgeGroup(user.age);
+        console.log('[Session] Auto-derived age group from user age:', user.age, '->', derivedGroup);
+        setAgeGroupState(derivedGroup);
+        await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify({ ageGroup: derivedGroup }));
       } else {
         setAgeGroupState(null);
       }
