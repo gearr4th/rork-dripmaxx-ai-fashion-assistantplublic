@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { Outfit, ClothingItem } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/utils/config';
+import { supabase } from '@/lib/supabase';
 
 interface CloudBlobV1 {
   version: 1;
@@ -20,7 +20,7 @@ interface CloudSyncContextType {
 }
 
 export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncContextType>(() => {
-  const { user, accessToken } = useAuth();
+  const { user } = useAuth();
   const [cloud, setCloud] = useState<CloudBlobV1 | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -38,26 +38,25 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
     }
     try {
       console.log('[CloudSync] fetchCloud for user', user.id);
-      const resp = await fetch(`${SUPABASE_URL}/rest/v1/user_blobs?id=eq.${encodeURIComponent(user.id)}&select=*`, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          Prefer: 'return=representation',
-        },
-      });
-      if (!resp.ok) {
-        const t = await resp.text();
-        console.log('[CloudSync] fetchCloud error', resp.status, t);
-        if (mountedRef.current) setLastError(`Cloud fetch failed: ${resp.status}`);
+      const { data, error } = await supabase
+        .from('user_blobs')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.log('[CloudSync] fetchCloud error', error);
+        if (mountedRef.current) setLastError(`Cloud fetch failed: ${error.message}`);
         return;
       }
-      const rows = (await resp.json()) as Array<{ id: string; data: CloudBlobV1 }>; 
-      const blob = rows?.[0]?.data ?? null;
+
+      const blob = data?.data ?? null;
       if (mountedRef.current) {
         if (blob) {
+          console.log('[CloudSync] Loaded cloud data:', { hasClothes: !!blob.clothes, hasSavedOutfits: !!blob.savedOutfits });
           setCloud(blob);
         } else {
+          console.log('[CloudSync] No cloud data found, creating empty');
           setCloud({ version: 1, updatedAt: new Date().toISOString() });
         }
       }
@@ -65,7 +64,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       console.log('[CloudSync] fetchCloud exception', e);
       if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
     }
-  }, [user?.id, accessToken]);
+  }, [user?.id]);
 
   useEffect(() => {
     void fetchCloud();
@@ -83,22 +82,17 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       } as CloudBlobV1;
       if (mountedRef.current) setCloud(next);
 
-      const body = [{ id: user.id, data: next }];
-      const resp = await fetch(`${SUPABASE_URL}/rest/v1/user_blobs`, {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          Prefer: 'return=representation,resolution=merge-duplicates',
-        },
-        body: JSON.stringify(body),
-      });
-      if (!resp.ok) {
-        const t = await resp.text();
-        console.log('[CloudSync] upsert error', resp.status, t);
-        if (mountedRef.current) setLastError(t || `Cloud save failed: ${resp.status}`);
+      console.log('[CloudSync] Saving to cloud:', { hasClothes: !!next.clothes, hasSavedOutfits: !!next.savedOutfits });
+
+      const { error } = await supabase
+        .from('user_blobs')
+        .upsert({ id: user.id, data: next }, { onConflict: 'id' });
+
+      if (error) {
+        console.log('[CloudSync] upsert error', error);
+        if (mountedRef.current) setLastError(error.message || 'Cloud save failed');
       } else {
+        console.log('[CloudSync] Successfully saved to cloud');
         if (mountedRef.current) setLastError(null);
       }
     } catch (e) {
@@ -107,7 +101,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
     } finally {
       if (mountedRef.current) setIsSyncing(false);
     }
-  }, [user?.id, cloud, accessToken]);
+  }, [user?.id, cloud]);
 
   return useMemo(() => ({ cloud, mergeAndPersist, isSyncing, lastError }), [cloud, mergeAndPersist, isSyncing, lastError]);
 });

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { trpc } from "@/lib/trpc";
+import { supabase } from "@/lib/supabase";
 
 interface User {
   id: string;
@@ -54,6 +55,14 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         setAccessToken(token ?? null);
         setRefreshToken(rtoken ?? null);
         console.log('[Auth] Loaded user from storage:', parsed.email);
+
+        if (token && rtoken) {
+          console.log('[Auth] Restoring Supabase session');
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: rtoken,
+          });
+        }
         return;
       }
       
@@ -110,6 +119,14 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       if (result.refreshToken) {
         await AsyncStorage.setItem('refreshToken', result.refreshToken);
       }
+
+      if (result.accessToken && result.refreshToken) {
+        console.log('[Auth] Setting Supabase session');
+        await supabase.auth.setSession({
+          access_token: result.accessToken,
+          refresh_token: result.refreshToken,
+        });
+      }
     } catch (error: unknown) {
       console.error('[Auth] signIn error:', error);
       
@@ -159,6 +176,14 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         await AsyncStorage.setItem('refreshToken', result.refreshToken);
       }
 
+      if (result.accessToken && result.refreshToken) {
+        console.log('[Auth] Setting Supabase session after signup');
+        await supabase.auth.setSession({
+          access_token: result.accessToken,
+          refresh_token: result.refreshToken,
+        });
+      }
+
       if (result.message && !result.user.emailVerified) {
         console.log('[Auth] Email verification required:', result.message);
       }
@@ -188,6 +213,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     await AsyncStorage.removeItem("user");
     await AsyncStorage.removeItem('accessToken');
     await AsyncStorage.removeItem('refreshToken');
+    await supabase.auth.signOut();
   }, []);
 
   const reloadUser = useCallback(async () => {
