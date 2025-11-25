@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useAuth } from "@/providers/AuthProvider";
@@ -64,22 +64,22 @@ export const [SessionProvider, useSession] = createContextHook<SessionContextTyp
     }
   };
 
-  const persist = async (next: { ageGroup: AgeGroup | null }) => {
+  const persist = useCallback(async (next: { ageGroup: AgeGroup | null }) => {
     setAgeGroupState(next.ageGroup);
     const uid = user?.id ?? 'guest';
     await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(next));
     try { await mergeAndPersist({ session: { ageGroup: next.ageGroup } as any }); } catch (e) { console.log('[Session] cloud persist error', e); }
-  };
+  }, [user?.id, mergeAndPersist]);
 
   const setAgeGroup = useCallback(async (age: AgeGroup) => {
     console.log('[Session] setAgeGroup', age);
     await persist({ ageGroup: age });
-  }, []);
+  }, [persist]);
 
   const resetSession = useCallback(async () => {
     console.log('[Session] resetSession');
     await persist({ ageGroup: null });
-  }, []);
+  }, [persist]);
 
   return useMemo(() => ({ ageGroup, setAgeGroup, resetSession }), [ageGroup, setAgeGroup, resetSession]);
 });

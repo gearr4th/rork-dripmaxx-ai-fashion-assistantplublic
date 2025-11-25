@@ -149,12 +149,12 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     }
   };
 
-  const persist = async (items: ClothingItem[]) => {
+  const persist = useCallback(async (items: ClothingItem[]) => {
     setClothes(items);
     const uid = user?.id ?? 'guest';
     await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), JSON.stringify(items));
     try { await mergeAndPersist({ clothes: items }); } catch (e) { console.log('[Clothes] cloud persist error', e); }
-  };
+  }, [user?.id, mergeAndPersist, STORAGE_KEY_FOR]);
 
   const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {
     const newItem: ClothingItem = {
@@ -164,7 +164,7 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     };
     const updated = [...clothes, newItem];
     await persist(updated);
-  }, [clothes]);
+  }, [clothes, persist]);
 
   const addClothingItemWithAnalysis = useCallback(async (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => {
     const newItem: ClothingItem = {
@@ -176,22 +176,22 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     };
     const updated = [...clothes, newItem];
     await persist(updated);
-  }, [clothes]);
+  }, [clothes, persist]);
 
   const removeClothingItem = useCallback(async (id: string) => {
     const updated = clothes.filter(item => item.id !== id);
     await persist(updated);
-  }, [clothes]);
+  }, [clothes, persist]);
 
   const removeClothingItems = useCallback(async (ids: string[]) => {
     const idSet = new Set(ids);
     const updated = clothes.filter(item => !idSet.has(item.id));
     await persist(updated);
-  }, [clothes]);
+  }, [clothes, persist]);
 
   const clearAll = useCallback(async () => {
     await persist([]);
-  }, []);
+  }, [persist]);
 
   return useMemo(() => ({
     clothes,

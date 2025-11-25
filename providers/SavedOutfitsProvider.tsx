@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { Outfit } from "@/types";
@@ -66,12 +66,12 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
     }
   };
 
-  const persist = async (arr: Outfit[]) => {
+  const persist = useCallback(async (arr: Outfit[]) => {
     setSavedOutfits(arr);
     const uid = user?.id ?? 'guest';
     await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(arr));
     try { await mergeAndPersist({ savedOutfits: arr }); } catch (e) { console.log('[SavedOutfits] cloud persist error', e); }
-  };
+  }, [user?.id, mergeAndPersist]);
 
   const saveOutfit = useCallback(async (outfit: Outfit) => {
     const exists = savedOutfits.some(o => o.id === outfit.id);
@@ -79,16 +79,16 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
       ? savedOutfits.map(o => (o.id === outfit.id ? outfit : o))
       : [outfit, ...savedOutfits];
     await persist(updated);
-  }, [savedOutfits]);
+  }, [savedOutfits, persist]);
 
   const removeOutfit = useCallback(async (id: string) => {
     const updated = savedOutfits.filter(o => o.id !== id);
     await persist(updated);
-  }, [savedOutfits]);
+  }, [savedOutfits, persist]);
 
   const clearAll = useCallback(async () => {
     await persist([]);
-  }, []);
+  }, [persist]);
 
   return useMemo(() => ({ savedOutfits, saveOutfit, removeOutfit, clearAll, loading }), [savedOutfits, saveOutfit, removeOutfit, clearAll, loading]);
 });
