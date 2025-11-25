@@ -4,11 +4,14 @@ import { Outfit, ClothingItem } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
 
+type BudgetOption = '$100' | '$250' | '$500' | '$1000' | '$2000+';
+
 interface CloudBlobV1 {
   version: 1;
   clothes?: ClothingItem[];
   savedOutfits?: Outfit[];
   session?: { ageGroup: string | null };
+  budget?: BudgetOption | null;
   updatedAt: string;
 }
 
@@ -47,7 +50,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.log('[CloudSync] fetchCloud error', error);
+        console.error('[CloudSync] fetchCloud error:', error);
         if (mountedRef.current) setLastError(`Cloud fetch failed: ${error.message}`);
         return;
       }
@@ -55,7 +58,12 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       const blob = data?.data ?? null;
       if (mountedRef.current) {
         if (blob) {
-          console.log('[CloudSync] Loaded cloud data:', { hasClothes: !!blob.clothes, hasSavedOutfits: !!blob.savedOutfits });
+          console.log('[CloudSync] Loaded cloud data:', { 
+            hasClothes: !!blob.clothes, 
+            hasSavedOutfits: !!blob.savedOutfits,
+            hasBudget: !!blob.budget,
+            hasSession: !!blob.session 
+          });
           setCloud(blob);
         } else {
           console.log('[CloudSync] No cloud data found, creating empty');
@@ -64,7 +72,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         setIsInitialLoadComplete(true);
       }
     } catch (e) {
-      console.log('[CloudSync] fetchCloud exception', e);
+      console.error('[CloudSync] fetchCloud exception:', e);
       if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
     }
   }, [user?.id]);
@@ -80,7 +88,10 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
   }, [fetchCloud]);
 
   const mergeAndPersist = useCallback(async (partial: Partial<CloudBlobV1>) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('[CloudSync] Cannot save: No user ID');
+      return;
+    }
     if (mountedRef.current) setIsSyncing(true);
     try {
       const next: CloudBlobV1 = {
@@ -91,22 +102,30 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       } as CloudBlobV1;
       if (mountedRef.current) setCloud(next);
 
-      console.log('[CloudSync] Saving to cloud:', { hasClothes: !!next.clothes, hasSavedOutfits: !!next.savedOutfits });
+      console.log('[CloudSync] Saving to cloud:', { 
+        hasClothes: !!next.clothes, 
+        hasSavedOutfits: !!next.savedOutfits,
+        hasBudget: !!next.budget,
+        hasSession: !!next.session,
+        userId: user.id
+      });
 
       const { error } = await supabase
         .from('user_blobs')
         .upsert({ id: user.id, data: next }, { onConflict: 'id' });
 
       if (error) {
-        console.log('[CloudSync] upsert error', error);
+        console.error('[CloudSync] upsert error:', error);
         if (mountedRef.current) setLastError(error.message || 'Cloud save failed');
+        throw new Error(`Cloud save failed: ${error.message}`);
       } else {
         console.log('[CloudSync] Successfully saved to cloud');
         if (mountedRef.current) setLastError(null);
       }
     } catch (e) {
-      console.log('[CloudSync] upsert exception', e);
+      console.error('[CloudSync] upsert exception:', e);
       if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
+      throw e;
     } finally {
       if (mountedRef.current) setIsSyncing(false);
     }

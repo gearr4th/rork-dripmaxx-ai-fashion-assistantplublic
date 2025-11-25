@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useAuth } from "@/providers/AuthProvider";
@@ -25,23 +25,29 @@ function ageToAgeGroup(age: number): AgeGroup {
 
 export const [SessionProvider, useSession] = createContextHook<SessionContextType>(() => {
   const { user } = useAuth();
-  const { cloud, mergeAndPersist } = useCloudSync();
+  const { cloud, mergeAndPersist, isInitialLoadComplete } = useCloudSync();
   const [ageGroup, setAgeGroupState] = useState<AgeGroup | null>(null);
+  const hasHydratedFromCloud = useRef<boolean>(false);
 
   useEffect(() => {
-    void load();
+    if (isInitialLoadComplete && !hasHydratedFromCloud.current) {
+      void load();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isInitialLoadComplete]);
 
   useEffect(() => {
-    if (cloud?.session) {
+    if (isInitialLoadComplete && cloud?.session && !hasHydratedFromCloud.current) {
       const ag = (cloud.session.ageGroup as AgeGroup | null) ?? null;
-      console.log('[Session] hydrate from cloud', ag);
+      console.log('[Session] hydrating from cloud', ag);
       setAgeGroupState(ag);
       const uid = user?.id ?? 'guest';
-      void AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify({ ageGroup: ag }));
+      void AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify({ ageGroup: ag })).catch(e => 
+        console.error('[Session] Failed to save cloud data to AsyncStorage:', e)
+      );
+      hasHydratedFromCloud.current = true;
     }
-  }, [cloud?.session, user?.id]);
+  }, [cloud?.session, user?.id, isInitialLoadComplete]);
 
   const load = async () => {
     try {
@@ -65,10 +71,23 @@ export const [SessionProvider, useSession] = createContextHook<SessionContextTyp
   };
 
   const persist = useCallback(async (next: { ageGroup: AgeGroup | null }) => {
+    console.log('[Session] persisting ageGroup:', next.ageGroup, 'for user:', user?.id);
     setAgeGroupState(next.ageGroup);
     const uid = user?.id ?? 'guest';
-    await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(next));
-    try { await mergeAndPersist({ session: { ageGroup: next.ageGroup } as any }); } catch (e) { console.log('[Session] cloud persist error', e); }
+    try {
+      await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(next));
+      console.log('[Session] AsyncStorage saved successfully');
+    } catch (e) {
+      console.error('[Session] AsyncStorage save failed:', e);
+      throw e;
+    }
+    try {
+      await mergeAndPersist({ session: { ageGroup: next.ageGroup } as any });
+      console.log('[Session] Cloud sync completed successfully');
+    } catch (e) {
+      console.error('[Session] Cloud persist error:', e);
+      throw e;
+    }
   }, [user?.id, mergeAndPersist]);
 
   const setAgeGroup = useCallback(async (age: AgeGroup) => {

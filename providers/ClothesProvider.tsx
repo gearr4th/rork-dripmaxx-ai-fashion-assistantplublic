@@ -32,9 +32,11 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
 
   useEffect(() => {
     if (isInitialLoadComplete && cloud?.clothes) {
-      console.log('[Clothes] hydrating from cloud');
+      console.log('[Clothes] hydrating', cloud.clothes.length, 'items from cloud');
       setClothes(cloud.clothes);
-      void AsyncStorage.setItem(STORAGE_KEY_FOR(user?.id ?? 'guest'), JSON.stringify(cloud.clothes));
+      void AsyncStorage.setItem(STORAGE_KEY_FOR(user?.id ?? 'guest'), JSON.stringify(cloud.clothes))
+        .then(() => console.log('[Clothes] Cloud data saved to AsyncStorage'))
+        .catch(e => console.error('[Clothes] Failed to save cloud data to AsyncStorage:', e));
       setLoading(false);
     }
   }, [cloud?.clothes, STORAGE_KEY_FOR, user?.id, isInitialLoadComplete]);
@@ -44,6 +46,7 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       setLoading(true);
       const uid = user?.id ?? 'guest';
       const key = STORAGE_KEY_FOR(uid);
+      console.log('[Clothes] Loading from AsyncStorage for user:', uid);
 
       const legacy = await AsyncStorage.getItem("clothes");
       if (legacy && !(await AsyncStorage.getItem(key))) {
@@ -54,9 +57,12 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
 
       const stored = await AsyncStorage.getItem(key);
       if (stored) {
-        setClothes(JSON.parse(stored) as ClothingItem[]);
+        const parsed = JSON.parse(stored) as ClothingItem[];
+        console.log('[Clothes] Loaded', parsed.length, 'items from AsyncStorage');
+        setClothes(parsed);
         return;
       }
+      console.log('[Clothes] No stored data found, loading demo items');
 
       const demoItems: ClothingItem[] = [
         {
@@ -142,21 +148,36 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       ];
       setClothes(demoItems);
       await AsyncStorage.setItem(key, JSON.stringify(demoItems));
+      console.log('[Clothes] Demo items saved to AsyncStorage');
     } catch (error) {
-      console.error("Failed to load clothes:", error);
+      console.error('[Clothes] Failed to load clothes:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const persist = useCallback(async (items: ClothingItem[]) => {
+    console.log('[Clothes] Persisting', items.length, 'items for user:', user?.id);
     setClothes(items);
     const uid = user?.id ?? 'guest';
-    await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), JSON.stringify(items));
-    try { await mergeAndPersist({ clothes: items }); } catch (e) { console.log('[Clothes] cloud persist error', e); }
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), JSON.stringify(items));
+      console.log('[Clothes] AsyncStorage saved successfully');
+    } catch (e) {
+      console.error('[Clothes] AsyncStorage save failed:', e);
+      throw e;
+    }
+    try {
+      await mergeAndPersist({ clothes: items });
+      console.log('[Clothes] Cloud sync completed successfully');
+    } catch (e) {
+      console.error('[Clothes] Cloud persist error:', e);
+      throw e;
+    }
   }, [user?.id, mergeAndPersist, STORAGE_KEY_FOR]);
 
   const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {
+    console.log('[Clothes] Adding new item:', item.name);
     const newItem: ClothingItem = {
       ...item,
       id: Date.now().toString(),
@@ -164,9 +185,11 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     };
     const updated = [...clothes, newItem];
     await persist(updated);
+    console.log('[Clothes] Item added successfully. Total items:', updated.length);
   }, [clothes, persist]);
 
   const addClothingItemWithAnalysis = useCallback(async (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => {
+    console.log('[Clothes] Adding new item with analysis:', item.name);
     const newItem: ClothingItem = {
       ...item,
       id: Date.now().toString(),
@@ -176,21 +199,28 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     };
     const updated = [...clothes, newItem];
     await persist(updated);
+    console.log('[Clothes] Item with analysis added successfully. Total items:', updated.length);
   }, [clothes, persist]);
 
   const removeClothingItem = useCallback(async (id: string) => {
+    console.log('[Clothes] Removing item:', id);
     const updated = clothes.filter(item => item.id !== id);
     await persist(updated);
+    console.log('[Clothes] Item removed successfully. Remaining items:', updated.length);
   }, [clothes, persist]);
 
   const removeClothingItems = useCallback(async (ids: string[]) => {
+    console.log('[Clothes] Removing', ids.length, 'items');
     const idSet = new Set(ids);
     const updated = clothes.filter(item => !idSet.has(item.id));
     await persist(updated);
+    console.log('[Clothes] Items removed successfully. Remaining items:', updated.length);
   }, [clothes, persist]);
 
   const clearAll = useCallback(async () => {
+    console.log('[Clothes] Clearing all items');
     await persist([]);
+    console.log('[Clothes] All items cleared successfully');
   }, [persist]);
 
   return useMemo(() => ({

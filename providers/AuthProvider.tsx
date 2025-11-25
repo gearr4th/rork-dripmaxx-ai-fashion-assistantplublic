@@ -44,6 +44,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
   const loadUser = async () => {
     try {
+      console.log('[Auth] Loading user from AsyncStorage...');
       const userData = await AsyncStorage.getItem("user");
       const token = await AsyncStorage.getItem('accessToken');
       const rtoken = await AsyncStorage.getItem('refreshToken');
@@ -54,17 +55,29 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         setIsAuthenticated(true);
         setAccessToken(token ?? null);
         setRefreshToken(rtoken ?? null);
-        console.log('[Auth] Loaded user from storage:', parsed.email);
+        console.log('[Auth] ✓ Loaded user from storage:', parsed.email, 'ID:', parsed.id);
 
         if (token && rtoken) {
-          console.log('[Auth] Restoring Supabase session');
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: rtoken,
-          });
+          console.log('[Auth] Restoring Supabase session...');
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: rtoken,
+            });
+            if (error) {
+              console.error('[Auth] Failed to restore Supabase session:', error);
+            } else {
+              console.log('[Auth] ✓ Supabase session restored successfully. User ID:', data?.user?.id);
+            }
+          } catch (sessionError) {
+            console.error('[Auth] Exception restoring Supabase session:', sessionError);
+          }
+        } else {
+          console.warn('[Auth] Missing tokens, cannot restore Supabase session');
         }
         return;
       }
+      console.log('[Auth] No user data found in AsyncStorage');
       
       const demo: User = { 
         id: 'demo-user-id', 
@@ -78,7 +91,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       setAccessToken(null);
       setRefreshToken(null);
       await AsyncStorage.setItem('user', JSON.stringify(demo));
-      console.log('[Auth] Using demo account');
+      console.log('[Auth] ✓ Using demo account');
     } catch (error) {
       console.error("[Auth] Failed to load user", error);
     }
@@ -97,7 +110,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         throw new Error("Login failed");
       }
 
-      console.log('[Auth] Login successful:', result.user.email);
+      console.log('[Auth] ✓ Login successful:', result.user.email, 'ID:', result.user.id);
 
       const u: User = {
         id: result.user.id,
@@ -113,19 +126,27 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       setRefreshToken(result.refreshToken);
       
       await AsyncStorage.setItem('user', JSON.stringify(u));
+      console.log('[Auth] ✓ User saved to AsyncStorage');
       if (result.accessToken) {
         await AsyncStorage.setItem('accessToken', result.accessToken);
+        console.log('[Auth] ✓ Access token saved');
       }
       if (result.refreshToken) {
         await AsyncStorage.setItem('refreshToken', result.refreshToken);
+        console.log('[Auth] ✓ Refresh token saved');
       }
 
       if (result.accessToken && result.refreshToken) {
-        console.log('[Auth] Setting Supabase session');
-        await supabase.auth.setSession({
+        console.log('[Auth] Setting Supabase session...');
+        const { data, error } = await supabase.auth.setSession({
           access_token: result.accessToken,
           refresh_token: result.refreshToken,
         });
+        if (error) {
+          console.error('[Auth] Failed to set Supabase session:', error);
+        } else {
+          console.log('[Auth] ✓ Supabase session set successfully. User ID:', data?.user?.id);
+        }
       }
     } catch (error: unknown) {
       console.error('[Auth] signIn error:', error);
@@ -153,7 +174,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         throw new Error("Signup failed");
       }
 
-      console.log('[Auth] Signup successful:', result.user.email);
+      console.log('[Auth] ✓ Signup successful:', result.user.email, 'ID:', result.user.id);
 
       const u: User = {
         id: result.user.id,
@@ -169,19 +190,27 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       setRefreshToken(result.refreshToken);
       
       await AsyncStorage.setItem("user", JSON.stringify(u));
+      console.log('[Auth] ✓ User saved to AsyncStorage');
       if (result.accessToken) {
         await AsyncStorage.setItem('accessToken', result.accessToken);
+        console.log('[Auth] ✓ Access token saved');
       }
       if (result.refreshToken) {
         await AsyncStorage.setItem('refreshToken', result.refreshToken);
+        console.log('[Auth] ✓ Refresh token saved');
       }
 
       if (result.accessToken && result.refreshToken) {
-        console.log('[Auth] Setting Supabase session after signup');
-        await supabase.auth.setSession({
+        console.log('[Auth] Setting Supabase session after signup...');
+        const { data, error } = await supabase.auth.setSession({
           access_token: result.accessToken,
           refresh_token: result.refreshToken,
         });
+        if (error) {
+          console.error('[Auth] Failed to set Supabase session:', error);
+        } else {
+          console.log('[Auth] ✓ Supabase session set successfully. User ID:', data?.user?.id);
+        }
       }
 
       if (result.message && !result.user.emailVerified) {
@@ -205,7 +234,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   }, [signupMutation]);
 
   const signOut = useCallback(async () => {
-    console.log('[Auth] signOut');
+    console.log('[Auth] Signing out...');
     setUser(null);
     setIsAuthenticated(false);
     setAccessToken(null);
@@ -214,6 +243,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     await AsyncStorage.removeItem('accessToken');
     await AsyncStorage.removeItem('refreshToken');
     await supabase.auth.signOut();
+    console.log('[Auth] ✓ Sign out completed');
   }, []);
 
   const reloadUser = useCallback(async () => {
