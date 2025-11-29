@@ -50,7 +50,13 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[CloudSync] fetchCloud error:', error);
+        console.error('[CloudSync] fetchCloud error:', JSON.stringify(error, null, 2));
+        console.error('[CloudSync] fetchCloud error details:', { 
+          message: error.message, 
+          code: error.code,
+          details: error.details,
+          hint: error.hint 
+        });
         if (mountedRef.current) setLastError(`Cloud fetch failed: ${error.message}`);
         return;
       }
@@ -73,6 +79,11 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       }
     } catch (e) {
       console.error('[CloudSync] fetchCloud exception:', e);
+      console.error('[CloudSync] fetchCloud exception details:', {
+        message: e instanceof Error ? e.message : 'Unknown error',
+        stack: e instanceof Error ? e.stack : undefined,
+        raw: JSON.stringify(e)
+      });
       if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
     }
   }, [user?.id]);
