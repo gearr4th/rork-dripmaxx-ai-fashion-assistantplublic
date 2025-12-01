@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { TRPCError } from "@trpc/server";
-import { SUPABASE_URL, SUPABASE_ANON_KEY, WEB3FORMS_ACCESS_KEY } from "@/utils/config";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/utils/config";
 
 const feedbackSchema = z.object({
   accessToken: z.string(),
@@ -19,7 +19,7 @@ export const sendFeedbackProcedure = publicProcedure
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: "Authentication service is not configured.",
+        message: "Database service is not configured.",
       });
     }
 
@@ -42,135 +42,51 @@ export const sendFeedbackProcedure = publicProcedure
       id: userData.id || "",
       email: userData.email || "",
     };
-    const timestamp = new Date();
-
-    const averageRating = (
-      (input.easeOfUse +
-        input.accuracyOfDripRating +
-        input.usefulnessOfRecommendations) /
-      3
-    ).toFixed(1);
-
-    const emailSubject = `Drip App Feedback - ${timestamp.toLocaleDateString()}`;
-    const emailBody = `NEW FEEDBACK RECEIVED
-
-OVERALL RATING: ${averageRating}/5 stars
-
-DETAILED RATINGS:
-• Ease of Use: ${input.easeOfUse}/5
-• Drip Rating Accuracy: ${input.accuracyOfDripRating}/5
-• Recommendation Usefulness: ${input.usefulnessOfRecommendations}/5
-
-USER COMMENTS:
-${input.additionalComments || "No additional comments provided"}
-
-USER INFO:
-• User Email: ${user.email}
-• User ID: ${user.id}
-
-TECHNICAL INFO:
-• Timestamp: ${timestamp.toLocaleString()}
-• App Version: ${input.appVersion}
-• Platform: ${input.deviceInfo}
-
----
-This feedback was automatically sent from your Drip App.`;
-
-    console.log("[Feedback] Checking WEB3FORMS_ACCESS_KEY...");
-    console.log("[Feedback] Key value:", WEB3FORMS_ACCESS_KEY);
-    console.log("[Feedback] Key length:", WEB3FORMS_ACCESS_KEY?.length);
-    console.log("[Feedback] Key type:", typeof WEB3FORMS_ACCESS_KEY);
-    console.log("[Feedback] Full key (for debugging):", WEB3FORMS_ACCESS_KEY);
-
-    const accessKey = String(WEB3FORMS_ACCESS_KEY);
-    
-    if (!accessKey || accessKey === '' || accessKey === 'undefined') {
-      console.error("[Feedback] ❌ WEB3FORMS_ACCESS_KEY is not properly configured:", { 
-        value: WEB3FORMS_ACCESS_KEY,
-        type: typeof WEB3FORMS_ACCESS_KEY 
-      });
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "Email service not configured. Please contact support.",
-      });
-    }
-
-    console.log("[Feedback] ✅ WEB3FORMS_ACCESS_KEY is configured:", `${WEB3FORMS_ACCESS_KEY.substring(0, 8)}...`);
 
     try {
-      const payload = {
-        access_key: String(WEB3FORMS_ACCESS_KEY),
-        subject: emailSubject,
-        name: user.email || 'Anonymous User',
-        email: user.email || 'noreply@dripapp.com',
-        message: emailBody,
-        from_name: "Drip App Feedback",
-        replyto: user.email || undefined,
+      const feedbackData = {
+        user_id: user.id,
+        user_email: user.email,
+        ease_of_use: input.easeOfUse,
+        accuracy_of_drip_rating: input.accuracyOfDripRating,
+        usefulness_of_recommendations: input.usefulnessOfRecommendations,
+        additional_comments: input.additionalComments || null,
+        app_version: input.appVersion,
+        device_info: input.deviceInfo,
       };
 
-      console.log("[Feedback] Sending feedback with payload:", {
-        access_key_length: WEB3FORMS_ACCESS_KEY?.length,
-        from: user.email,
-        subject: emailSubject,
-      });
+      console.log("[Feedback] Saving to Supabase:", { user_id: user.id, email: user.email });
 
-      const response = await fetch("https://api.web3forms.com/submit", {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/feedback`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${input.accessToken}`,
+          "Prefer": "return=representation",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(feedbackData),
       });
 
-      const responseText = await response.text();
-      console.log("[Feedback] Raw response:", responseText);
-      console.log("[Feedback] Response status:", response.status);
-      
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch {
-        console.error("[Feedback] Failed to parse response as JSON");
-        throw new Error(`Invalid response from email service: ${responseText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Feedback] Supabase error:", errorText);
+        throw new Error(`Failed to save feedback: ${errorText}`);
       }
 
-      console.log("[Feedback] Web3Forms parsed response:", JSON.stringify(result, null, 2));
+      const result = await response.json();
+      console.log(`[Feedback] ✅ Feedback saved successfully for user ${user.email}`);
 
-      if (result?.success === true) {
-        console.log(`[Feedback] ✅ Email sent successfully from user ${user.email}`);
-        return {
-          success: true,
-          message: "Feedback sent successfully",
-        };
-      } else {
-        console.error(`[Feedback] ❌ Web3Forms error:`, result);
-        
-        let errorMessage = "Failed to send feedback. ";
-        
-        if (result?.message) {
-          errorMessage += result.message;
-          console.error("[Feedback] Error message from Web3Forms:", result.message);
-        }
-        
-        if (response.status === 403) {
-          errorMessage = "Web3Forms access key is invalid or not activated. Please verify at https://web3forms.com";
-        }
-        
-        if (response.status === 422) {
-          errorMessage = "Web3Forms validation error: " + (result?.message || "Invalid request format");
-        }
-        
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: errorMessage,
-        });
-      }
+      return {
+        success: true,
+        message: "Feedback saved successfully",
+        data: result,
+      };
     } catch (error) {
-      console.error("[Feedback] Error sending email:", error);
+      console.error("[Feedback] Error saving feedback:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: error instanceof Error ? error.message : "Failed to send feedback. Please try again later.",
+        message: error instanceof Error ? error.message : "Failed to save feedback. Please try again later.",
       });
     }
   });
