@@ -23,15 +23,18 @@ for each row execute procedure public.set_updated_at();
 alter table public.user_blobs enable row level security;
 
 -- Policies: users can read/write only their row (id must match their auth.uid())
-create policy if not exists "Allow user read own blob"
+drop policy if exists "Allow user read own blob" on public.user_blobs;
+create policy "Allow user read own blob"
   on public.user_blobs for select
   using (auth.uid() = id);
 
-create policy if not exists "Allow user upsert own blob"
+drop policy if exists "Allow user upsert own blob" on public.user_blobs;
+create policy "Allow user upsert own blob"
   on public.user_blobs for insert
   with check (auth.uid() = id);
 
-create policy if not exists "Allow user update own blob"
+drop policy if exists "Allow user update own blob" on public.user_blobs;
+create policy "Allow user update own blob"
   on public.user_blobs for update
   using (auth.uid() = id)
   with check (auth.uid() = id);
