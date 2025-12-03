@@ -1,3 +1,11 @@
+# Backend API URL - Required for authentication and backend features
+# In Rork, the backend runs on their servers at this URL
+EXPO_PUBLIC_RORK_API_BASE_URL=https://rork.app/projects/3wcf24lbkm7gahweu7eyf
+
+# Supabase Configuration
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+
 # Web3Forms API Key for sending feedback emails
 # Get yours at: https://web3forms.com
 WEB3FORMS_ACCESS_KEY=10c958e9-abf0-44be-9513-4a2882c3ccef
