@@ -7,8 +7,22 @@ export const GEMINI_API_KEY = '';
 export const WEATHER_API_KEY = 'your-weather-api-key-here';
 
 // Supabase configuration (read from environment variables)
-export const SUPABASE_URL: string = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-export const SUPABASE_ANON_KEY: string = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+// Support both process.env and direct access for web compatibility
+const getEnvVar = (key: string): string => {
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key] as string;
+  }
+  return '';
+};
+
+export const SUPABASE_URL: string = getEnvVar('EXPO_PUBLIC_SUPABASE_URL');
+export const SUPABASE_ANON_KEY: string = getEnvVar('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.warn('[Config] Supabase environment variables not found!');
+  console.warn('[Config] SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
+  console.warn('[Config] SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
+}
 
 // Public email service (Web3Forms) for feedback delivery
 // Create a free key at https://web3forms.com/ and paste it here

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import { Outfit, ClothingItem } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 type BudgetOption = '$100' | '$250' | '$500' | '$1000' | '$2000+';
 
@@ -44,6 +44,16 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       }
       return;
     }
+    
+    if (!isSupabaseConfigured) {
+      console.warn('[CloudSync] ⚠️  Supabase not configured, skipping cloud sync');
+      if (mountedRef.current) {
+        setCloud({ version: 1, updatedAt: new Date().toISOString() });
+        setIsInitialLoadComplete(true);
+      }
+      return;
+    }
+    
     try {
       console.log('[CloudSync] ========== FETCHING CLOUD DATA ==========');
       console.log('[CloudSync] User ID:', user.id);
@@ -56,8 +66,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[CloudSync] ❌ fetchCloud error:', JSON.stringify(error, null, 2));
-        console.error('[CloudSync] fetchCloud error details:', { 
+        console.error('[CloudSync] ❌ fetchCloud error:', { 
           message: error.message, 
           code: error.code,
           details: error.details,
@@ -88,14 +97,31 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         console.log('[CloudSync] ========== CLOUD SYNC READY ==========');
       }
     } catch (e) {
-      console.error('[CloudSync] ❌ fetchCloud exception:', e);
-      console.error('[CloudSync] fetchCloud exception details:', {
-        message: e instanceof Error ? e.message : 'Unknown error',
-        stack: e instanceof Error ? e.stack : undefined,
-        raw: JSON.stringify(e)
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      const errorStack = e instanceof Error ? e.stack : undefined;
+      const isFetchError = errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch');
+      
+      console.error('[CloudSync] ❌ fetchCloud exception:', {
+        message: errorMessage,
+        stack: errorStack,
+        type: e?.constructor?.name || typeof e,
+        isFetchError
       });
+      
+      if (isFetchError) {
+        console.error('[CloudSync] Network error detected. This could be:');
+        console.error('[CloudSync]   1. Supabase is unreachable (check your internet connection)');
+        console.error('[CloudSync]   2. CORS issue (if running on web)');
+        console.error('[CloudSync]   3. Invalid Supabase credentials');
+        console.error('[CloudSync] App will continue in offline mode.');
+      }
+      
       if (mountedRef.current) {
-        setLastError(e instanceof Error ? e.message : 'Unknown error');
+        const userFriendlyError = isFetchError 
+          ? 'Unable to connect to cloud storage. App is running in offline mode.' 
+          : (e instanceof Error ? e.message : 'Unknown error');
+        setLastError(userFriendlyError);
+        setCloud({ version: 1, updatedAt: new Date().toISOString() });
         setIsInitialLoadComplete(true);
       }
     }
@@ -114,6 +140,18 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
   const mergeAndPersist = useCallback(async (partial: Partial<CloudBlobV1>) => {
     if (!user?.id) {
       console.error('[CloudSync] Cannot save: No user ID');
+      return;
+    }
+    
+    if (!isSupabaseConfigured) {
+      console.warn('[CloudSync] ⚠️  Supabase not configured, changes saved locally only');
+      const next: CloudBlobV1 = {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        ...(cloud ?? {}),
+        ...partial,
+      } as CloudBlobV1;
+      if (mountedRef.current) setCloud(next);
       return;
     }
     if (mountedRef.current) setIsSyncing(true);
