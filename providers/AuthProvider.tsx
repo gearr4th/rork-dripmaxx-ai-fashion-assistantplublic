@@ -219,14 +219,26 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         }
       }
     } catch (error: unknown) {
-      console.error('[Auth] tRPC login failed, falling back to direct Supabase:', error);
+      console.error('[Auth] tRPC login failed:', error);
       
       const errorMsg = error && typeof error === 'object' && 'message' in error 
         ? String(error.message) 
         : String(error);
       
-      if (errorMsg.includes('JSON') || errorMsg.includes('SyntaxError') || errorMsg.includes('fetch')) {
-        console.log('[Auth] Backend unavailable, using direct Supabase authentication');
+      console.log('[Auth] Error message:', errorMsg);
+      
+      const shouldFallbackToDirectAuth = 
+        errorMsg.includes('JSON') || 
+        errorMsg.includes('SyntaxError') || 
+        errorMsg.includes('parse') ||
+        errorMsg.includes('fetch') ||
+        errorMsg.includes('HTML') ||
+        errorMsg.includes('Backend') ||
+        errorMsg.includes('Network error') ||
+        errorMsg.includes('unreachable');
+      
+      if (shouldFallbackToDirectAuth) {
+        console.log('[Auth] Backend unavailable, falling back to direct Supabase authentication');
         
         try {
           const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
@@ -236,7 +248,11 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
           if (supabaseError) {
             console.error('[Auth] Supabase direct login failed:', supabaseError);
-            throw new Error(supabaseError.message || 'Authentication failed');
+          const msg = supabaseError.message || 'Authentication failed';
+          if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
+            throw new Error('Invalid email or password. Please check your credentials.');
+          }
+          throw new Error(msg);
           }
 
           if (!data.user || !data.session) {
@@ -342,14 +358,26 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         user: u,
       };
     } catch (error: unknown) {
-      console.error('[Auth] tRPC signup failed, falling back to direct Supabase:', error);
+      console.error('[Auth] tRPC signup failed:', error);
       
       const errorMsg = error && typeof error === 'object' && 'message' in error 
         ? String(error.message) 
         : String(error);
       
-      if (errorMsg.includes('JSON') || errorMsg.includes('SyntaxError') || errorMsg.includes('fetch')) {
-        console.log('[Auth] Backend unavailable, using direct Supabase signup');
+      console.log('[Auth] Error message:', errorMsg);
+      
+      const shouldFallbackToDirectAuth = 
+        errorMsg.includes('JSON') || 
+        errorMsg.includes('SyntaxError') || 
+        errorMsg.includes('parse') ||
+        errorMsg.includes('fetch') ||
+        errorMsg.includes('HTML') ||
+        errorMsg.includes('Backend') ||
+        errorMsg.includes('Network error') ||
+        errorMsg.includes('unreachable');
+      
+      if (shouldFallbackToDirectAuth) {
+        console.log('[Auth] Backend unavailable, falling back to direct Supabase signup');
         
         try {
           const { data, error: supabaseError } = await supabase.auth.signUp({
@@ -365,7 +393,11 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
           if (supabaseError) {
             console.error('[Auth] Supabase direct signup failed:', supabaseError);
-            throw new Error(supabaseError.message || 'Signup failed');
+            const msg = supabaseError.message || 'Signup failed';
+            if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+              throw new Error('An account with this email already exists. Please sign in instead.');
+            }
+            throw new Error(msg);
           }
 
           if (!data.user) {

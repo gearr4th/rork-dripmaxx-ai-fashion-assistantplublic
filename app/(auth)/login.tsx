@@ -56,25 +56,25 @@ export default function LoginScreen() {
         message = error.message;
         console.log('[Login Screen] Error message:', message);
         
-        if (message.includes("JSON") || message.includes("parse") || message.includes("SyntaxError")) {
-          title = "Connection Issue";
-          message = "Unable to connect to authentication service. Using direct authentication instead. Please try again.";
-        } else if (message.includes("Backend") || message.includes("HTML")) {
+        if (message.toLowerCase().includes("json") || message.toLowerCase().includes("parse") || message.toLowerCase().includes("syntaxerror") || message.toLowerCase().includes("unexpected character")) {
+          title = "Backend Error";
+          message = "The backend returned an invalid response. This usually means the API endpoint is misconfigured. The app will attempt to authenticate directly with Supabase. If this persists, please contact support.";
+        } else if (message.toLowerCase().includes("backend") || message.toLowerCase().includes("html") || message.toLowerCase().includes("unreachable")) {
           title = "Service Issue";
-          message = "The authentication backend is temporarily unavailable. Don't worry - we'll use direct authentication. Please try again.";
-        } else if (message.includes("Invalid") || message.includes("incorrect") || message.includes("credentials")) {
+          message = "The authentication backend is temporarily unavailable. The app will use direct authentication. Please try again.";
+        } else if (message.toLowerCase().includes("invalid") || message.toLowerCase().includes("incorrect") || message.toLowerCase().includes("credentials")) {
           title = "Invalid Credentials";
           message = "The email or password you entered is incorrect. Please double-check and try again.";
-        } else if (message.includes("not found") || message.includes("does not exist")) {
+        } else if (message.toLowerCase().includes("not found") || message.toLowerCase().includes("does not exist")) {
           title = "Account Not Found";
           message = "No account found with this email. Please sign up first.";
-        } else if (message.includes("verify") || message.includes("confirm")) {
+        } else if (message.toLowerCase().includes("verify") || message.toLowerCase().includes("confirm")) {
           title = "Email Not Verified";
           message = "Please check your email and verify your account before signing in.";
-        } else if (message.includes("Too many") || message.includes("rate limit")) {
+        } else if (message.toLowerCase().includes("too many") || message.toLowerCase().includes("rate limit")) {
           title = "Too Many Attempts";
           message = "You've tried to log in too many times. Please wait a few minutes and try again.";
-        } else if (message.includes("Network") || message.includes("fetch")) {
+        } else if (message.toLowerCase().includes("network") || message.toLowerCase().includes("fetch failed")) {
           title = "Network Error";
           message = "Please check your internet connection and try again.";
         }
