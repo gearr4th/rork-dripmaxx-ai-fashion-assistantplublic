@@ -44,41 +44,82 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
   const loadUser = async () => {
     try {
-      console.log('[Auth] Loading user from AsyncStorage...');
+      console.log('[Auth] ========== LOADING USER SESSION ==========');
       const userData = await AsyncStorage.getItem("user");
       const token = await AsyncStorage.getItem('accessToken');
       const rtoken = await AsyncStorage.getItem('refreshToken');
       
+      console.log('[Auth] Storage check:', {
+        hasUserData: !!userData,
+        hasAccessToken: !!token,
+        hasRefreshToken: !!rtoken,
+      });
+      
       if (userData) {
         const parsed = JSON.parse(userData) as User;
-        setUser(parsed);
-        setIsAuthenticated(true);
-        setAccessToken(token ?? null);
-        setRefreshToken(rtoken ?? null);
-        console.log('[Auth] ✓ Loaded user from storage:', parsed.email, 'ID:', parsed.id);
-
-        if (token && rtoken) {
-          console.log('[Auth] Restoring Supabase session...');
+        console.log('[Auth] ✓ Found stored user:', parsed.email, 'ID:', parsed.id);
+        
+        if (token && rtoken && parsed.id !== 'demo-user-id') {
+          console.log('[Auth] Attempting to restore Supabase session...');
           try {
             const { data, error } = await supabase.auth.setSession({
               access_token: token,
               refresh_token: rtoken,
             });
+            
             if (error) {
-              console.error('[Auth] Failed to restore Supabase session:', error);
+              console.error('[Auth] ⚠️  Session restoration failed:', error.message);
+              console.log('[Auth] Clearing invalid session data...');
+              await AsyncStorage.removeItem('accessToken');
+              await AsyncStorage.removeItem('refreshToken');
+              setAccessToken(null);
+              setRefreshToken(null);
+            } else if (data?.session) {
+              console.log('[Auth] ✅ Session restored successfully!');
+              console.log('[Auth] Session user:', data.user?.email);
+              
+              const newAccessToken = data.session.access_token;
+              const newRefreshToken = data.session.refresh_token;
+              
+              if (newAccessToken !== token) {
+                console.log('[Auth] Session was refreshed, updating tokens...');
+                await AsyncStorage.setItem('accessToken', newAccessToken);
+                await AsyncStorage.setItem('refreshToken', newRefreshToken);
+                setAccessToken(newAccessToken);
+                setRefreshToken(newRefreshToken);
+              } else {
+                setAccessToken(token);
+                setRefreshToken(rtoken);
+              }
             } else {
-              console.log('[Auth] ✓ Supabase session restored successfully. User ID:', data?.user?.id);
+              console.warn('[Auth] Session restoration returned no session');
+              setAccessToken(null);
+              setRefreshToken(null);
             }
           } catch (sessionError) {
-            console.error('[Auth] Exception restoring Supabase session:', sessionError);
+            console.error('[Auth] Exception restoring session:', sessionError);
+            await AsyncStorage.removeItem('accessToken');
+            await AsyncStorage.removeItem('refreshToken');
+            setAccessToken(null);
+            setRefreshToken(null);
           }
+        } else if (parsed.id === 'demo-user-id') {
+          console.log('[Auth] Demo user detected, skipping session restoration');
+          setAccessToken(null);
+          setRefreshToken(null);
         } else {
-          console.warn('[Auth] Missing tokens, cannot restore Supabase session');
+          console.warn('[Auth] Missing tokens, user logged out or session expired');
+          setAccessToken(null);
+          setRefreshToken(null);
         }
+        
+        setUser(parsed);
+        setIsAuthenticated(true);
+        console.log('[Auth] ========== USER LOADED SUCCESSFULLY ==========');
         return;
       }
-      console.log('[Auth] No user data found in AsyncStorage');
       
+      console.log('[Auth] No stored user found, using demo account');
       const demo: User = { 
         id: 'demo-user-id', 
         email: 'demo@dripmaxx.ai', 
@@ -91,9 +132,19 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       setAccessToken(null);
       setRefreshToken(null);
       await AsyncStorage.setItem('user', JSON.stringify(demo));
-      console.log('[Auth] ✓ Using demo account');
+      console.log('[Auth] ✓ Demo account initialized');
+      console.log('[Auth] ========================================');
     } catch (error) {
-      console.error("[Auth] Failed to load user", error);
+      console.error("[Auth] ❌ FATAL: Failed to load user", error);
+      const demo: User = { 
+        id: 'demo-user-id', 
+        email: 'demo@dripmaxx.ai', 
+        name: 'Demo User', 
+        age: 25, 
+        emailVerified: true 
+      };
+      setUser(demo);
+      setIsAuthenticated(true);
     }
   };
 

@@ -48,15 +48,23 @@ export default function LoginScreen() {
       await signIn(trimmedEmail, trimmedPassword);
       navigateToApp();
     } catch (error: unknown) {
+      console.error('[Login Screen] Login error:', error);
       let message = "Failed to sign in";
       let title = "Login Failed";
       
       if (error instanceof Error) {
         message = error.message;
+        console.log('[Login Screen] Error message:', message);
         
-        if (message.includes("Invalid") || message.includes("incorrect")) {
+        if (message.includes("JSON") || message.includes("parse") || message.includes("SyntaxError")) {
+          title = "Connection Issue";
+          message = "Unable to connect to authentication service. Using direct authentication instead. Please try again.";
+        } else if (message.includes("Backend") || message.includes("HTML")) {
+          title = "Service Issue";
+          message = "The authentication backend is temporarily unavailable. Don't worry - we'll use direct authentication. Please try again.";
+        } else if (message.includes("Invalid") || message.includes("incorrect") || message.includes("credentials")) {
           title = "Invalid Credentials";
-          message = "The email or password you entered is incorrect. Please try again.";
+          message = "The email or password you entered is incorrect. Please double-check and try again.";
         } else if (message.includes("not found") || message.includes("does not exist")) {
           title = "Account Not Found";
           message = "No account found with this email. Please sign up first.";
@@ -66,6 +74,9 @@ export default function LoginScreen() {
         } else if (message.includes("Too many") || message.includes("rate limit")) {
           title = "Too Many Attempts";
           message = "You've tried to log in too many times. Please wait a few minutes and try again.";
+        } else if (message.includes("Network") || message.includes("fetch")) {
+          title = "Network Error";
+          message = "Please check your internet connection and try again.";
         }
       }
       
