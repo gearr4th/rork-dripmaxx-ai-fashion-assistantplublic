@@ -45,8 +45,17 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       return;
     }
     
+    if (user.id === 'demo-user-id') {
+      console.log('[CloudSync] Demo user detected, using local storage only');
+      if (mountedRef.current) {
+        setCloud({ version: 1, updatedAt: new Date().toISOString() });
+        setIsInitialLoadComplete(true);
+      }
+      return;
+    }
+    
     if (!isSupabaseConfigured) {
-      console.warn('[CloudSync] ⚠️  Supabase not configured, skipping cloud sync');
+      console.warn('[CloudSync] Supabase not configured, using local storage');
       if (mountedRef.current) {
         setCloud({ version: 1, updatedAt: new Date().toISOString() });
         setIsInitialLoadComplete(true);
@@ -55,9 +64,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
     }
     
     try {
-      console.log('[CloudSync] ========== FETCHING CLOUD DATA ==========');
-      console.log('[CloudSync] User ID:', user.id);
-      console.log('[CloudSync] Supabase session:', (await supabase.auth.getSession()).data.session?.user?.id || 'NO SESSION');
+      console.log('[CloudSync] Fetching cloud data for user:', user.id);
       
       const { data, error } = await supabase
         .from('user_blobs')
@@ -66,14 +73,9 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[CloudSync] ❌ fetchCloud error:', { 
-          message: error.message, 
-          code: error.code,
-          details: error.details,
-          hint: error.hint 
-        });
+        console.error('[CloudSync] Fetch error:', error.message);
         if (mountedRef.current) {
-          setLastError(`Cloud fetch failed: ${error.message}`);
+          setCloud({ version: 1, updatedAt: new Date().toISOString() });
           setIsInitialLoadComplete(true);
         }
         return;
@@ -82,45 +84,20 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       const blob = data?.data ?? null;
       if (mountedRef.current) {
         if (blob) {
-          console.log('[CloudSync] ✅ CLOUD DATA LOADED:', { 
+          console.log('[CloudSync] Cloud data loaded:', { 
             clothesCount: blob.clothes?.length ?? 0, 
-            outfitsCount: blob.savedOutfits?.length ?? 0,
-            budget: blob.budget,
-            session: blob.session?.ageGroup
+            outfitsCount: blob.savedOutfits?.length ?? 0
           });
           setCloud(blob);
         } else {
-          console.log('[CloudSync] ⚠️  No cloud data found, creating empty');
+          console.log('[CloudSync] No cloud data, starting fresh');
           setCloud({ version: 1, updatedAt: new Date().toISOString() });
         }
         setIsInitialLoadComplete(true);
-        console.log('[CloudSync] ========== CLOUD SYNC READY ==========');
       }
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-      const errorStack = e instanceof Error ? e.stack : undefined;
-      const isFetchError = errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch');
-      
-      console.error('[CloudSync] ❌ fetchCloud exception:', {
-        message: errorMessage,
-        stack: errorStack,
-        type: e?.constructor?.name || typeof e,
-        isFetchError
-      });
-      
-      if (isFetchError) {
-        console.error('[CloudSync] Network error detected. This could be:');
-        console.error('[CloudSync]   1. Supabase is unreachable (check your internet connection)');
-        console.error('[CloudSync]   2. CORS issue (if running on web)');
-        console.error('[CloudSync]   3. Invalid Supabase credentials');
-        console.error('[CloudSync] App will continue in offline mode.');
-      }
-      
+    } catch {
+      console.warn('[CloudSync] Cloud fetch failed, using offline mode');
       if (mountedRef.current) {
-        const userFriendlyError = isFetchError 
-          ? 'Unable to connect to cloud storage. App is running in offline mode.' 
-          : (e instanceof Error ? e.message : 'Unknown error');
-        setLastError(userFriendlyError);
         setCloud({ version: 1, updatedAt: new Date().toISOString() });
         setIsInitialLoadComplete(true);
       }
@@ -143,51 +120,41 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       return;
     }
     
-    if (!isSupabaseConfigured) {
-      console.warn('[CloudSync] ⚠️  Supabase not configured, changes saved locally only');
-      const next: CloudBlobV1 = {
-        version: 1,
-        updatedAt: new Date().toISOString(),
-        ...(cloud ?? {}),
-        ...partial,
-      } as CloudBlobV1;
-      if (mountedRef.current) setCloud(next);
+    const next: CloudBlobV1 = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      ...(cloud ?? {}),
+      ...partial,
+    } as CloudBlobV1;
+    
+    if (mountedRef.current) setCloud(next);
+    
+    if (user.id === 'demo-user-id') {
+      console.log('[CloudSync] Demo user, data stored locally only');
       return;
     }
+    
+    if (!isSupabaseConfigured) {
+      console.warn('[CloudSync] Supabase not configured, local only');
+      return;
+    }
+    
     if (mountedRef.current) setIsSyncing(true);
     try {
-      const next: CloudBlobV1 = {
-        version: 1,
-        updatedAt: new Date().toISOString(),
-        ...(cloud ?? {}),
-        ...partial,
-      } as CloudBlobV1;
-      if (mountedRef.current) setCloud(next);
-
-      console.log('[CloudSync] Saving to cloud:', { 
-        hasClothes: !!next.clothes, 
-        hasSavedOutfits: !!next.savedOutfits,
-        hasBudget: !!next.budget,
-        hasSession: !!next.session,
-        userId: user.id
-      });
+      console.log('[CloudSync] Saving to cloud for user:', user.id);
 
       const { error } = await supabase
         .from('user_blobs')
         .upsert({ id: user.id, data: next }, { onConflict: 'id' });
 
       if (error) {
-        console.error('[CloudSync] upsert error:', error);
-        if (mountedRef.current) setLastError(error.message || 'Cloud save failed');
-        throw new Error(`Cloud save failed: ${error.message}`);
+        console.warn('[CloudSync] Cloud save failed:', error.message);
       } else {
-        console.log('[CloudSync] Successfully saved to cloud');
+        console.log('[CloudSync] Saved to cloud successfully');
         if (mountedRef.current) setLastError(null);
       }
-    } catch (e) {
-      console.error('[CloudSync] upsert exception:', e);
-      if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
-      throw e;
+    } catch {
+      console.warn('[CloudSync] Cloud save error, data kept locally');
     } finally {
       if (mountedRef.current) setIsSyncing(false);
     }

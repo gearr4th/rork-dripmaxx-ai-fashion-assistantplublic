@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
-import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase";
 
 interface User {
@@ -34,9 +33,6 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
-
-  const loginMutation = trpc.auth.login.useMutation();
-  const signupMutation = trpc.auth.signup.useMutation();
 
   useEffect(() => {
     void loadUser();
@@ -171,278 +167,129 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
 
     try {
-      console.log('[Auth] Step 1: Attempting tRPC backend login...');
-      const result = await loginMutation.mutateAsync({ 
-        email, 
-        password 
+      console.log('[Auth] Using direct Supabase authentication...');
+      
+      const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (!result.success || !result.user) {
-        throw new Error("Login failed");
+      if (supabaseError) {
+        console.error('[Auth] ❌ Supabase login failed:', supabaseError.message);
+        const msg = supabaseError.message || 'Authentication failed';
+        if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
+          throw new Error('Invalid email or password. Please check your credentials.');
+        }
+        throw new Error(msg);
       }
 
-      console.log('[Auth] ✅ tRPC login successful:', result.user.email);
+      if (!data.user || !data.session) {
+        throw new Error('Login failed - no user data returned');
+      }
+
+      console.log('[Auth] ✅ Supabase login successful:', data.user.email);
 
       const u: User = {
-        id: result.user.id,
-        email: result.user.email,
-        name: result.user.name,
-        age: result.user.age,
-        emailVerified: result.user.emailVerified,
+        id: data.user.id,
+        email: data.user.email || email,
+        name: data.user.user_metadata?.name,
+        age: data.user.user_metadata?.age,
+        emailVerified: Boolean(data.user.email_confirmed_at),
       };
 
       setUser(u);
       setIsAuthenticated(true);
-      setAccessToken(result.accessToken);
-      setRefreshToken(result.refreshToken);
+      setAccessToken(data.session.access_token);
+      setRefreshToken(data.session.refresh_token);
       
       await AsyncStorage.setItem('user', JSON.stringify(u));
-      if (result.accessToken) await AsyncStorage.setItem('accessToken', result.accessToken);
-      if (result.refreshToken) await AsyncStorage.setItem('refreshToken', result.refreshToken);
-
-      if (result.accessToken && result.refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-        });
-        if (error) console.error('[Auth] Failed to set Supabase session:', error);
-      }
-      console.log('[Auth] ========== SIGN IN SUCCESS (BACKEND) ==========');
-      return;
+      await AsyncStorage.setItem('accessToken', data.session.access_token);
+      await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
+      console.log('[Auth] ========== SIGN IN SUCCESS ==========');
     } catch (error: unknown) {
-      const errorMsg = error && typeof error === 'object' && 'message' in error 
-        ? String(error.message) 
-        : String(error);
-      
-      console.log('[Auth] Backend login failed:', errorMsg);
-      
-      const shouldFallbackToDirectAuth = 
-        errorMsg.includes('JSON') || 
-        errorMsg.includes('SyntaxError') || 
-        errorMsg.includes('parse') ||
-        errorMsg.includes('fetch') ||
-        errorMsg.includes('HTML') ||
-        errorMsg.includes('Backend') ||
-        errorMsg.includes('Network error') ||
-        errorMsg.includes('unreachable') ||
-        errorMsg.includes('Failed to fetch');
-      
-      if (shouldFallbackToDirectAuth) {
-        console.log('[Auth] Step 2: Backend unavailable, trying direct Supabase...');
-        
-        try {
-          const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (supabaseError) {
-            console.error('[Auth] ❌ Direct Supabase login failed:', supabaseError.message);
-            const msg = supabaseError.message || 'Authentication failed';
-            if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
-              throw new Error('Invalid email or password. Please check your credentials.');
-            }
-            throw new Error(msg);
-          }
-
-          if (!data.user || !data.session) {
-            throw new Error('Login failed - no user data returned');
-          }
-
-          console.log('[Auth] ✅ Direct Supabase login successful:', data.user.email);
-
-          const u: User = {
-            id: data.user.id,
-            email: data.user.email || email,
-            name: data.user.user_metadata?.name,
-            age: data.user.user_metadata?.age,
-            emailVerified: Boolean(data.user.email_confirmed_at),
-          };
-
-          setUser(u);
-          setIsAuthenticated(true);
-          setAccessToken(data.session.access_token);
-          setRefreshToken(data.session.refresh_token);
-          
-          await AsyncStorage.setItem('user', JSON.stringify(u));
-          await AsyncStorage.setItem('accessToken', data.session.access_token);
-          await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
-          console.log('[Auth] ========== SIGN IN SUCCESS (DIRECT SUPABASE) ==========');
-          return;
-        } catch (supabaseErr) {
-          console.error('[Auth] ❌ Both backend and direct Supabase failed');
-          throw supabaseErr;
-        }
-      }
-      
-      console.log('[Auth] ❌ Non-network error, not attempting fallback');
+      console.error('[Auth] ❌ Login error:', error);
       if (error && typeof error === 'object' && 'message' in error) {
         throw new Error(String(error.message));
       }
-      
       throw new Error('Failed to sign in. Please try again.');
     }
-  }, [loginMutation]);
+  }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string, age: number): Promise<SignUpResult | undefined> => {
-    console.log('[Auth] signUp started', { email: email?.slice(0, 3) + '***' });
+    console.log('[Auth] ========== SIGN UP STARTED ==========');
+    console.log('[Auth] Email:', email?.slice(0, 3) + '***');
 
     try {
-      console.log('[Auth] Attempting tRPC signup...');
-      const result = await signupMutation.mutateAsync({
+      console.log('[Auth] Using direct Supabase signup...');
+      
+      const { data, error: supabaseError } = await supabase.auth.signUp({
         email,
         password,
-        name,
-        age,
+        options: {
+          data: {
+            name,
+            age,
+          },
+        },
       });
 
-      if (!result.success || !result.user) {
-        throw new Error("Signup failed");
+      if (supabaseError) {
+        console.error('[Auth] ❌ Supabase signup failed:', supabaseError.message);
+        const msg = supabaseError.message || 'Signup failed';
+        if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
+        throw new Error(msg);
       }
 
-      console.log('[Auth] ✓ tRPC signup successful:', result.user.email, 'ID:', result.user.id);
+      if (!data.user) {
+        throw new Error('Signup failed - no user data returned');
+      }
+
+      console.log('[Auth] ✅ Supabase signup successful:', data.user.email);
 
       const u: User = {
-        id: result.user.id,
-        email: result.user.email,
-        name: result.user.name,
-        age: result.user.age,
-        emailVerified: result.user.emailVerified,
+        id: data.user.id,
+        email: data.user.email || email,
+        name: name,
+        age: age,
+        emailVerified: Boolean(data.user.email_confirmed_at),
       };
 
       setUser(u);
       setIsAuthenticated(true);
-      setAccessToken(result.accessToken);
-      setRefreshToken(result.refreshToken);
       
-      await AsyncStorage.setItem("user", JSON.stringify(u));
+      if (data.session) {
+        setAccessToken(data.session.access_token);
+        setRefreshToken(data.session.refresh_token);
+        await AsyncStorage.setItem('accessToken', data.session.access_token);
+        await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
+      } else {
+        setAccessToken(null);
+        setRefreshToken(null);
+      }
+      
+      await AsyncStorage.setItem('user', JSON.stringify(u));
       console.log('[Auth] ✓ User saved to AsyncStorage');
-      if (result.accessToken) {
-        await AsyncStorage.setItem('accessToken', result.accessToken);
-        console.log('[Auth] ✓ Access token saved');
-      }
-      if (result.refreshToken) {
-        await AsyncStorage.setItem('refreshToken', result.refreshToken);
-        console.log('[Auth] ✓ Refresh token saved');
-      }
-
-      if (result.accessToken && result.refreshToken) {
-        console.log('[Auth] Setting Supabase session after signup...');
-        const { data, error } = await supabase.auth.setSession({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-        });
-        if (error) {
-          console.error('[Auth] Failed to set Supabase session:', error);
-        } else {
-          console.log('[Auth] ✓ Supabase session set successfully. User ID:', data?.user?.id);
-        }
-      }
-
-      if (result.message && !result.user.emailVerified) {
-        console.log('[Auth] Email verification required:', result.message);
-      }
-
+      console.log('[Auth] ========== SIGN UP SUCCESS ==========');
+      
+      const message = data.session 
+        ? 'Account created successfully!' 
+        : 'Account created! Please check your email to verify your account.';
+      
       return {
         success: true,
-        message: result.message,
+        message,
         user: u,
       };
     } catch (error: unknown) {
-      console.error('[Auth] tRPC signup failed:', error);
-      
-      const errorMsg = error && typeof error === 'object' && 'message' in error 
-        ? String(error.message) 
-        : String(error);
-      
-      console.log('[Auth] Error message:', errorMsg);
-      
-      const shouldFallbackToDirectAuth = 
-        errorMsg.includes('JSON') || 
-        errorMsg.includes('SyntaxError') || 
-        errorMsg.includes('parse') ||
-        errorMsg.includes('fetch') ||
-        errorMsg.includes('HTML') ||
-        errorMsg.includes('Backend') ||
-        errorMsg.includes('Network error') ||
-        errorMsg.includes('unreachable');
-      
-      if (shouldFallbackToDirectAuth) {
-        console.log('[Auth] Backend unavailable, falling back to direct Supabase signup');
-        
-        try {
-          const { data, error: supabaseError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                name,
-                age,
-              },
-            },
-          });
-
-          if (supabaseError) {
-            console.error('[Auth] Supabase direct signup failed:', supabaseError);
-            const msg = supabaseError.message || 'Signup failed';
-            if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
-              throw new Error('An account with this email already exists. Please sign in instead.');
-            }
-            throw new Error(msg);
-          }
-
-          if (!data.user) {
-            throw new Error('Signup failed - no user data returned');
-          }
-
-          console.log('[Auth] ✓ Direct Supabase signup successful:', data.user.email);
-
-          const u: User = {
-            id: data.user.id,
-            email: data.user.email || email,
-            name: name,
-            age: age,
-            emailVerified: Boolean(data.user.email_confirmed_at),
-          };
-
-          setUser(u);
-          setIsAuthenticated(true);
-          
-          if (data.session) {
-            setAccessToken(data.session.access_token);
-            setRefreshToken(data.session.refresh_token);
-            await AsyncStorage.setItem('accessToken', data.session.access_token);
-            await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
-          } else {
-            setAccessToken(null);
-            setRefreshToken(null);
-          }
-          
-          await AsyncStorage.setItem('user', JSON.stringify(u));
-          console.log('[Auth] ✓ Direct Supabase signup saved');
-          
-          const message = data.session 
-            ? 'Account created successfully!' 
-            : '⚠️ Account created! Please check your email to verify your account.';
-          
-          return {
-            success: true,
-            message,
-            user: u,
-          };
-        } catch (supabaseErr) {
-          console.error('[Auth] Direct Supabase signup also failed:', supabaseErr);
-          throw supabaseErr;
-        }
-      }
-      
+      console.error('[Auth] ❌ Signup error:', error);
       if (error && typeof error === 'object' && 'message' in error) {
         throw new Error(String(error.message));
       }
-      
       throw new Error('Failed to create account. Please try again.');
     }
-  }, [signupMutation]);
+  }, []);
 
   const signOut = useCallback(async () => {
     console.log('[Auth] Signing out...');
