@@ -29,15 +29,16 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState<boolean>(false);
-  const mountedRef = useRef<boolean>(false);
+  const mountedRef = useRef<boolean>(true);
+  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 
-  const fetchCloud = useCallback(async () => {
-    if (!user?.id) {
+  const fetchCloud = useCallback(async (userId: string | null) => {
+    if (!userId) {
       if (mountedRef.current) {
         setCloud(null);
         setIsInitialLoadComplete(true);
@@ -45,7 +46,7 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
       return;
     }
     
-    if (user.id === 'demo-user-id') {
+    if (userId === 'demo-user-id') {
       console.log('[CloudSync] Demo user detected, using local storage only');
       if (mountedRef.current) {
         setCloud({ version: 1, updatedAt: new Date().toISOString() });
@@ -64,12 +65,12 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
     }
     
     try {
-      console.log('[CloudSync] Fetching cloud data for user:', user.id);
+      console.log('[CloudSync] Fetching cloud data for user:', userId);
       
       const { data, error } = await supabase
         .from('user_blobs')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -102,63 +103,67 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         setIsInitialLoadComplete(true);
       }
     }
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
-    if (!user?.id) {
-      setIsInitialLoadComplete(true);
+    const currentUserId = user?.id ?? null;
+    if (userIdRef.current !== currentUserId) {
+      userIdRef.current = currentUserId;
+      setIsInitialLoadComplete(false);
+      void fetchCloud(currentUserId);
     }
-  }, [user?.id]);
-
-  useEffect(() => {
-    void fetchCloud();
-  }, [fetchCloud]);
+  }, [user?.id, fetchCloud]);
 
   const mergeAndPersist = useCallback(async (partial: Partial<CloudBlobV1>) => {
-    if (!user?.id) {
+    const userId = userIdRef.current;
+    if (!userId) {
       console.error('[CloudSync] Cannot save: No user ID');
       return;
     }
     
-    const next: CloudBlobV1 = {
-      version: 1,
-      updatedAt: new Date().toISOString(),
-      ...(cloud ?? {}),
-      ...partial,
-    } as CloudBlobV1;
-    
-    if (mountedRef.current) setCloud(next);
-    
-    if (user.id === 'demo-user-id') {
-      console.log('[CloudSync] Demo user, data stored locally only');
-      return;
-    }
-    
-    if (!isSupabaseConfigured) {
-      console.warn('[CloudSync] Supabase not configured, local only');
-      return;
-    }
-    
-    if (mountedRef.current) setIsSyncing(true);
-    try {
-      console.log('[CloudSync] Saving to cloud for user:', user.id);
-
-      const { error } = await supabase
-        .from('user_blobs')
-        .upsert({ id: user.id, data: next }, { onConflict: 'id' });
-
-      if (error) {
-        console.warn('[CloudSync] Cloud save failed:', error.message);
-      } else {
-        console.log('[CloudSync] Saved to cloud successfully');
-        if (mountedRef.current) setLastError(null);
+    setCloud(prevCloud => {
+      const next: CloudBlobV1 = {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        ...(prevCloud ?? {}),
+        ...partial,
+      } as CloudBlobV1;
+      
+      if (userId === 'demo-user-id') {
+        console.log('[CloudSync] Demo user, data stored locally only');
+        return next;
       }
-    } catch {
-      console.warn('[CloudSync] Cloud save error, data kept locally');
-    } finally {
-      if (mountedRef.current) setIsSyncing(false);
-    }
-  }, [user?.id, cloud]);
+      
+      if (!isSupabaseConfigured) {
+        console.warn('[CloudSync] Supabase not configured, local only');
+        return next;
+      }
+      
+      setIsSyncing(true);
+      console.log('[CloudSync] Saving to cloud for user:', userId);
+      
+      (async () => {
+        try {
+          const { error } = await supabase
+            .from('user_blobs')
+            .upsert({ id: userId, data: next }, { onConflict: 'id' });
+          
+          if (error) {
+            console.warn('[CloudSync] Cloud save failed:', error.message);
+          } else {
+            console.log('[CloudSync] Saved to cloud successfully');
+            if (mountedRef.current) setLastError(null);
+          }
+        } catch {
+          console.warn('[CloudSync] Cloud save error, data kept locally');
+        } finally {
+          if (mountedRef.current) setIsSyncing(false);
+        }
+      })();
+      
+      return next;
+    });
+  }, []);
 
   return useMemo(() => ({ cloud, mergeAndPersist, isSyncing, lastError, isInitialLoadComplete }), [cloud, mergeAndPersist, isSyncing, lastError, isInitialLoadComplete]);
 });

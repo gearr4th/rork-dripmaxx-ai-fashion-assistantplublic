@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { ClothingItem, ImageAnalysisResult } from "@/types";
@@ -19,21 +19,23 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
   const { user } = useAuth();
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const { cloud, mergeAndPersist, isInitialLoadComplete } = useCloudSync();
+  const cloudSync = useCloudSync();
+  const hasLoadedRef = useRef<string | null>(null);
 
   const STORAGE_KEY_FOR = useCallback((userId: string) => `clothes:${userId}`, []);
 
   useEffect(() => {
-    if (isInitialLoadComplete) {
-      void loadClothes();
+    const uid = user?.id ?? 'guest';
+    if (cloudSync.isInitialLoadComplete && hasLoadedRef.current !== uid) {
+      hasLoadedRef.current = uid;
+      void loadClothesAsync(uid, cloudSync.cloud);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, isInitialLoadComplete]);
+  }, [user?.id, cloudSync.isInitialLoadComplete, cloudSync.cloud, STORAGE_KEY_FOR]);
 
-  const loadClothes = async () => {
+  const loadClothesAsync = async (uid: string, cloud: typeof cloudSync.cloud) => {
     try {
       setLoading(true);
-      const uid = user?.id ?? 'guest';
       const key = STORAGE_KEY_FOR(uid);
       console.log('[Clothes] ========== LOADING CLOTHES ==========');
       console.log('[Clothes] User:', uid);
@@ -156,9 +158,9 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
   };
 
   const persist = useCallback(async (items: ClothingItem[]) => {
-    console.log('[Clothes] Persisting', items.length, 'items for user:', user?.id);
-    setClothes(items);
     const uid = user?.id ?? 'guest';
+    console.log('[Clothes] Persisting', items.length, 'items for user:', uid);
+    setClothes(items);
     try {
       await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), JSON.stringify(items));
       console.log('[Clothes] AsyncStorage saved successfully');
@@ -167,13 +169,13 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       throw e;
     }
     try {
-      await mergeAndPersist({ clothes: items });
+      await cloudSync.mergeAndPersist({ clothes: items });
       console.log('[Clothes] Cloud sync completed successfully');
     } catch (e) {
       console.error('[Clothes] Cloud persist error:', e);
       throw e;
     }
-  }, [user?.id, mergeAndPersist, STORAGE_KEY_FOR]);
+  }, [user?.id, cloudSync.mergeAndPersist, STORAGE_KEY_FOR]);
 
   const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {
     console.log('[Clothes] Adding new item:', item.name);

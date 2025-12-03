@@ -18,10 +18,10 @@ const STORAGE_KEY_FOR = (userId: string) => `budget:${userId}`;
 
 export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(() => {
   const { user } = useAuth();
-  const { cloud, mergeAndPersist, isInitialLoadComplete } = useCloudSync();
+  const cloudSync = useCloudSync();
   const [budget, setBudgetState] = useState<BudgetOption | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const hasHydratedFromCloud = useRef<boolean>(false);
+  const hasLoadedRef = useRef<string | null>(null);
 
   const getBudgetForCurrentUser = useCallback(async (): Promise<BudgetOption | null> => {
     try {
@@ -44,38 +44,35 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
   }, [user?.id]);
 
   useEffect(() => {
-    hasHydratedFromCloud.current = false;
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (isInitialLoadComplete) {
-      void load();
+    const uid = user?.id ?? null;
+    if (cloudSync.isInitialLoadComplete && hasLoadedRef.current !== uid) {
+      hasLoadedRef.current = uid;
+      void loadAsync(uid, cloudSync.cloud);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, isInitialLoadComplete]);
+  }, [user?.id, cloudSync.isInitialLoadComplete, cloudSync.cloud]);
 
-  const load = async () => {
+  const loadAsync = async (uid: string | null, cloud: typeof cloudSync.cloud) => {
     try {
-      if (!user?.id) {
+      if (!uid) {
         setBudgetState(null);
         return;
       }
       console.log('[Budget] ========== LOADING BUDGET ==========');
-      console.log('[Budget] User:', user.id);
+      console.log('[Budget] User:', uid);
 
-      if (cloud?.budget && !hasHydratedFromCloud.current) {
+      if (cloud?.budget) {
         const b = cloud.budget as BudgetOption | null;
         console.log('[Budget] ✅ USING CLOUD DATA:', b);
         setBudgetState(b);
         if (b) {
-          await AsyncStorage.setItem(STORAGE_KEY_FOR(user.id), b);
+          await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), b);
           console.log('[Budget] Cloud data saved to AsyncStorage as backup');
         }
-        hasHydratedFromCloud.current = true;
         return;
       }
 
-      const stored = await AsyncStorage.getItem(STORAGE_KEY_FOR(user.id));
+      const stored = await AsyncStorage.getItem(STORAGE_KEY_FOR(uid));
       if (stored) {
         const parsed = stored as BudgetOption;
         console.log('[Budget] 📁 Loaded from AsyncStorage (local backup):', parsed);
@@ -91,18 +88,19 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
   };
 
   const setBudget = useCallback(async (b: BudgetOption) => {
-    console.log('[Budget] Setting budget:', b, 'for user:', user?.id);
+    const uid = user?.id;
+    console.log('[Budget] Setting budget:', b, 'for user:', uid);
     try {
-      if (!user?.id) {
+      if (!uid) {
         console.error('[Budget] Cannot save budget: No user ID');
         return;
       }
       setBudgetState(b);
-      await AsyncStorage.setItem(STORAGE_KEY_FOR(user.id), b);
+      await AsyncStorage.setItem(STORAGE_KEY_FOR(uid), b);
       console.log('[Budget] AsyncStorage saved successfully');
       
       try {
-        await mergeAndPersist({ budget: b } as any);
+        await cloudSync.mergeAndPersist({ budget: b } as any);
         console.log('[Budget] Cloud sync completed successfully');
       } catch (cloudError) {
         console.error('[Budget] Cloud sync failed:', cloudError);
@@ -112,21 +110,22 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
       console.error('[Budget] save error:', e);
       throw e;
     }
-  }, [user?.id, mergeAndPersist]);
+  }, [user?.id, cloudSync.mergeAndPersist]);
 
   const clearBudget = useCallback(async () => {
-    console.log('[Budget] Clearing budget for user:', user?.id);
+    const uid = user?.id;
+    console.log('[Budget] Clearing budget for user:', uid);
     try {
-      if (!user?.id) {
+      if (!uid) {
         console.error('[Budget] Cannot clear budget: No user ID');
         return;
       }
       setBudgetState(null);
-      await AsyncStorage.removeItem(STORAGE_KEY_FOR(user.id));
+      await AsyncStorage.removeItem(STORAGE_KEY_FOR(uid));
       console.log('[Budget] AsyncStorage cleared successfully');
       
       try {
-        await mergeAndPersist({ budget: null } as any);
+        await cloudSync.mergeAndPersist({ budget: null } as any);
         console.log('[Budget] Cloud sync completed successfully');
       } catch (cloudError) {
         console.error('[Budget] Cloud sync failed:', cloudError);
@@ -136,7 +135,7 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
       console.error('[Budget] clear error:', e);
       throw e;
     }
-  }, [user?.id, mergeAndPersist]);
+  }, [user?.id, cloudSync.mergeAndPersist]);
 
   return useMemo(() => ({ budget, setBudget, clearBudget, getBudgetForCurrentUser, loading }), [budget, setBudget, clearBudget, getBudgetForCurrentUser, loading]);
 });

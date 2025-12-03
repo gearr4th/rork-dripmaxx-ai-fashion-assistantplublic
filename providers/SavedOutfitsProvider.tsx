@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { Outfit } from "@/types";
@@ -20,19 +20,21 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
   const { user } = useAuth();
   const [savedOutfits, setSavedOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const { cloud, mergeAndPersist, isInitialLoadComplete } = useCloudSync();
+  const cloudSync = useCloudSync();
+  const hasLoadedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isInitialLoadComplete) {
-      void load();
+    const uid = user?.id ?? 'guest';
+    if (cloudSync.isInitialLoadComplete && hasLoadedRef.current !== uid) {
+      hasLoadedRef.current = uid;
+      void loadAsync(uid, cloudSync.cloud);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, isInitialLoadComplete]);
+  }, [user?.id, cloudSync.isInitialLoadComplete, cloudSync.cloud]);
 
-  const load = async () => {
+  const loadAsync = async (uid: string, cloud: typeof cloudSync.cloud) => {
     try {
       setLoading(true);
-      const uid = user?.id ?? 'guest';
       const key = KEY_FOR(uid);
       console.log('[SavedOutfits] ========== LOADING OUTFITS ==========');
       console.log('[SavedOutfits] User:', uid);
@@ -70,9 +72,9 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
   };
 
   const persist = useCallback(async (arr: Outfit[]) => {
-    console.log('[SavedOutfits] Persisting', arr.length, 'outfits for user:', user?.id);
-    setSavedOutfits(arr);
     const uid = user?.id ?? 'guest';
+    console.log('[SavedOutfits] Persisting', arr.length, 'outfits for user:', uid);
+    setSavedOutfits(arr);
     try {
       await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(arr));
       console.log('[SavedOutfits] AsyncStorage saved successfully');
@@ -81,13 +83,13 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
       throw e;
     }
     try {
-      await mergeAndPersist({ savedOutfits: arr });
+      await cloudSync.mergeAndPersist({ savedOutfits: arr });
       console.log('[SavedOutfits] Cloud sync completed successfully');
     } catch (e) {
       console.error('[SavedOutfits] Cloud persist error:', e);
       throw e;
     }
-  }, [user?.id, mergeAndPersist]);
+  }, [user?.id, cloudSync.mergeAndPersist]);
 
   const saveOutfit = useCallback(async (outfit: Outfit) => {
     const exists = savedOutfits.some(o => o.id === outfit.id);
