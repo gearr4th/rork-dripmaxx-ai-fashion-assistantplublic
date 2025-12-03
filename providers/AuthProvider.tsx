@@ -149,7 +149,8 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   };
 
   const signIn = useCallback(async (email: string, password: string) => {
-    console.log('[Auth] signIn started', { email: email?.slice(0, 3) + '***' });
+    console.log('[Auth] ========== SIGN IN STARTED ==========');
+    console.log('[Auth] Email:', email?.slice(0, 3) + '***');
 
     if (email === "demo@dripmaxx.ai" && password === "password") {
       console.log('[Auth] Demo login - bypassing backend');
@@ -170,7 +171,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
 
     try {
-      console.log('[Auth] Attempting tRPC login...');
+      console.log('[Auth] Step 1: Attempting tRPC backend login...');
       const result = await loginMutation.mutateAsync({ 
         email, 
         password 
@@ -180,7 +181,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         throw new Error("Login failed");
       }
 
-      console.log('[Auth] ✓ tRPC login successful:', result.user.email, 'ID:', result.user.id);
+      console.log('[Auth] ✅ tRPC login successful:', result.user.email);
 
       const u: User = {
         id: result.user.id,
@@ -196,36 +197,24 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       setRefreshToken(result.refreshToken);
       
       await AsyncStorage.setItem('user', JSON.stringify(u));
-      console.log('[Auth] ✓ User saved to AsyncStorage');
-      if (result.accessToken) {
-        await AsyncStorage.setItem('accessToken', result.accessToken);
-        console.log('[Auth] ✓ Access token saved');
-      }
-      if (result.refreshToken) {
-        await AsyncStorage.setItem('refreshToken', result.refreshToken);
-        console.log('[Auth] ✓ Refresh token saved');
-      }
+      if (result.accessToken) await AsyncStorage.setItem('accessToken', result.accessToken);
+      if (result.refreshToken) await AsyncStorage.setItem('refreshToken', result.refreshToken);
 
       if (result.accessToken && result.refreshToken) {
-        console.log('[Auth] Setting Supabase session...');
-        const { data, error } = await supabase.auth.setSession({
+        const { error } = await supabase.auth.setSession({
           access_token: result.accessToken,
           refresh_token: result.refreshToken,
         });
-        if (error) {
-          console.error('[Auth] Failed to set Supabase session:', error);
-        } else {
-          console.log('[Auth] ✓ Supabase session set successfully. User ID:', data?.user?.id);
-        }
+        if (error) console.error('[Auth] Failed to set Supabase session:', error);
       }
+      console.log('[Auth] ========== SIGN IN SUCCESS (BACKEND) ==========');
+      return;
     } catch (error: unknown) {
-      console.error('[Auth] tRPC login failed:', error);
-      
       const errorMsg = error && typeof error === 'object' && 'message' in error 
         ? String(error.message) 
         : String(error);
       
-      console.log('[Auth] Error message:', errorMsg);
+      console.log('[Auth] Backend login failed:', errorMsg);
       
       const shouldFallbackToDirectAuth = 
         errorMsg.includes('JSON') || 
@@ -235,10 +224,11 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         errorMsg.includes('HTML') ||
         errorMsg.includes('Backend') ||
         errorMsg.includes('Network error') ||
-        errorMsg.includes('unreachable');
+        errorMsg.includes('unreachable') ||
+        errorMsg.includes('Failed to fetch');
       
       if (shouldFallbackToDirectAuth) {
-        console.log('[Auth] Backend unavailable, falling back to direct Supabase authentication');
+        console.log('[Auth] Step 2: Backend unavailable, trying direct Supabase...');
         
         try {
           const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
@@ -247,19 +237,19 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
           });
 
           if (supabaseError) {
-            console.error('[Auth] Supabase direct login failed:', supabaseError);
-          const msg = supabaseError.message || 'Authentication failed';
-          if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
-            throw new Error('Invalid email or password. Please check your credentials.');
-          }
-          throw new Error(msg);
+            console.error('[Auth] ❌ Direct Supabase login failed:', supabaseError.message);
+            const msg = supabaseError.message || 'Authentication failed';
+            if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
+              throw new Error('Invalid email or password. Please check your credentials.');
+            }
+            throw new Error(msg);
           }
 
           if (!data.user || !data.session) {
             throw new Error('Login failed - no user data returned');
           }
 
-          console.log('[Auth] ✓ Direct Supabase login successful:', data.user.email);
+          console.log('[Auth] ✅ Direct Supabase login successful:', data.user.email);
 
           const u: User = {
             id: data.user.id,
@@ -277,14 +267,15 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
           await AsyncStorage.setItem('user', JSON.stringify(u));
           await AsyncStorage.setItem('accessToken', data.session.access_token);
           await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
-          console.log('[Auth] ✓ Direct Supabase session saved');
+          console.log('[Auth] ========== SIGN IN SUCCESS (DIRECT SUPABASE) ==========');
           return;
         } catch (supabaseErr) {
-          console.error('[Auth] Direct Supabase auth also failed:', supabaseErr);
+          console.error('[Auth] ❌ Both backend and direct Supabase failed');
           throw supabaseErr;
         }
       }
       
+      console.log('[Auth] ❌ Non-network error, not attempting fallback');
       if (error && typeof error === 'object' && 'message' in error) {
         throw new Error(String(error.message));
       }
