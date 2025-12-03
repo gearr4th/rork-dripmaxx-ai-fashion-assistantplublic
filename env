@@ -3,8 +3,8 @@
 EXPO_PUBLIC_RORK_API_BASE_URL=https://rork.app/projects/3wcf24lbkm7gahweu7eyf
 
 # Supabase Configuration
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_SUPABASE_URL=https://qfvwpchklysqgmylhqvn.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdndwY2hrbHlzcWdteWxocXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTUxNzQsImV4cCI6MjA3NjEzMTE3NH0.5Z3BZyanLVSuB_yCwjvEnPtpXdA2oNMAsqcuBpA-8Z0
 
 # Web3Forms API Key for sending feedback emails
 # Get yours at: https://web3forms.com
