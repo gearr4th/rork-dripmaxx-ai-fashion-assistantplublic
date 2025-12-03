@@ -30,23 +30,22 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isInitialLoadComplete]);
 
-  useEffect(() => {
-    if (isInitialLoadComplete && cloud?.clothes) {
-      console.log('[Clothes] hydrating', cloud.clothes.length, 'items from cloud');
-      setClothes(cloud.clothes);
-      void AsyncStorage.setItem(STORAGE_KEY_FOR(user?.id ?? 'guest'), JSON.stringify(cloud.clothes))
-        .then(() => console.log('[Clothes] Cloud data saved to AsyncStorage'))
-        .catch(e => console.error('[Clothes] Failed to save cloud data to AsyncStorage:', e));
-      setLoading(false);
-    }
-  }, [cloud?.clothes, STORAGE_KEY_FOR, user?.id, isInitialLoadComplete]);
-
   const loadClothes = async () => {
     try {
       setLoading(true);
       const uid = user?.id ?? 'guest';
       const key = STORAGE_KEY_FOR(uid);
-      console.log('[Clothes] Loading from AsyncStorage for user:', uid);
+      console.log('[Clothes] ========== LOADING CLOTHES ==========');
+      console.log('[Clothes] User:', uid);
+
+      if (cloud?.clothes && cloud.clothes.length > 0) {
+        console.log('[Clothes] ✅ USING CLOUD DATA:', cloud.clothes.length, 'items');
+        setClothes(cloud.clothes);
+        await AsyncStorage.setItem(key, JSON.stringify(cloud.clothes));
+        console.log('[Clothes] Cloud data saved to AsyncStorage as backup');
+        setLoading(false);
+        return;
+      }
 
       const legacy = await AsyncStorage.getItem("clothes");
       if (legacy && !(await AsyncStorage.getItem(key))) {
@@ -58,11 +57,11 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       const stored = await AsyncStorage.getItem(key);
       if (stored) {
         const parsed = JSON.parse(stored) as ClothingItem[];
-        console.log('[Clothes] Loaded', parsed.length, 'items from AsyncStorage');
+        console.log('[Clothes] 📁 Loaded', parsed.length, 'items from AsyncStorage (local backup)');
         setClothes(parsed);
         return;
       }
-      console.log('[Clothes] No stored data found, loading demo items');
+      console.log('[Clothes] ⚠️  No data found, loading demo items');
 
       const demoItems: ClothingItem[] = [
         {

@@ -44,27 +44,51 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
   }, [user?.id]);
 
   useEffect(() => {
-    if (isInitialLoadComplete && cloud?.budget && !hasHydratedFromCloud.current) {
-      const b = cloud.budget as BudgetOption | null;
-      console.log('[Budget] hydrating from cloud:', b);
-      setBudgetState(b);
-      if (user?.id && b) {
-        void AsyncStorage.setItem(STORAGE_KEY_FOR(user.id), b).catch(e =>
-          console.error('[Budget] Failed to save cloud data to AsyncStorage:', e)
-        );
-      }
-      hasHydratedFromCloud.current = true;
-    }
-  }, [cloud?.budget, user?.id, isInitialLoadComplete]);
+    hasHydratedFromCloud.current = false;
+  }, [user?.id]);
 
   useEffect(() => {
-    if (isInitialLoadComplete && !hasHydratedFromCloud.current) {
-      setBudgetState(null);
-      if (user?.id) {
-        void getBudgetForCurrentUser();
-      }
+    if (isInitialLoadComplete) {
+      void load();
     }
-  }, [user?.id, getBudgetForCurrentUser, isInitialLoadComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isInitialLoadComplete]);
+
+  const load = async () => {
+    try {
+      if (!user?.id) {
+        setBudgetState(null);
+        return;
+      }
+      console.log('[Budget] ========== LOADING BUDGET ==========');
+      console.log('[Budget] User:', user.id);
+
+      if (cloud?.budget && !hasHydratedFromCloud.current) {
+        const b = cloud.budget as BudgetOption | null;
+        console.log('[Budget] ✅ USING CLOUD DATA:', b);
+        setBudgetState(b);
+        if (b) {
+          await AsyncStorage.setItem(STORAGE_KEY_FOR(user.id), b);
+          console.log('[Budget] Cloud data saved to AsyncStorage as backup');
+        }
+        hasHydratedFromCloud.current = true;
+        return;
+      }
+
+      const stored = await AsyncStorage.getItem(STORAGE_KEY_FOR(user.id));
+      if (stored) {
+        const parsed = stored as BudgetOption;
+        console.log('[Budget] 📁 Loaded from AsyncStorage (local backup):', parsed);
+        setBudgetState(parsed);
+      } else {
+        console.log('[Budget] ⚠️  No data found');
+        setBudgetState(null);
+      }
+    } catch (e) {
+      console.log('[Budget] load error', e);
+      setBudgetState(null);
+    }
+  };
 
   const setBudget = useCallback(async (b: BudgetOption) => {
     console.log('[Budget] Setting budget:', b, 'for user:', user?.id);

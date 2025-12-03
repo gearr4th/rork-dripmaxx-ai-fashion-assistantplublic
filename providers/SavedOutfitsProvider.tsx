@@ -29,24 +29,22 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isInitialLoadComplete]);
 
-  useEffect(() => {
-    if (isInitialLoadComplete && cloud?.savedOutfits) {
-      console.log('[SavedOutfits] hydrating', cloud.savedOutfits.length, 'outfits from cloud');
-      setSavedOutfits(cloud.savedOutfits);
-      const uid = user?.id ?? 'guest';
-      void AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify(cloud.savedOutfits))
-        .then(() => console.log('[SavedOutfits] Cloud data saved to AsyncStorage'))
-        .catch(e => console.error('[SavedOutfits] Failed to save cloud data to AsyncStorage:', e));
-      setLoading(false);
-    }
-  }, [cloud?.savedOutfits, user?.id, isInitialLoadComplete]);
-
   const load = async () => {
     try {
       setLoading(true);
       const uid = user?.id ?? 'guest';
       const key = KEY_FOR(uid);
-      console.log('[SavedOutfits] Loading from AsyncStorage for user:', uid);
+      console.log('[SavedOutfits] ========== LOADING OUTFITS ==========');
+      console.log('[SavedOutfits] User:', uid);
+
+      if (cloud?.savedOutfits && cloud.savedOutfits.length > 0) {
+        console.log('[SavedOutfits] ✅ USING CLOUD DATA:', cloud.savedOutfits.length, 'outfits');
+        setSavedOutfits(cloud.savedOutfits);
+        await AsyncStorage.setItem(key, JSON.stringify(cloud.savedOutfits));
+        console.log('[SavedOutfits] Cloud data saved to AsyncStorage as backup');
+        setLoading(false);
+        return;
+      }
 
       const legacy = await AsyncStorage.getItem(LEGACY_KEY);
       if (legacy && !(await AsyncStorage.getItem(key))) {
@@ -58,10 +56,10 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
       const raw = await AsyncStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw) as Outfit[];
-        console.log('[SavedOutfits] Loaded', parsed.length, 'outfits from AsyncStorage');
+        console.log('[SavedOutfits] 📁 Loaded', parsed.length, 'outfits from AsyncStorage (local backup)');
         setSavedOutfits(parsed);
       } else {
-        console.log('[SavedOutfits] No stored data found');
+        console.log('[SavedOutfits] ⚠️  No data found');
         setSavedOutfits([]);
       }
     } catch (e) {

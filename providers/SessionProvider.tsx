@@ -30,38 +30,44 @@ export const [SessionProvider, useSession] = createContextHook<SessionContextTyp
   const hasHydratedFromCloud = useRef<boolean>(false);
 
   useEffect(() => {
-    if (isInitialLoadComplete && !hasHydratedFromCloud.current) {
+    hasHydratedFromCloud.current = false;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (isInitialLoadComplete) {
       void load();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isInitialLoadComplete]);
 
-  useEffect(() => {
-    if (isInitialLoadComplete && cloud?.session && !hasHydratedFromCloud.current) {
-      const ag = (cloud.session.ageGroup as AgeGroup | null) ?? null;
-      console.log('[Session] hydrating from cloud', ag);
-      setAgeGroupState(ag);
-      const uid = user?.id ?? 'guest';
-      void AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify({ ageGroup: ag })).catch(e => 
-        console.error('[Session] Failed to save cloud data to AsyncStorage:', e)
-      );
-      hasHydratedFromCloud.current = true;
-    }
-  }, [cloud?.session, user?.id, isInitialLoadComplete]);
-
   const load = async () => {
     try {
       const uid = user?.id ?? 'guest';
+      console.log('[Session] ========== LOADING SESSION ==========');
+      console.log('[Session] User:', uid);
+
+      if (cloud?.session?.ageGroup && !hasHydratedFromCloud.current) {
+        const ag = (cloud.session.ageGroup as AgeGroup | null) ?? null;
+        console.log('[Session] ✅ USING CLOUD DATA:', ag);
+        setAgeGroupState(ag);
+        await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify({ ageGroup: ag }));
+        console.log('[Session] Cloud data saved to AsyncStorage as backup');
+        hasHydratedFromCloud.current = true;
+        return;
+      }
+
       const raw = await AsyncStorage.getItem(KEY_FOR(uid));
       if (raw) {
         const parsed = JSON.parse(raw) as { ageGroup?: AgeGroup | null };
+        console.log('[Session] 📁 Loaded from AsyncStorage (local backup):', parsed.ageGroup);
         setAgeGroupState(parsed.ageGroup ?? null);
       } else if (user?.age) {
         const derivedGroup = ageToAgeGroup(user.age);
-        console.log('[Session] Auto-derived age group from user age:', user.age, '->', derivedGroup);
+        console.log('[Session] 🔄 Auto-derived age group from user age:', user.age, '->', derivedGroup);
         setAgeGroupState(derivedGroup);
         await AsyncStorage.setItem(KEY_FOR(uid), JSON.stringify({ ageGroup: derivedGroup }));
       } else {
+        console.log('[Session] ⚠️  No data found');
         setAgeGroupState(null);
       }
     } catch (e) {

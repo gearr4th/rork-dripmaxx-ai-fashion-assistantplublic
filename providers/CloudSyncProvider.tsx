@@ -38,11 +38,17 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
 
   const fetchCloud = useCallback(async () => {
     if (!user?.id) {
-      if (mountedRef.current) setCloud(null);
+      if (mountedRef.current) {
+        setCloud(null);
+        setIsInitialLoadComplete(true);
+      }
       return;
     }
     try {
-      console.log('[CloudSync] fetchCloud for user', user.id);
+      console.log('[CloudSync] ========== FETCHING CLOUD DATA ==========');
+      console.log('[CloudSync] User ID:', user.id);
+      console.log('[CloudSync] Supabase session:', (await supabase.auth.getSession()).data.session?.user?.id || 'NO SESSION');
+      
       const { data, error } = await supabase
         .from('user_blobs')
         .select('*')
@@ -50,41 +56,48 @@ export const [CloudSyncProvider, useCloudSync] = createContextHook<CloudSyncCont
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[CloudSync] fetchCloud error:', JSON.stringify(error, null, 2));
+        console.error('[CloudSync] ❌ fetchCloud error:', JSON.stringify(error, null, 2));
         console.error('[CloudSync] fetchCloud error details:', { 
           message: error.message, 
           code: error.code,
           details: error.details,
           hint: error.hint 
         });
-        if (mountedRef.current) setLastError(`Cloud fetch failed: ${error.message}`);
+        if (mountedRef.current) {
+          setLastError(`Cloud fetch failed: ${error.message}`);
+          setIsInitialLoadComplete(true);
+        }
         return;
       }
 
       const blob = data?.data ?? null;
       if (mountedRef.current) {
         if (blob) {
-          console.log('[CloudSync] Loaded cloud data:', { 
-            hasClothes: !!blob.clothes, 
-            hasSavedOutfits: !!blob.savedOutfits,
-            hasBudget: !!blob.budget,
-            hasSession: !!blob.session 
+          console.log('[CloudSync] ✅ CLOUD DATA LOADED:', { 
+            clothesCount: blob.clothes?.length ?? 0, 
+            outfitsCount: blob.savedOutfits?.length ?? 0,
+            budget: blob.budget,
+            session: blob.session?.ageGroup
           });
           setCloud(blob);
         } else {
-          console.log('[CloudSync] No cloud data found, creating empty');
+          console.log('[CloudSync] ⚠️  No cloud data found, creating empty');
           setCloud({ version: 1, updatedAt: new Date().toISOString() });
         }
         setIsInitialLoadComplete(true);
+        console.log('[CloudSync] ========== CLOUD SYNC READY ==========');
       }
     } catch (e) {
-      console.error('[CloudSync] fetchCloud exception:', e);
+      console.error('[CloudSync] ❌ fetchCloud exception:', e);
       console.error('[CloudSync] fetchCloud exception details:', {
         message: e instanceof Error ? e.message : 'Unknown error',
         stack: e instanceof Error ? e.stack : undefined,
         raw: JSON.stringify(e)
       });
-      if (mountedRef.current) setLastError(e instanceof Error ? e.message : 'Unknown error');
+      if (mountedRef.current) {
+        setLastError(e instanceof Error ? e.message : 'Unknown error');
+        setIsInitialLoadComplete(true);
+      }
     }
   }, [user?.id]);
 
