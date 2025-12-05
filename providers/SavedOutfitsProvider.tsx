@@ -18,9 +18,9 @@ const LEGACY_KEY = "savedOutfits" as const;
 
 export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOutfitsContextType>(() => {
   const { user } = useAuth();
+  const cloudSync = useCloudSync();
   const [savedOutfits, setSavedOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const cloudSync = useCloudSync();
   const hasLoadedRef = useRef<string | null>(null);
 
   useEffect(() => {

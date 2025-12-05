@@ -17,9 +17,9 @@ interface ClothesContextType {
 
 export const [ClothesProvider, useClothes] = createContextHook<ClothesContextType>(() => {
   const { user } = useAuth();
+  const cloudSync = useCloudSync();
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const cloudSync = useCloudSync();
   const hasLoadedRef = useRef<string | null>(null);
 
   const STORAGE_KEY_FOR = useCallback((userId: string) => `clothes:${userId}`, []);

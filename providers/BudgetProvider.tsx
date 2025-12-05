@@ -22,6 +22,12 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
   const [budget, setBudgetState] = useState<BudgetOption | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const hasLoadedRef = useRef<string | null>(null);
+  const mountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const getBudgetForCurrentUser = useCallback(async (): Promise<BudgetOption | null> => {
     try {

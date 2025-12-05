@@ -28,6 +28,12 @@ export const [SessionProvider, useSession] = createContextHook<SessionContextTyp
   const cloudSync = useCloudSync();
   const [ageGroup, setAgeGroupState] = useState<AgeGroup | null>(null);
   const hasLoadedRef = useRef<string | null>(null);
+  const mountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     const uid = user?.id ?? 'guest';
