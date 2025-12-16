@@ -188,7 +188,7 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.greeting}>{currentGreeting}</Text>
-              <Text style={styles.title}>What's your vibe today?</Text>
+              <Text style={styles.title}>What&apos;s your vibe today?</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

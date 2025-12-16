@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ClothesProvider } from "@/providers/ClothesProvider";
 import { WeatherProvider } from "@/providers/WeatherProvider";
@@ -11,7 +11,7 @@ import { SessionProvider } from "@/providers/SessionProvider";
 import { BudgetProvider } from "@/providers/BudgetProvider";
 import { SavedOutfitsProvider } from "@/providers/SavedOutfitsProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { CloudSyncProvider, useCloudSync } from "@/providers/CloudSyncProvider";
+import { CloudSyncProvider } from "@/providers/CloudSyncProvider";
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
 
@@ -19,20 +19,7 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-function CloudSyncGate({ children }: { children: React.ReactNode }) {
-  const { isInitialLoadComplete } = useCloudSync();
-  
-  if (!isInitialLoadComplete) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF5C00" />
-        <Text style={styles.loadingText}>Loading your data...</Text>
-      </View>
-    );
-  }
-  
-  return <>{children}</>;
-}
+
 
 function RootLayoutNav() {
   return (
@@ -71,7 +58,6 @@ export default function RootLayout() {
         <GestureHandlerRootView style={styles.flex1}>
           <AuthProvider>
             <CloudSyncProvider>
-              <CloudSyncGate>
                 <SubscriptionProvider>
                   <WeatherProvider>
                     <ClothesProvider>
@@ -92,7 +78,6 @@ export default function RootLayout() {
                     </ClothesProvider>
                   </WeatherProvider>
                 </SubscriptionProvider>
-              </CloudSyncGate>
             </CloudSyncProvider>
           </AuthProvider>
         </GestureHandlerRootView>
@@ -104,17 +89,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
   container: { flex: 1 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0A0A0A",
-  },
-  loadingText: {
-    color: "#E0E0E0",
-    marginTop: 16,
-    fontSize: 16,
-  },
   debugBadge: {
     position: "absolute",
     top: 8,
