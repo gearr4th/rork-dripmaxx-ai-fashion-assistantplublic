@@ -239,7 +239,7 @@ export default function ClothesScreen() {
                   trendScore: String(item.trendScore),
                   versatilityScore: String(item.versatilityScore),
                 } as const;
-                router.push({ pathname: "/recommendation-details", params: params2 });
+                router.push({ pathname: "/recommendation-details" as any, params: params2 });
               } catch (e) {
                 console.log('[Wardrobe] navigate recommendation error', e);
               }
