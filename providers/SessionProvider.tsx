@@ -96,7 +96,7 @@ export const [SessionProvider, useSession] = createContextHook<SessionContextTyp
       console.error('[Session] Cloud persist error:', e);
       throw e;
     }
-  }, [user?.id, cloudSync.mergeAndPersist]);
+  }, [user?.id, cloudSync]);
 
   const setAgeGroup = useCallback(async (age: AgeGroup) => {
     console.log('[Session] setAgeGroup', age);

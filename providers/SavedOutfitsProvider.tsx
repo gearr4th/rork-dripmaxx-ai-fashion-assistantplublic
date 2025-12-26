@@ -89,7 +89,7 @@ export const [SavedOutfitsProvider, useSavedOutfits] = createContextHook<SavedOu
       console.error('[SavedOutfits] Cloud persist error:', e);
       throw e;
     }
-  }, [user?.id, cloudSync.mergeAndPersist]);
+  }, [user?.id, cloudSync]);
 
   const saveOutfit = useCallback(async (outfit: Outfit) => {
     const exists = savedOutfits.some(o => o.id === outfit.id);

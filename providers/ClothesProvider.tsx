@@ -175,7 +175,7 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
       console.error('[Clothes] Cloud persist error:', e);
       throw e;
     }
-  }, [user?.id, cloudSync.mergeAndPersist, STORAGE_KEY_FOR]);
+  }, [user?.id, cloudSync, STORAGE_KEY_FOR]);
 
   const addClothingItem = useCallback(async (item: Omit<ClothingItem, "id">) => {
     console.log('[Clothes] Adding new item:', item.name);

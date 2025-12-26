@@ -116,7 +116,7 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
       console.error('[Budget] save error:', e);
       throw e;
     }
-  }, [user?.id, cloudSync.mergeAndPersist]);
+  }, [user?.id, cloudSync]);
 
   const clearBudget = useCallback(async () => {
     const uid = user?.id;
@@ -141,7 +141,7 @@ export const [BudgetProvider, useBudget] = createContextHook<BudgetContextType>(
       console.error('[Budget] clear error:', e);
       throw e;
     }
-  }, [user?.id, cloudSync.mergeAndPersist]);
+  }, [user?.id, cloudSync]);
 
   return useMemo(() => ({ budget, setBudget, clearBudget, getBudgetForCurrentUser, loading }), [budget, setBudget, clearBudget, getBudgetForCurrentUser, loading]);
 });
