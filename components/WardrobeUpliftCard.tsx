@@ -83,7 +83,7 @@ export default function WardrobeUpliftCard({
   }, [clothes, weather, occasion, budget, generateFallbackAnalysis]);
 
   useEffect(() => {
-    analyzeWardrobe();
+    void analyzeWardrobe();
   }, [analyzeWardrobe]);
 
   const generateFallbackSuggestions = (budgetNum: number): SuggestedItem[] => {
@@ -135,7 +135,7 @@ export default function WardrobeUpliftCard({
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FFD700" />
+        <ActivityIndicator size="large" color="#3B82F6" />
         <Text style={styles.loadingText}>Analyzing your wardrobe...</Text>
       </View>
     );
@@ -148,7 +148,7 @@ export default function WardrobeUpliftCard({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#FF6B6B', '#FF8E8E', '#FFB6B6']}
+        colors={['#1E3A5F', '#1A3352', '#162D4A']}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -198,11 +198,11 @@ export default function WardrobeUpliftCard({
                 
                 <View style={styles.scoresContainer}>
                   <View style={styles.scoreChip}>
-                    <TrendingUp color="#FFD700" size={12} />
+                    <TrendingUp color="#60A5FA" size={12} />
                     <Text style={styles.chipText}>{item.trendScore}</Text>
                   </View>
                   <View style={styles.scoreChip}>
-                    <Star color="#FFD700" size={12} />
+                    <Star color="#60A5FA" size={12} />
                     <Text style={styles.chipText}>{item.versatilityScore}</Text>
                   </View>
                 </View>
@@ -217,14 +217,14 @@ export default function WardrobeUpliftCard({
 
         <TouchableOpacity style={styles.actionButton}>
           <LinearGradient
-            colors={['#FFD700', '#FFA500']}
+            colors={['#3B82F6', '#1D4ED8']}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Heart color="#000" size={20} />
+            <Heart color="#FFF" size={20} />
             <Text style={styles.buttonText}>Start Shopping</Text>
-            <ExternalLink color="#000" size={16} />
+            <ExternalLink color="#FFF" size={16} />
           </LinearGradient>
         </TouchableOpacity>
       </LinearGradient>
@@ -243,26 +243,22 @@ function getQuickBoostTip(analysis: WardrobeAnalysis): string {
 
 async function performWardrobeAnalysis(
   clothes: ClothingItem[],
-  weather: Weather | null,
-  occasion: string,
+  _weather: Weather | null,
+  _occasion: string,
   budget: string | null
 ): Promise<WardrobeAnalysis> {
   const budgetNum = getBudgetNumber(budget);
   
   // Analyze weather appropriateness
-  const hasWeatherAppropriateClothes = analyzeWeatherAppropriateness(clothes, weather);
+  const hasWeatherAppropriateClothes = analyzeWeatherAppropriateness(clothes, _weather);
   
-  // Analyze trend alignment
   const hasTrendyItems = analyzeTrendiness(clothes);
   
-  // Find missing categories
   const missingCategories = findMissingCategories(clothes);
   
-  // Calculate overall score
   const overallScore = calculateWardrobeScore(clothes, hasWeatherAppropriateClothes, hasTrendyItems);
   
-  // Generate suggestions
-  const suggestions = await generateSmartSuggestions(clothes, weather, occasion, budgetNum, missingCategories);
+  const suggestions = await generateSmartSuggestions(clothes, _weather, _occasion, budgetNum, missingCategories);
   
   // Create uplift message
   const upliftMessage = generateUpliftMessage(overallScore, missingCategories.length);
@@ -385,8 +381,8 @@ async function generateSmartSuggestions(
 function generateCategoryItems(
   category: string,
   budget: number,
-  weather: Weather | null,
-  occasion: string
+  _weather: Weather | null,
+  _occasion: string
 ): SuggestedItem[] {
   const priceRange = budget / 4;
   
@@ -506,7 +502,7 @@ function generateCategoryItems(
   return categoryMap[category] || [];
 }
 
-function generateVersatileItems(budget: number, weather: Weather | null): SuggestedItem[] {
+function generateVersatileItems(budget: number, _weather: Weather | null): SuggestedItem[] {
   const priceRange = budget / 4;
   
   return [
@@ -533,7 +529,7 @@ function generateVersatileItems(budget: number, weather: Weather | null): Sugges
   ];
 }
 
-function generateUpliftMessage(score: number, missingCategoriesCount: number): string {
+function generateUpliftMessage(score: number, _missingCategoriesCount: number): string {
   const messages = [
     "Your style journey is just beginning! ✨ These pieces will elevate your wardrobe and boost your confidence.",
     "Ready to level up your look? 🚀 These trendy additions will have you feeling amazing every day!",
@@ -615,7 +611,7 @@ const styles = StyleSheet.create({
   },
   scoreProgress: {
     height: '100%',
-    backgroundColor: '#FFD700',
+    backgroundColor: '#3B82F6',
     borderRadius: 4,
   },
   scoreText: {
@@ -665,7 +661,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#60A5FA',
     marginBottom: 8,
   },
   scoresContainer: {
@@ -675,7 +671,7 @@ const styles = StyleSheet.create({
   scoreChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -683,7 +679,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 10,
-    color: '#FFD700',
+    color: '#60A5FA',
     marginLeft: 2,
     fontWeight: '600',
   },
@@ -704,7 +700,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   buttonText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },

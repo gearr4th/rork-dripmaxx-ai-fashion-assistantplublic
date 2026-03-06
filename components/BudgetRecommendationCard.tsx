@@ -21,9 +21,9 @@ function BudgetRecommendationCard({ recommendation, currency = 'USD' }: Props) {
       <View style={styles.header}>
         <View style={[styles.statusIcon, fits ? styles.successIcon : styles.warningIcon]}>
           {fits ? (
-            <CheckCircle color={fits ? '#4CAF50' : '#FF9800'} size={20} />
+            <CheckCircle color={fits ? '#34D399' : '#FBBF24'} size={20} />
           ) : (
-            <AlertTriangle color="#FF9800" size={20} />
+            <AlertTriangle color="#FBBF24" size={20} />
           )}
         </View>
         <Text style={styles.title}>Budget & Occasion Analysis</Text>
@@ -31,7 +31,7 @@ function BudgetRecommendationCard({ recommendation, currency = 'USD' }: Props) {
       
       <View style={styles.section}>
         <View style={styles.row}>
-          <DollarSign color="#FFD700" size={16} />
+          <DollarSign color="#60A5FA" size={16} />
           <Text style={styles.label}>Budget Fit</Text>
         </View>
         <Text style={[styles.message, fits ? styles.successText : styles.warningText]}>
@@ -114,8 +114,8 @@ export default memo(BudgetRecommendationCard);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
+    borderColor: 'rgba(59, 130, 246, 0.12)',
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
@@ -135,13 +135,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   successIcon: {
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
   },
   warningIcon: {
-    backgroundColor: 'rgba(255, 152, 0, 0.2)',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
   },
   title: {
-    color: '#FFF',
+    color: '#E2E8F0',
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   label: {
-    color: '#AAA',
+    color: '#64748B',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -165,16 +165,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   successText: {
-    color: '#4CAF50',
+    color: '#34D399',
   },
   warningText: {
-    color: '#FF9800',
+    color: '#FBBF24',
   },
   alternativesSection: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: 'rgba(59, 130, 246, 0.12)',
   },
   alternativesHeader: {
     flexDirection: 'row',
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   alternativeName: {
-    color: '#FFF',
+    color: '#E2E8F0',
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   alternativeBrand: {
-    color: '#CCC',
+    color: '#94A3B8',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -248,15 +248,15 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   metricText: {
-    color: '#AAA',
+    color: '#94A3B8',
     fontSize: 11,
   },
   metricDivider: {
-    color: '#666',
+    color: '#475569',
     fontSize: 11,
   },
   whereToFind: {
-    color: '#999',
+    color: '#64748B',
     fontSize: 11,
     fontStyle: 'italic',
   },

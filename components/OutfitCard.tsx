@@ -17,12 +17,13 @@ export default function OutfitCard({ outfit }: OutfitCardProps) {
       onPress={async () => {
         try {
           await saveOutfit(outfit);
-        } catch (e) {
+        } catch {
           // no-op
         }
         router.push({ pathname: "/outfit-details", params: { id: outfit.id } } as any);
       }}
       testID={`outfit-card-${outfit.id}`}
+      activeOpacity={0.8}
     >
       <View style={styles.imagesContainer}>
         {outfit.items.slice(0, 3).map((item, index) => (
@@ -37,7 +38,7 @@ export default function OutfitCard({ outfit }: OutfitCardProps) {
         <Text style={styles.occasion} numberOfLines={1}>{outfit.style}</Text>
         <Text style={styles.itemCount}>{outfit.items.length} items</Text>
       </View>
-      <ChevronRight color="#666" size={20} />
+      <ChevronRight color="#334155" size={18} />
     </TouchableOpacity>
   );
 }
@@ -46,36 +47,36 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.12)",
   },
   imagesContainer: {
     flexDirection: "row",
-    marginRight: 16,
+    marginRight: 14,
   },
   itemImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 2,
-    borderColor: "#0A0A0A",
-    marginRight: -15,
+    borderColor: "#0F1729",
+    marginRight: -14,
   },
   details: {
     flex: 1,
-    marginLeft: 20,
+    marginLeft: 18,
   },
   occasion: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#E0E0E0",
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#E2E8F0",
+    marginBottom: 3,
   },
   itemCount: {
     fontSize: 12,
-    color: "#888",
+    color: "#64748B",
   },
 });

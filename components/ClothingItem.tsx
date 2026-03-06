@@ -11,10 +11,10 @@ interface ClothingItemProps {
 }
 
 const DRIP_COLORS: Record<DripLevel, string> = {
-  "Maxx Drip": "#8A2BE2",
-  "Pure Drip": "#1E90FF",
-  "Certified Drip": "#32CD32",
-  "Lowkey Drip": "#999999",
+  "Maxx Drip": "#A78BFA",
+  "Pure Drip": "#60A5FA",
+  "Certified Drip": "#34D399",
+  "Lowkey Drip": "#64748B",
 };
 
 function formatPrice(price: number | null, currency?: string): string {
@@ -24,7 +24,7 @@ function formatPrice(price: number | null, currency?: string): string {
   return `${sym}${Math.round(price)}`;
 }
 
-export default function ClothingItem({ item, onDelete, showDelete = false }: ClothingItemProps) {
+export default function ClothingItem({ item }: ClothingItemProps) {
   const analysis: ImageAnalysisResult | undefined = useMemo(() => {
     if (item.analysis) return item.analysis;
     const base = (name: string) => name.toLowerCase();
@@ -53,12 +53,11 @@ export default function ClothingItem({ item, onDelete, showDelete = false }: Clo
     };
     return derived;
   }, [item]);
-  const dripColor = analysis ? DRIP_COLORS[analysis.dripLevel] : "#999999";
+  const dripColor = analysis ? DRIP_COLORS[analysis.dripLevel] : "#64748B";
 
   return (
     <View style={styles.container} testID={`clothing-card-${item.id}`}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
-
 
       <View style={styles.overlay}>
         <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
@@ -75,12 +74,12 @@ export default function ClothingItem({ item, onDelete, showDelete = false }: Clo
           {item.brand ? <Text style={styles.brand}>{item.brand}</Text> : <View />}
           {analysis && analysis.averagePrice ? (
             <View style={styles.priceRow}>
-              <DollarSign color="#FF5C00" size={12} />
+              <DollarSign color="#3B82F6" size={12} />
               <Text style={styles.price}>{formatPrice(analysis.averagePrice, analysis.currency)}</Text>
             </View>
           ) : null}
         </View>
-        <View style={[styles.dripLevel, { backgroundColor: `${dripColor}20` }]}>
+        <View style={[styles.dripLevel, { backgroundColor: `${dripColor}15` }]}>
           <Text style={[styles.dripText, { color: dripColor }]}>{analysis?.dripLevel ?? 'Lowkey Drip'}</Text>
         </View>
       </View>
@@ -92,9 +91,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     margin: 4,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
   },
   image: {
     width: "100%",
@@ -107,31 +106,31 @@ const styles = StyleSheet.create({
     right: 8,
   },
   colorIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#E0E0E0",
+    borderColor: "rgba(226, 232, 240, 0.6)",
   },
   dripBadge: {
     position: "absolute",
     top: -8,
     left: -8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(15, 23, 42, 0.85)",
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
   },
   info: {
-    padding: 12,
+    padding: 10,
   },
   name: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#E0E0E0",
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: "#E2E8F0",
     marginBottom: 4,
   },
   details: {
@@ -141,8 +140,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   brand: {
-    fontSize: 12,
-    color: "#888",
+    fontSize: 11,
+    color: "#64748B",
   },
   priceRow: {
     flexDirection: "row",
@@ -151,19 +150,19 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 12,
-    color: "#FF5C00",
-    fontWeight: "600",
+    color: "#60A5FA",
+    fontWeight: "600" as const,
   },
   dripLevel: {
     alignSelf: "flex-start",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
-    marginTop: 4,
+    marginTop: 2,
   },
   dripText: {
     fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
   },
 });

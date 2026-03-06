@@ -98,7 +98,7 @@ export default function LoginScreen() {
         setConnectionStatus("Connection issue detected. Use demo account.");
       }
     };
-    checkConnection().catch(console.error);
+    void checkConnection();
   }, []);
 
   const handleDemo = async () => {
@@ -116,7 +116,7 @@ export default function LoginScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0B1120", "#0F1A2E", "#0B1526"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -130,7 +130,7 @@ export default function LoginScreen() {
           >
             <View style={styles.header}>
               <View style={styles.logoContainer}>
-                <Sparkles color="#FFD700" size={40} />
+                <Sparkles color="#60A5FA" size={36} />
               </View>
               <Text style={styles.title}>DripMaxx AI</Text>
               <Text style={styles.subtitle}>Your AI Fashion Assistant</Text>
@@ -143,12 +143,12 @@ export default function LoginScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputContainer}>
-                <Mail color="#666" size={20} style={styles.inputIcon} />
+                <Mail color="#475569" size={20} style={styles.inputIcon} />
                 <TextInput
                   testID="login-email"
                   style={styles.input}
                   placeholder="Email"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#475569"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -157,12 +157,12 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Lock color="#666" size={20} style={styles.inputIcon} />
+                <Lock color="#475569" size={20} style={styles.inputIcon} />
                 <TextInput
                   testID="login-password"
                   style={styles.input}
                   placeholder="Password"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#475569"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -174,9 +174,10 @@ export default function LoginScreen() {
                 style={[styles.loginButton, loading && styles.disabledButton]}
                 onPress={handleLogin}
                 disabled={loading}
+                activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={["#FFD700", "#FFA500"]}
+                  colors={["#3B82F6", "#1D4ED8"]}
                   style={styles.gradientButton}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -192,6 +193,7 @@ export default function LoginScreen() {
                 style={styles.demoPrimary}
                 onPress={handleDemo}
                 disabled={loading}
+                activeOpacity={0.7}
               >
                 <Text style={styles.demoPrimaryText}>Continue with Demo</Text>
               </TouchableOpacity>
@@ -223,30 +225,32 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 24,
   },
   header: {
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 48,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    width: 76,
+    height: 76,
+    borderRadius: 22,
+    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.25)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#F2F2F2",
-    marginBottom: 8,
+    fontSize: 30,
+    fontWeight: "800" as const,
+    color: "#E2E8F0",
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#888",
+    fontSize: 15,
+    color: "#64748B",
   },
   form: {
     width: "100%",
@@ -254,36 +258,36 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: "rgba(30, 58, 95, 0.4)",
+    borderRadius: 14,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.15)",
   },
   inputIcon: {
     marginLeft: 16,
   },
   input: {
     flex: 1,
-    height: 56,
-    paddingHorizontal: 16,
-    color: "#F2F2F2",
-    fontSize: 16,
+    height: 54,
+    paddingHorizontal: 14,
+    color: "#E2E8F0",
+    fontSize: 15,
   },
   loginButton: {
     marginTop: 8,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
   },
   gradientButton: {
-    height: 56,
+    height: 54,
     justifyContent: "center",
     alignItems: "center",
   },
   loginButtonText: {
-    color: "#000000",
-    fontSize: 18,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "700" as const,
   },
   disabledButton: {
     opacity: 0.6,
@@ -291,15 +295,17 @@ const styles = StyleSheet.create({
   demoPrimary: {
     marginTop: 12,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: "#FF6B00",
+    borderRadius: 14,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
   demoPrimaryText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "700",
+    color: "#60A5FA",
+    fontSize: 15,
+    fontWeight: "600" as const,
   },
   signupContainer: {
     flexDirection: "row",
@@ -307,25 +313,25 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   signupText: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 14,
   },
   signupLink: {
-    color: "#FFD700",
+    color: "#3B82F6",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   connectionStatus: {
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "rgba(255, 165, 0, 0.15)",
-    borderRadius: 8,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 165, 0, 0.3)",
+    borderColor: "rgba(59, 130, 246, 0.2)",
   },
   connectionStatusText: {
-    color: "#FFA500",
+    color: "#60A5FA",
     fontSize: 12,
     textAlign: "center",
   },

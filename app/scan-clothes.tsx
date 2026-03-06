@@ -511,15 +511,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   deleteButton: {
-    borderColor: "rgba(255, 68, 68, 0.3)",
+    borderColor: "rgba(239, 68, 68, 0.3)",
   },
   actionButtonText: {
-    color: "#FFD700",
+    color: "#60A5FA",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   deleteButtonText: {
-    color: "#FF4444",
+    color: "#EF4444",
   },
   analyzeButton: {
     borderRadius: 12,
@@ -534,9 +534,9 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   analyzeText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   form: {
     marginBottom: 32,
@@ -610,9 +610,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveButtonText: {
-    color: "#000000",
-    fontSize: 18,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "700" as const,
   },
   disabledButton: {
     opacity: 0.6,

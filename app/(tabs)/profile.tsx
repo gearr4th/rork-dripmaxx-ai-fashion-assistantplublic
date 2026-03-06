@@ -47,7 +47,7 @@ export default function ProfileScreen() {
         text: "Sign Out",
         style: "destructive",
         onPress: () => {
-          signOut();
+          void signOut();
           router.replace("/login" as any);
         },
       },
@@ -56,7 +56,7 @@ export default function ProfileScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
+      colors={["#0B1120", "#111B2E", "#0A1628"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -66,27 +66,27 @@ export default function ProfileScreen() {
         >
           <View style={styles.header}>
             <View style={styles.avatarContainer}>
-              <User color="#FF5C00" size={40} />
+              <User color="#60A5FA" size={36} />
             </View>
             <Text style={styles.name}>{user?.name || "Demo User"}</Text>
             <Text style={styles.email}>{user?.email || "demo@dripmaxx.ai"}</Text>
           </View>
 
-          <TouchableOpacity style={styles.premiumCard} onPress={handleUpgrade}>
+          <TouchableOpacity style={styles.premiumCard} onPress={handleUpgrade} activeOpacity={0.8}>
             <LinearGradient
-              colors={["#FF5C00", "#FF8C00"]}
+              colors={["#2563EB", "#1D4ED8"]}
               style={styles.premiumGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Crown color="#0A0A0A" size={24} />
+              <Crown color="#FCD34D" size={24} />
               <View style={styles.premiumContent}>
                 <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
                 <Text style={styles.premiumSubtitle}>
                   Unlimited outfits & exclusive features
                 </Text>
               </View>
-              <ChevronRight color="#0A0A0A" size={24} />
+              <ChevronRight color="rgba(255,255,255,0.6)" size={22} />
             </LinearGradient>
           </TouchableOpacity>
 
@@ -95,7 +95,7 @@ export default function ProfileScreen() {
             
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <User color="#666" size={20} />
+                <User color="#60A5FA" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Name</Text>
@@ -105,7 +105,7 @@ export default function ProfileScreen() {
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <Mail color="#666" size={20} />
+                <Mail color="#60A5FA" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Email</Text>
@@ -117,7 +117,7 @@ export default function ProfileScreen() {
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <Calendar color="#666" size={20} />
+                <Calendar color="#60A5FA" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Age Group</Text>
@@ -127,9 +127,9 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.infoItem} onPress={() => router.push('/subscription' as any)}>
+            <TouchableOpacity style={styles.infoItem} onPress={() => router.push('/subscription' as any)} activeOpacity={0.7}>
               <View style={styles.infoIcon}>
-                <CreditCard color="#666" size={20} />
+                <CreditCard color="#60A5FA" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Subscription</Text>
@@ -145,19 +145,19 @@ export default function ProfileScreen() {
                   </Text>
                 )}
               </View>
-              <ChevronRight color="#666" size={20} />
+              <ChevronRight color="#475569" size={18} />
             </TouchableOpacity>
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <Wallet color="#666" size={20} />
+                <Wallet color="#60A5FA" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Monthly Budget</Text>
                 <Text style={styles.infoValue}>{budget ?? 'Not set'}</Text>
               </View>
-              <TouchableOpacity onPress={() => router.push('/select-budget' as any)}>
-                <Text style={[styles.infoValue, { color: '#FF5C00' }]}>Change</Text>
+              <TouchableOpacity onPress={() => router.push('/select-budget' as any)} activeOpacity={0.7}>
+                <Text style={styles.changeLink}>Change</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -169,11 +169,10 @@ export default function ProfileScreen() {
                 <Text style={styles.savedEmpty}>No saved outfits yet</Text>
               ) : (
                 savedOutfits.map((o) => (
-                  <TouchableOpacity key={o.id} onPress={() => router.push({ pathname: '/outfit-details', params: { id: o.id } } as any)} style={styles.savedOutfitCard} testID={`saved-outfit-${o.id}`}>
+                  <TouchableOpacity key={o.id} onPress={() => router.push({ pathname: '/outfit-details', params: { id: o.id } } as any)} style={styles.savedOutfitCard} testID={`saved-outfit-${o.id}`} activeOpacity={0.8}>
                     <View style={styles.savedThumbRow}>
                       {o.items.slice(0,3).map((it) => (
                         <View key={it.id} style={styles.savedThumbWrap}>
-                          <View style={styles.savedThumbShadow} />
                           <Image source={{ uri: it.imageUrl }} style={styles.savedThumb} />
                         </View>
                       ))}
@@ -188,33 +187,33 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Settings</Text>
 
-            <TouchableOpacity style={styles.menuItem}>
-              <Settings color="#888" size={20} />
+            <TouchableOpacity style={styles.menuItem} activeOpacity={0.6}>
+              <Settings color="#64748B" size={20} />
               <Text style={styles.menuText}>Preferences</Text>
-              <ChevronRight color="#666" size={20} />
+              <ChevronRight color="#334155" size={18} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
-              <CreditCard color="#888" size={20} />
+            <TouchableOpacity style={styles.menuItem} activeOpacity={0.6}>
+              <CreditCard color="#64748B" size={20} />
               <Text style={styles.menuText}>Payment Methods</Text>
-              <ChevronRight color="#666" size={20} />
+              <ChevronRight color="#334155" size={18} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/select-budget' as any)}>
-              <Wallet color="#888" size={20} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/select-budget' as any)} activeOpacity={0.6}>
+              <Wallet color="#64748B" size={20} />
               <Text style={styles.menuText}>Monthly Budget</Text>
-              <ChevronRight color="#666" size={20} />
+              <ChevronRight color="#334155" size={18} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => setFeedbackModalVisible(true)}>
-              <MessageSquare color="#888" size={20} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => setFeedbackModalVisible(true)} activeOpacity={0.6}>
+              <MessageSquare color="#64748B" size={20} />
               <Text style={styles.menuText}>Give Feedback</Text>
-              <ChevronRight color="#666" size={20} />
+              <ChevronRight color="#334155" size={18} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
-              <LogOut color="#FF4444" size={20} />
-              <Text style={[styles.menuText, { color: "#FF4444" }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleSignOut} activeOpacity={0.6}>
+              <LogOut color="#EF4444" size={20} />
+              <Text style={[styles.menuText, { color: "#EF4444" }]}>
                 Sign Out
               </Text>
             </TouchableOpacity>
@@ -253,128 +252,138 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    borderWidth: 2,
+    borderColor: "rgba(59, 130, 246, 0.25)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
   name: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#E0E0E0",
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: "#E2E8F0",
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: "#888",
+    color: "#64748B",
   },
   premiumCard: {
     borderRadius: 16,
     overflow: "hidden",
-    marginBottom: 32,
+    marginBottom: 28,
   },
   premiumGradient: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 20,
-    gap: 16,
+    padding: 18,
+    gap: 14,
   },
   premiumContent: {
     flex: 1,
   },
   premiumTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#0A0A0A",
-    marginBottom: 4,
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+    marginBottom: 3,
   },
   premiumSubtitle: {
-    fontSize: 14,
-    color: "rgba(0, 0, 0, 0.7)",
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.6)",
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#E0E0E0",
-    marginBottom: 16,
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#CBD5E1",
+    marginBottom: 14,
+    letterSpacing: 0.3,
   },
   infoItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.1)",
   },
   infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: 14,
   },
   infoContent: {
     flex: 1,
   },
   infoLabel: {
     fontSize: 12,
-    color: "#888",
-    marginBottom: 4,
+    color: "#64748B",
+    marginBottom: 3,
+    fontWeight: "500" as const,
   },
   infoValue: {
-    fontSize: 16,
-    color: "#E0E0E0",
-    fontWeight: "500",
+    fontSize: 15,
+    color: "#E2E8F0",
+    fontWeight: "500" as const,
   },
   infoSubtext: {
     fontSize: 12,
-    color: "#888",
-    marginTop: 4,
+    color: "#64748B",
+    marginTop: 3,
+  },
+  changeLink: {
+    color: "#3B82F6",
+    fontSize: 14,
+    fontWeight: "600" as const,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.05)",
+    borderBottomColor: "rgba(30, 58, 95, 0.4)",
   },
   menuText: {
     flex: 1,
-    fontSize: 16,
-    color: "#E0E0E0",
-    marginLeft: 16,
+    fontSize: 15,
+    color: "#CBD5E1",
+    marginLeft: 14,
   },
   footer: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 16,
   },
   version: {
     fontSize: 12,
-    color: "#666",
+    color: "#334155",
     marginBottom: 4,
   },
   copyright: {
     fontSize: 12,
-    color: "#666",
+    color: "#334155",
   },
   savedOutfitsRow: {
     paddingVertical: 8,
   },
   savedEmpty: {
-    color: '#888',
+    color: '#475569',
+    fontSize: 14,
   },
   savedOutfitCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
+    borderColor: 'rgba(59, 130, 246, 0.12)',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
     marginRight: 12,
     width: 180,
@@ -389,23 +398,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginRight: -10,
     borderWidth: 2,
-    borderColor: '#0A0A0A',
+    borderColor: '#0F1729',
   },
   savedThumb: {
     width: 36,
     height: 36,
   },
-  savedThumbShadow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.1)'
-  },
   savedOutfitText: {
-    color: '#FFF',
+    color: '#CBD5E1',
     fontSize: 12,
     marginTop: 8,
-  }
+    fontWeight: "500" as const,
+  },
 });

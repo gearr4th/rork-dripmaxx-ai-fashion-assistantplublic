@@ -14,7 +14,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator color="#FF5C00" />
+        <ActivityIndicator color="#3B82F6" />
       </View>
     );
   }
@@ -24,8 +24,8 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
       <View style={styles.container}>
         <Text style={styles.errorText}>{error || "Unable to fetch weather"}</Text>
         {onRefresh && (
-          <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-            <RefreshCw color="#FF5C00" size={16} />
+          <TouchableOpacity style={styles.retryButton} onPress={onRefresh} activeOpacity={0.7}>
+            <RefreshCw color="#3B82F6" size={16} />
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         )}
@@ -37,7 +37,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.location}>
-          <MapPin color="#FF5C00" size={16} />
+          <MapPin color="#3B82F6" size={14} />
           <Text style={styles.locationText}>{weather.location}</Text>
         </View>
         <Text style={styles.temperature}>{weather.temperature}°C</Text>
@@ -57,8 +57,9 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
                   ]
                 );
               }}
+              activeOpacity={0.7}
             >
-              <Settings color="#FF5C00" size={14} />
+              <Settings color="#3B82F6" size={14} />
               <Text style={styles.settingsText}>Enable Location</Text>
             </TouchableOpacity>
           )}
@@ -67,11 +68,11 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
       <Text style={styles.condition}>{weather.condition}</Text>
       <View style={styles.details}>
         <View style={styles.detailItem}>
-          <Droplets color="#666" size={16} />
+          <Droplets color="#475569" size={14} />
           <Text style={styles.detailText}>{weather.humidity}%</Text>
         </View>
         <View style={styles.detailItem}>
-          <Wind color="#666" size={16} />
+          <Wind color="#475569" size={14} />
           <Text style={styles.detailText}>{weather.windSpeed} km/h</Text>
         </View>
       </View>
@@ -81,12 +82,12 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    padding: 18,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.12)",
   },
   header: {
     flexDirection: "row",
@@ -100,40 +101,40 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: {
-    color: "#FF5C00",
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#60A5FA",
+    fontSize: 13,
+    fontWeight: "600" as const,
   },
   temperature: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#E0E0E0",
+    fontSize: 30,
+    fontWeight: "700" as const,
+    color: "#E2E8F0",
   },
   condition: {
-    fontSize: 18,
-    color: "#E0E0E0",
+    fontSize: 16,
+    color: "#CBD5E1",
     marginBottom: 12,
   },
   details: {
     flexDirection: "row",
-    gap: 24,
+    gap: 20,
   },
   detailItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   detailText: {
-    color: "#888",
-    fontSize: 14,
+    color: "#64748B",
+    fontSize: 13,
   },
   errorText: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 14,
     textAlign: "center",
   },
   warningText: {
-    color: "#FFB347",
+    color: "#FBBF24",
     fontSize: 12,
     marginBottom: 8,
     fontStyle: "italic",
@@ -146,15 +147,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "rgba(255, 92, 0, 0.1)",
-    borderRadius: 8,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 92, 0, 0.3)",
+    borderColor: "rgba(59, 130, 246, 0.25)",
   },
   retryText: {
-    color: "#FF5C00",
+    color: "#3B82F6",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   warningContainer: {
     marginBottom: 8,
@@ -166,15 +167,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: "rgba(255, 92, 0, 0.1)",
-    borderRadius: 6,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 92, 0, 0.2)",
+    borderColor: "rgba(59, 130, 246, 0.2)",
     alignSelf: "flex-start",
   },
   settingsText: {
-    color: "#FF5C00",
+    color: "#3B82F6",
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
 });

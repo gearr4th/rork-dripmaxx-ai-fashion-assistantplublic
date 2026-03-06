@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Calendar, Trash2, X, CheckSquare } from "lucide-react-native";
+import { Calendar, Trash2, X } from "lucide-react-native";
 import OutfitHistoryCard from "@/components/OutfitHistoryCard";
 import { OutfitHistory } from "@/types";
 
@@ -112,7 +112,7 @@ export default function HistoryScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
+      colors={["#0B1120", "#111B2E", "#0A1628"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -121,11 +121,11 @@ export default function HistoryScreen() {
           <View style={styles.actions}>
             {selectionMode ? (
               <>
-                <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.iconPill}>
-                  <X color="#0A0A0A" size={20} />
+                <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.iconPill} activeOpacity={0.7}>
+                  <X color="#E2E8F0" size={18} />
                 </TouchableOpacity>
-                <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.iconPill, { backgroundColor: "#FF5A5F" }]}>
-                  <Trash2 color="#0A0A0A" size={20} />
+                <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.iconPill, styles.deletePill]} activeOpacity={0.7}>
+                  <Trash2 color="#FFF" size={18} />
                 </TouchableOpacity>
               </>
             ) : null}
@@ -137,6 +137,7 @@ export default function HistoryScreen() {
             style={[styles.filterButton, filter === "all" && styles.filterButtonActive]}
             onPress={() => setFilter("all")}
             testID="filter-all"
+            activeOpacity={0.7}
           >
             <Text style={[styles.filterButtonText, filter === "all" && styles.filterButtonTextActive]}>All</Text>
           </TouchableOpacity>
@@ -144,6 +145,7 @@ export default function HistoryScreen() {
             style={[styles.filterButton, filter === "favorites" && styles.filterButtonActive]}
             onPress={() => setFilter("favorites")}
             testID="filter-favorites"
+            activeOpacity={0.7}
           >
             <Text style={[styles.filterButtonText, filter === "favorites" && styles.filterButtonTextActive]}>Favorites</Text>
           </TouchableOpacity>
@@ -156,8 +158,8 @@ export default function HistoryScreen() {
           {selectionMode && (
             <View style={styles.selectionBar}>
               <Text style={styles.selectionText}>{selectedIds.size} selected</Text>
-              <TouchableOpacity testID="delete-all" style={[styles.selectionButton, { backgroundColor: "#FF5A5F" }]} onPress={handleDeleteAll}>
-                <Trash2 color="#0A0A0A" size={18} />
+              <TouchableOpacity testID="delete-all" style={styles.selectionButton} onPress={handleDeleteAll} activeOpacity={0.7}>
+                <Trash2 color="#FFF" size={16} />
                 <Text style={styles.selectionButtonText}>Delete All</Text>
               </TouchableOpacity>
             </View>
@@ -165,7 +167,9 @@ export default function HistoryScreen() {
 
           {filteredHistory.length === 0 ? (
             <View style={styles.emptyState}>
-              <Calendar color="#666" size={48} />
+              <View style={styles.emptyIconWrap}>
+                <Calendar color="#334155" size={48} />
+              </View>
               <Text style={styles.emptyStateText}>No outfits yet</Text>
               <Text style={styles.emptyStateSubtext}>
                 Your outfit history will appear here
@@ -216,19 +220,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FF5C00',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  deletePill: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#E0E0E0",
+    fontSize: 28,
+    fontWeight: "800" as const,
+    color: "#E2E8F0",
     marginBottom: 16,
   },
   filterContainer: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
     marginBottom: 16,
     paddingHorizontal: 20,
   },
@@ -236,21 +246,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(30, 58, 95, 0.4)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.15)",
   },
   filterButtonActive: {
-    backgroundColor: "#FFD700",
-    borderColor: "#FF5C00",
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
   },
   filterButtonText: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   filterButtonTextActive: {
-    color: "#0A0A0A",
+    color: "#FFFFFF",
   },
   scrollContent: {
     padding: 20,
@@ -261,47 +271,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(30, 58, 95, 0.5)',
+    borderColor: 'rgba(59, 130, 246, 0.2)',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 12,
   },
   selectionText: {
-    color: '#E0E0E0',
+    color: '#CBD5E1',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   selectionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FF5C00',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
     borderRadius: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
   },
   selectionButtonText: {
-    color: '#0A0A0A',
+    color: '#FCA5A5',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 80,
   },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(30, 58, 95, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   emptyStateText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#E0E0E0",
-    marginTop: 16,
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: "#CBD5E1",
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: "#666",
-    marginTop: 8,
+    color: "#475569",
+    marginTop: 6,
   },
 });

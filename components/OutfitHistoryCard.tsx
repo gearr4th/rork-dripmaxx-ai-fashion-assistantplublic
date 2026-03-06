@@ -30,18 +30,19 @@ export default function OutfitHistoryCard({ history, selectable = false, selecte
       delayLongPress={250}
       testID={testID}
       accessibilityRole="button"
+      activeOpacity={0.8}
     >
       <View style={styles.headerRow}>
         <View style={styles.dateContainer}>
-          <Calendar color="#666" size={16} />
+          <Calendar color="#475569" size={14} />
           <Text style={styles.date}>{formatDate(history.date)}</Text>
         </View>
         {selectable && (
           <View style={styles.selectIcon}>
             {selected ? (
-              <CheckCircle color="#FFD700" size={22} fill="#FFD700" />
+              <CheckCircle color="#3B82F6" size={22} fill="#3B82F6" />
             ) : (
-              <Circle color="#666" size={22} />
+              <Circle color="#334155" size={22} />
             )}
           </View>
         )}
@@ -53,7 +54,7 @@ export default function OutfitHistoryCard({ history, selectable = false, selecte
             <Image
               key={item.id}
               source={{ uri: item.imageUrl }}
-              style={[styles.itemImage, { marginLeft: index > 0 ? -20 : 0 }]}
+              style={[styles.itemImage, { marginLeft: index > 0 ? -18 : 0 }]}
             />
           ))}
         </View>
@@ -66,15 +67,15 @@ export default function OutfitHistoryCard({ history, selectable = false, selecte
               <Star
                 key={i}
                 size={12}
-                color={i < history.rating ? "#FFD700" : "#333"}
-                fill={i < history.rating ? "#FFD700" : "transparent"}
+                color={i < history.rating ? "#FBBF24" : "#1E293B"}
+                fill={i < history.rating ? "#FBBF24" : "transparent"}
               />
             ))}
           </View>
         </View>
         
         {history.favorite && (
-          <Heart color="#FF4444" size={20} fill="#FF4444" />
+          <Heart color="#EF4444" size={18} fill="#EF4444" />
         )}
       </View>
     </TouchableOpacity>
@@ -83,16 +84,16 @@ export default function OutfitHistoryCard({ history, selectable = false, selecte
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.12)",
   },
   containerSelected: {
-    borderColor: "#FFD700",
-    backgroundColor: "rgba(255, 215, 0, 0.08)",
+    borderColor: "#3B82F6",
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
   },
   headerRow: {
     flexDirection: "row",
@@ -109,8 +110,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   date: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 12,
+    fontWeight: "500" as const,
   },
   content: {
     flexDirection: "row",
@@ -118,27 +120,27 @@ const styles = StyleSheet.create({
   },
   imagesContainer: {
     flexDirection: "row",
-    marginRight: 16,
+    marginRight: 14,
   },
   itemImage: {
     width: 40,
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#0A0A0A",
+    borderColor: "#0F1729",
   },
   details: {
     flex: 1,
   },
   occasion: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#E2E8F0",
+    marginBottom: 3,
   },
   weather: {
     fontSize: 12,
-    color: "#888",
+    color: "#64748B",
     marginBottom: 6,
   },
   rating: {

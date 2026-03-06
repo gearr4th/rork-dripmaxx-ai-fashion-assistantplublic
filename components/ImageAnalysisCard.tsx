@@ -8,10 +8,10 @@ interface Props {
 }
 
 const DRIP_COLORS: Record<DripLevel, string> = {
-  'Maxx Drip': '#8A2BE2',
-  'Pure Drip': '#1E90FF',
-  'Certified Drip': '#32CD32',
-  'Lowkey Drip': '#999999',
+  'Maxx Drip': '#A78BFA',
+  'Pure Drip': '#60A5FA',
+  'Certified Drip': '#34D399',
+  'Lowkey Drip': '#64748B',
 };
 
 function formatPrice(price: number | null, currency?: string): string {
@@ -30,16 +30,16 @@ function ImageAnalysisCard({ result }: Props) {
   return (
     <View style={styles.card} testID="analysis-card">
       <View style={styles.rowHeader}>
-        <Shirt color="#FFD700" size={18} />
+        <Shirt color="#60A5FA" size={18} />
         <Text style={styles.title} numberOfLines={2}>{result.officialProductName || result.itemName}</Text>
       </View>
       <View style={styles.row}>
-        <DollarSign color="#AAA" size={16} />
+        <DollarSign color="#64748B" size={16} />
         <Text style={styles.label}>Avg Price</Text>
         <Text style={styles.value}>{formatPrice(result.averagePrice, result.currency)}</Text>
       </View>
       <View style={styles.row}>
-        <Sparkles color="#AAA" size={16} />
+        <Sparkles color="#64748B" size={16} />
         <Text style={styles.label}>Versatility</Text>
         <Text style={styles.value}>{clampScore(result.versatilityScore)} / 100</Text>
       </View>
@@ -54,14 +54,14 @@ function ImageAnalysisCard({ result }: Props) {
       )}
       {result.bestOccasion && (
         <View style={styles.row}>
-          <Calendar color="#AAA" size={16} />
+          <Calendar color="#64748B" size={16} />
           <Text style={styles.label}>Best Occasion</Text>
           <Text style={styles.value}>{result.bestOccasion}</Text>
         </View>
       )}
       {(result.verifiedStoreLink || result.storeLink) && (
         <View style={styles.row}>
-          <LinkIcon color="#AAA" size={16} />
+          <LinkIcon color="#64748B" size={16} />
           <Text style={styles.label}>Store</Text>
           <Text style={[styles.value, styles.link]} numberOfLines={1}>{result.verifiedStoreLink || result.storeLink}</Text>
         </View>
@@ -161,8 +161,8 @@ export default memo(ImageAnalysisCard);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
+    borderColor: 'rgba(59, 130, 246, 0.12)',
     borderWidth: 1,
     borderRadius: 16,
     padding: 14,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    color: '#FFF',
+    color: '#E2E8F0',
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
@@ -187,18 +187,18 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   label: {
-    color: '#AAA',
+    color: '#64748B',
     fontSize: 13,
   },
   value: {
-    color: '#FFF',
+    color: '#E2E8F0',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 6,
     flexShrink: 1,
   },
   link: {
-    color: '#4AB3FF',
+    color: '#60A5FA',
   },
   dripPill: {
     alignSelf: 'flex-start',
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   subtle: {
-    color: '#BBB',
+    color: '#94A3B8',
     fontSize: 12,
     marginTop: 2,
   },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   alternativeName: {
-    color: '#FFF',
+    color: '#E2E8F0',
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   alternativeBrand: {
-    color: '#CCC',
+    color: '#94A3B8',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -317,15 +317,15 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   metricText: {
-    color: '#AAA',
+    color: '#94A3B8',
     fontSize: 11,
   },
   metricDivider: {
-    color: '#666',
+    color: '#475569',
     fontSize: 11,
   },
   whereToFind: {
-    color: '#999',
+    color: '#64748B',
     fontSize: 11,
     fontStyle: 'italic',
   },

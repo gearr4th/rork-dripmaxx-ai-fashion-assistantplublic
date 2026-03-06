@@ -35,16 +35,16 @@ export default function OutfitDetailsScreen() {
     try {
       await saveOutfit(outfit);
       Alert.alert("Saved", "Outfit saved to your profile");
-    } catch (e) {
+    } catch {
       Alert.alert("Error", "Could not save outfit");
     }
   };
 
   const resolvedItems = outfit?.items ?? [];
+  const outfitItemIds = useMemo(() => new Set((outfit?.items ?? []).map(i => i.id)), [outfit?.items]);
   const wardrobeOther = useMemo(() => {
-    const outfitIds = new Set(resolvedItems.map(i => i.id));
-    return clothes.filter(c => !outfitIds.has(c.id));
-  }, [clothes, resolvedItems]);
+    return clothes.filter(c => !outfitItemIds.has(c.id));
+  }, [clothes, outfitItemIds]);
 
   type RecommendedProduct = {
     name: string;
@@ -159,14 +159,14 @@ export default function OutfitDetailsScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0B1120", "#111B2E", "#0A1628"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.title}>Outfit</Text>
           <TouchableOpacity style={styles.closeButton} onPress={() => router.back()} testID="close-outfit-details">
-            <X color="#FFFFFF" size={24} />
+            <X color="#CBD5E1" size={24} />
           </TouchableOpacity>
         </View>
 
@@ -284,13 +284,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#E2E8F0",
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(30, 58, 95, 0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#CBD5E1",
     marginBottom: 16,
   },
   items: {
@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     flexDirection: "row",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
+    borderRadius: 14,
     padding: 12,
     marginBottom: 12,
     alignItems: "center",
@@ -327,12 +327,12 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#E2E8F0",
     marginBottom: 4,
   },
   itemMeta: {
     fontSize: 13,
-    color: "#BBB",
+    color: "#94A3B8",
   },
   itemMetaSub: {
     fontSize: 12,
@@ -340,26 +340,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   explainer: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
+    borderColor: 'rgba(59, 130, 246, 0.12)',
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
     marginTop: 4,
   },
   explainerTitle: {
-    color: '#FFD700',
+    color: '#60A5FA',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 6,
   },
   explainerText: {
-    color: '#EEE',
+    color: '#CBD5E1',
     fontSize: 13,
     marginBottom: 6,
   },
   explainerTags: {
-    color: '#9AE6B4',
+    color: '#34D399',
     fontSize: 12,
   },
   wardrobeSection: {
@@ -371,13 +371,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   recoCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
   },
   recoItemTitle: {
-    color: '#EAEAEA',
+    color: '#CBD5E1',
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   recoItem: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -403,17 +403,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   recoTier: {
-    color: '#8AC6FF',
+    color: '#60A5FA',
     fontSize: 11,
     fontWeight: '600',
   },
   recoName: {
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     fontSize: 13,
     fontWeight: '600',
   },
   recoMeta: {
-    color: '#BBB',
+    color: '#94A3B8',
     fontSize: 12,
   },
   recoTrend: {
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   gridText: {
-    color: '#EEE',
+    color: '#CBD5E1',
     fontSize: 12,
   },
   actions: {
@@ -461,14 +461,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
+    borderTopColor: "rgba(59, 130, 246, 0.12)",
   },
   actionButton: {
     alignItems: "center",
     gap: 8,
   },
   actionText: {
-    color: "#FFFFFF",
+    color: "#CBD5E1",
     fontSize: 12,
   },
 });

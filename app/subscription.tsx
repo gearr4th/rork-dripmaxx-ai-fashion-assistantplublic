@@ -84,11 +84,11 @@ export default function SubscriptionScreen() {
   };
 
   return (
-    <LinearGradient colors={['#0A0A0A', '#1A1A2E', '#0A0A0A']} style={styles.container}>
+    <LinearGradient colors={['#0B1120', '#111B2E', '#0A1628']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <X color="#FFFFFF" size={24} />
+            <X color="#CBD5E1" size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Choose Your Plan</Text>
           <Text style={styles.subtitle}>Unlock premium features and elevate your style</Text>
@@ -123,9 +123,9 @@ export default function SubscriptionScreen() {
 
                 <View style={styles.planHeader}>
                   <View style={styles.planIcon}>
-                    {planTier === 'free' && <Zap color="#888" size={28} />}
-                    {planTier === 'premium' && <Crown color="#FFD700" size={28} />}
-                    {planTier === 'pro' && <Crown color="#FF6B00" size={28} />}
+                    {planTier === 'free' && <Zap color="#64748B" size={28} />}
+                    {planTier === 'premium' && <Crown color="#FBBF24" size={28} />}
+                    {planTier === 'pro' && <Crown color="#3B82F6" size={28} />}
                   </View>
                   <Text style={styles.planName}>{plan.name}</Text>
                   <View style={styles.priceContainer}>
@@ -138,7 +138,7 @@ export default function SubscriptionScreen() {
                 <View style={styles.featuresContainer}>
                   {plan.features.map((feature, index) => (
                     <View key={index} style={styles.featureRow}>
-                      <Check color="#4CAF50" size={20} />
+                      <Check color="#34D399" size={20} />
                       <Text style={styles.featureText}>{feature}</Text>
                     </View>
                   ))}
@@ -210,19 +210,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(30, 58, 95, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '800' as const,
+    color: '#E2E8F0',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#888',
+    fontSize: 15,
+    color: '#64748B',
     textAlign: 'center',
   },
   scrollView: {
@@ -233,32 +233,32 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   planCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
     borderRadius: 16,
     padding: 24,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(59, 130, 246, 0.12)',
   },
   highlightedCard: {
-    borderColor: '#FFD700',
-    backgroundColor: 'rgba(255, 215, 0, 0.05)',
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
   },
   currentPlanCard: {
-    borderColor: '#4CAF50',
-    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    borderColor: '#059669',
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
   },
   badge: {
     position: 'absolute',
     top: -10,
     right: 20,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#3B82F6',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   badgeText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     marginBottom: 8,
   },
   priceContainer: {
@@ -287,17 +287,17 @@ const styles = StyleSheet.create({
   },
   currency: {
     fontSize: 20,
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     fontWeight: '600',
   },
   price: {
     fontSize: 40,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E2E8F0',
   },
   interval: {
     fontSize: 16,
-    color: '#888',
+    color: '#64748B',
   },
   featuresContainer: {
     marginBottom: 24,
@@ -311,46 +311,46 @@ const styles = StyleSheet.create({
   featureText: {
     flex: 1,
     fontSize: 14,
-    color: '#CCCCCC',
+    color: '#94A3B8',
   },
   upgradeButton: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#3B82F6',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },
   highlightedButton: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#2563EB',
   },
   currentButton: {
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    backgroundColor: 'rgba(5, 150, 105, 0.15)',
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: '#059669',
   },
   upgradeButtonText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
   currentButtonText: {
-    color: '#4CAF50',
+    color: '#34D399',
   },
   warningCard: {
-    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 152, 0, 0.3)',
+    borderColor: 'rgba(251, 191, 36, 0.2)',
   },
   warningText: {
-    color: '#FFA726',
+    color: '#FBBF24',
     fontSize: 14,
     textAlign: 'center',
   },
   disclaimer: {
     fontSize: 12,
-    color: '#666',
+    color: '#475569',
     textAlign: 'center',
     marginTop: 20,
     lineHeight: 18,

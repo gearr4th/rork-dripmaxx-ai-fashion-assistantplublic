@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, StyleSheet, TouchableOpacity } from "react-native";
 import { TrendingUp } from "lucide-react-native";
 
 interface TrendCardProps {
@@ -8,8 +8,8 @@ interface TrendCardProps {
 
 export default function TrendCard({ trend }: TrendCardProps) {
   return (
-    <TouchableOpacity style={styles.container}>
-      <TrendingUp color="#FF6B00" size={16} />
+    <TouchableOpacity style={styles.container} activeOpacity={0.7}>
+      <TrendingUp color="#60A5FA" size={14} />
       <Text style={styles.text}>{trend}</Text>
     </TouchableOpacity>
   );
@@ -19,18 +19,18 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginRight: 10,
+    gap: 6,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.2)",
+    borderColor: "rgba(59, 130, 246, 0.2)",
   },
   text: {
-    color: "#FF6B00",
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#93C5FD",
+    fontSize: 13,
+    fontWeight: "600" as const,
   },
 });

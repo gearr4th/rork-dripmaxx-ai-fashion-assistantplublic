@@ -31,7 +31,7 @@ interface RecommendedItem {
 }
 
 export default function ClothesScreen() {
-  const { clothes, removeClothingItems, removeClothingItem, clearAll } = useClothes();
+  const { clothes, removeClothingItems, removeClothingItem } = useClothes();
   const { weather } = useWeather();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [analysisResults] = useState<ImageAnalysisResult[]>([]);
@@ -127,7 +127,7 @@ export default function ClothesScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A1A", "#0A0A0A"]}
+      colors={["#0B1120", "#111B2E", "#0A1628"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -136,23 +136,24 @@ export default function ClothesScreen() {
           <View style={styles.headerActions}>
             {selectionMode ? (
               <>
-                <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.headerPill}>
-                  <X color="#0A0A0A" size={20} />
+                <TouchableOpacity accessibilityRole="button" testID="exit-selection" onPress={exitSelection} style={styles.headerPill} activeOpacity={0.7}>
+                  <X color="#E2E8F0" size={18} />
                 </TouchableOpacity>
-                <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.headerPill, { backgroundColor: "#FF5A5F" }]}>
-                  <Trash2 color="#0A0A0A" size={20} />
+                <TouchableOpacity accessibilityRole="button" testID="delete-selected" onPress={handleDeleteSelected} style={[styles.headerPill, styles.deletePill]} activeOpacity={0.7}>
+                  <Trash2 color="#FFF" size={18} />
                 </TouchableOpacity>
               </>
             ) : (
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => router.push("/scan-clothes" as any)}
+                activeOpacity={0.7}
               >
                 <LinearGradient
-                  colors={["#FF5C00", "#FF8C00"]}
+                  colors={["#3B82F6", "#2563EB"]}
                   style={styles.addButtonGradient}
                 >
-                  <Plus color="#0A0A0A" size={24} />
+                  <Plus color="#FFFFFF" size={22} />
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -173,6 +174,7 @@ export default function ClothesScreen() {
                 selectedCategory === category.id && styles.categoryButtonActive,
               ]}
               onPress={() => setSelectedCategory(category.id)}
+              activeOpacity={0.7}
             >
               <Text style={styles.categoryIcon}>{category.icon}</Text>
               <Text
@@ -195,26 +197,30 @@ export default function ClothesScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{clothes.length}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
+              <Text style={styles.statLabel}>Total</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
                 {clothes.filter(c => c.type === "tops").length}
               </Text>
               <Text style={styles.statLabel}>Tops</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
                 {clothes.filter(c => c.type === "bottoms").length}
               </Text>
               <Text style={styles.statLabel}>Bottoms</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
                 {clothes.filter(c => c.type === "shoes").length}
               </Text>
               <Text style={styles.statLabel}>Shoes</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
                 {clothes.filter(c => c.type === "jewelry").length}
@@ -247,9 +253,10 @@ export default function ClothesScreen() {
           />
 
           <View style={styles.trendsSection}>
-            <Text style={styles.sectionTitle}>
-              <TrendingUp color="#FF5C00" size={20} /> Current Trends
-            </Text>
+            <View style={styles.sectionTitleRow}>
+              <TrendingUp color="#3B82F6" size={18} />
+              <Text style={styles.sectionTitle}>Current Trends</Text>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -262,22 +269,24 @@ export default function ClothesScreen() {
           </View>
 
           <View style={styles.scanSection}>
-            <Text style={styles.sectionTitle}>
-              <Camera color="#FF5C00" size={20} /> Scan & Analyze
-            </Text>
+            <View style={styles.sectionTitleRow}>
+              <Camera color="#3B82F6" size={18} />
+              <Text style={styles.sectionTitle}>Scan & Analyze</Text>
+            </View>
             <TouchableOpacity
               style={styles.scanButton}
               onPress={() => router.push("/scan-clothes" as any)}
+              activeOpacity={0.8}
             >
               <LinearGradient
-                colors={["#4CAF50", "#45A049"]}
+                colors={["#059669", "#047857"]}
                 style={styles.scanButtonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Camera color="#FFF" size={24} />
+                <Camera color="#FFF" size={22} />
                 <Text style={styles.scanButtonText}>Scan New Item</Text>
-                <Sparkles color="#FFF" size={20} />
+                <Sparkles color="#FFF" size={18} />
               </LinearGradient>
             </TouchableOpacity>
             <Text style={styles.scanDescription}>
@@ -287,9 +296,10 @@ export default function ClothesScreen() {
 
           {analysisResults.length > 0 && (
             <View style={styles.analysisSection}>
-              <Text style={styles.sectionTitle}>
-                <Sparkles color="#FF5C00" size={20} /> Recent Analysis
-              </Text>
+              <View style={styles.sectionTitleRow}>
+                <Sparkles color="#3B82F6" size={18} />
+                <Text style={styles.sectionTitle}>Recent Analysis</Text>
+              </View>
               {analysisResults.map((result, index) => (
                 <ImageAnalysisCard key={index} result={result} />
               ))}
@@ -301,8 +311,8 @@ export default function ClothesScreen() {
               <View style={styles.selectionBar}>
                 <Text style={styles.selectionText}>{selectedIds.size} selected</Text>
                 <View style={styles.selectionActions}>
-                  <TouchableOpacity testID="delete-all" style={[styles.selectionButton, { backgroundColor: "#FF5A5F" }]} onPress={handleDeleteAll}>
-                    <Trash2 color="#0A0A0A" size={18} />
+                  <TouchableOpacity testID="delete-all" style={styles.selectionButton} onPress={handleDeleteAll} activeOpacity={0.7}>
+                    <Trash2 color="#FFF" size={16} />
                     <Text style={styles.selectionButtonText}>Delete All</Text>
                   </TouchableOpacity>
                 </View>
@@ -311,12 +321,15 @@ export default function ClothesScreen() {
           </View>
 
           <View style={styles.wardrobeSection}>
-            <Text style={styles.sectionTitle}>
-              <Shirt color="#FF5C00" size={20} /> My Wardrobe
-            </Text>
+            <View style={styles.sectionTitleRow}>
+              <Shirt color="#3B82F6" size={18} />
+              <Text style={styles.sectionTitle}>My Wardrobe</Text>
+            </View>
             {filteredClothes.length === 0 ? (
               <View style={styles.emptyState}>
-                <Shirt color="#666" size={48} />
+                <View style={styles.emptyIconWrap}>
+                  <Shirt color="#334155" size={48} />
+                </View>
                 <Text style={styles.emptyStateText}>No items in wardrobe</Text>
                 <Text style={styles.emptyStateSubtext}>
                   Tap the + button to add your first item
@@ -336,10 +349,11 @@ export default function ClothesScreen() {
                       testID={`wardrobe-item-${item.id}`}
                       accessibilityRole="button"
                       accessibilityLabel={`Open details for ${item.name}`}
+                      activeOpacity={0.8}
                     >
                       {selectionMode && (
                         <View style={[styles.checkOverlay, isSelected ? styles.checkOverlayActive : null]}>
-                          <CheckSquare color={isSelected ? "#000" : "#888"} size={18} />
+                          <CheckSquare color={isSelected ? "#FFF" : "#94A3B8"} size={16} />
                         </View>
                       )}
                       <ClothingItem 
@@ -378,18 +392,19 @@ export default function ClothesScreen() {
                       style={styles.recCard}
                       onPress={() => {
                         try {
-                          import('react-native').then(({ Linking }) => {
+                          void import('react-native').then(({ Linking }) => {
                             Linking.openURL(rec.linkUrl).catch(() => {
                               Alert.alert('Link error', 'Could not open link');
                             });
                           });
-                        } catch (e) {
+                        } catch {
                           Alert.alert('Link error', 'Could not open link');
                         }
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={`Open link for ${rec.name}`}
                       testID={`rec-item-${rec.id}`}
+                      activeOpacity={0.8}
                     >
                       <Image source={{ uri: rec.imageUrl }} style={styles.recImage} />
                       <View style={styles.recInfoRow}>
@@ -397,11 +412,11 @@ export default function ClothesScreen() {
                           <Text style={styles.recName} numberOfLines={1}>{rec.name}</Text>
                           <Text style={styles.recReason} numberOfLines={2}>{rec.reason}</Text>
                         </View>
-                        <View style={styles.badge}><Text style={styles.badgeText}>Certified Drip</Text></View>
+                        <View style={styles.badge}><Text style={styles.badgeText}>Drip</Text></View>
                       </View>
                       <View style={styles.recFooter}>
                         <Text style={styles.recPrice}>${rec.price}</Text>
-                        <Text style={styles.recLink}>View</Text>
+                        <Text style={styles.recLink}>View →</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -438,59 +453,65 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FF5C00',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  deletePill: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#E0E0E0",
+    fontSize: 28,
+    fontWeight: "800" as const,
+    color: "#E2E8F0",
   },
   addButton: {
-    borderRadius: 24,
+    borderRadius: 22,
     overflow: "hidden",
   },
   addButtonGradient: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 22,
   },
   categoriesContainer: {
-    maxHeight: 60,
-    marginBottom: 16,
+    maxHeight: 56,
+    marginBottom: 12,
   },
   categoriesContent: {
     paddingHorizontal: 20,
-    gap: 12,
+    gap: 8,
   },
   categoryButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(30, 58, 95, 0.4)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    marginRight: 12,
+    borderColor: "rgba(59, 130, 246, 0.15)",
   },
   categoryButtonActive: {
-    backgroundColor: "#FFD700",
-    borderColor: "#FF5C00",
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
   },
   categoryIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 18,
+    marginRight: 6,
   },
   categoryText: {
-    color: "#888",
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#64748B",
+    fontSize: 13,
+    fontWeight: "600" as const,
   },
   categoryTextActive: {
-    color: "#0A0A0A",
+    color: "#FFFFFF",
   },
   mainContent: {
     flex: 1,
@@ -500,35 +521,51 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-around",
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
     paddingVertical: 16,
+    paddingHorizontal: 12,
     marginBottom: 16,
+    backgroundColor: "rgba(30, 58, 95, 0.35)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.12)",
   },
   statItem: {
     alignItems: "center",
   },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+  },
   statNumber: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FF5C00",
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: "#60A5FA",
   },
   statLabel: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 4,
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+    fontWeight: "500" as const,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#CBD5E1",
+    letterSpacing: 0.3,
   },
   trendsSection: {
     marginBottom: 24,
     paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#E0E0E0",
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
   },
   trendsScroll: {
     marginHorizontal: -20,
@@ -539,7 +576,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   scanButton: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
     marginBottom: 8,
   },
@@ -551,12 +588,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   scanButtonText: {
-    color: "#E0E0E0",
-    fontSize: 16,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700" as const,
   },
   scanDescription: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 12,
     textAlign: "center",
     lineHeight: 16,
@@ -573,17 +610,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(30, 58, 95, 0.5)',
+    borderColor: 'rgba(59, 130, 246, 0.2)',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 10,
   },
   selectionText: {
-    color: '#E0E0E0',
+    color: '#CBD5E1',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   selectionActions: {
     flexDirection: 'row',
@@ -593,15 +630,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FF5C00',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
     borderRadius: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
   },
   selectionButtonText: {
-    color: '#0A0A0A',
+    color: '#FCA5A5',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   wardrobeSection: {
     paddingHorizontal: 20,
@@ -614,12 +653,12 @@ const styles = StyleSheet.create({
   gridItem: {
     width: "48%",
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   gridItemSelected: {
     borderWidth: 2,
-    borderColor: '#FFD700',
+    borderColor: '#3B82F6',
   },
   checkOverlay: {
     position: 'absolute',
@@ -629,28 +668,36 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkOverlayActive: {
-    backgroundColor: '#FF5C00',
+    backgroundColor: '#3B82F6',
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 40,
+    paddingVertical: 48,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(30, 58, 95, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
   emptyStateText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#E0E0E0",
-    marginTop: 16,
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: "#CBD5E1",
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: "#666",
-    marginTop: 8,
+    color: "#475569",
+    marginTop: 6,
   },
   recsGrid: {
     flexDirection: 'row',
@@ -659,9 +706,9 @@ const styles = StyleSheet.create({
   },
   recCard: {
     width: '48%',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(30, 58, 95, 0.35)',
+    borderColor: 'rgba(59, 130, 246, 0.12)',
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: 12,
@@ -669,35 +716,35 @@ const styles = StyleSheet.create({
   recImage: {
     width: '100%',
     height: 120,
-    backgroundColor: '#111',
+    backgroundColor: '#0F172A',
   },
   recInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingTop: 8,
-    gap: 8,
+    gap: 6,
   },
   recName: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#E2E8F0',
+    fontSize: 13,
+    fontWeight: '700' as const,
     marginBottom: 2,
   },
   recReason: {
-    color: '#AAA',
-    fontSize: 12,
+    color: '#64748B',
+    fontSize: 11,
   },
   badge: {
-    backgroundColor: '#FF5C00',
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   badgeText: {
-    color: '#0A0A0A',
+    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '800' as const,
   },
   recFooter: {
     paddingHorizontal: 10,
@@ -707,17 +754,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   recPrice: {
-    color: '#FFD700',
+    color: '#60A5FA',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   recLink: {
-    color: '#FFF',
+    color: '#94A3B8',
     fontSize: 12,
-    textDecorationLine: 'underline',
   },
   recsSubtext: {
-    color: '#AAA',
+    color: '#64748B',
     fontSize: 12,
     marginBottom: 8,
   },

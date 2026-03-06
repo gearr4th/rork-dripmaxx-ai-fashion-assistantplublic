@@ -38,11 +38,12 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, onRatingChange, label }
             onPress={() => onRatingChange(star)}
             style={styles.starButton}
             testID={`star-${star}-${label.replace(/\s+/g, '-').toLowerCase()}`}
+            activeOpacity={0.6}
           >
             <Star
               size={28}
-              color={star <= rating ? '#FFD700' : '#666'}
-              fill={star <= rating ? '#FFD700' : 'transparent'}
+              color={star <= rating ? '#FBBF24' : '#334155'}
+              fill={star <= rating ? '#FBBF24' : 'transparent'}
             />
           </TouchableOpacity>
         ))}
@@ -65,14 +66,12 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
     setAdditionalComments('');
   };
 
-
-
   const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
     const backupLocally = async () => {
       const emailBackup = {
         to: 'gearr4th@gmail.com',
-        subject: `🔥 Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
-        body: `Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\nRatings:\n• Ease of Use: ${feedbackData.easeOfUse}/5\n• Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n• Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\nComments: ${feedbackData.additionalComments || 'None'}`,
+        subject: `Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
+        body: `Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\nRatings:\n- Ease of Use: ${feedbackData.easeOfUse}/5\n- Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n- Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\nComments: ${feedbackData.additionalComments || 'None'}`,
         timestamp: new Date().toISOString()
       };
 
@@ -134,19 +133,17 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
         deviceInfo: Platform.OS,
       };
 
-      // Store feedback locally as backup
       const existingFeedback = await AsyncStorage.getItem('user_feedback');
       const feedbackArray = existingFeedback ? JSON.parse(existingFeedback) : [];
       feedbackArray.push(feedbackData);
       await AsyncStorage.setItem('user_feedback', JSON.stringify(feedbackArray));
 
-      // Send organized email to your address
       const emailSent = await sendFeedbackEmail(feedbackData);
       
       console.log('Feedback submitted:', feedbackData);
       
       Alert.alert(
-        'Thank You! 🙏',
+        'Thank You!',
         emailSent 
           ? 'Your feedback has been sent! We appreciate your input.' 
           : 'Your feedback has been saved. We\'ll send it when connection improves.',
@@ -176,7 +173,7 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
       onRequestClose={handleClose}
     >
       <LinearGradient
-        colors={['#0A0A0A', '#1A1A2E', '#0A0A0A']}
+        colors={['#0B1120', '#111B2E', '#0A1628']}
         style={styles.container}
       >
         <View style={styles.header}>
@@ -185,8 +182,9 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
             onPress={handleClose}
             style={styles.closeButton}
             testID="close-feedback-modal"
+            activeOpacity={0.7}
           >
-            <X color="#FFFFFF" size={24} />
+            <X color="#CBD5E1" size={22} />
           </TouchableOpacity>
         </View>
 
@@ -222,7 +220,7 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
             <TextInput
               style={styles.commentsInput}
               placeholder="Tell us more about your experience..."
-              placeholderTextColor="#666"
+              placeholderTextColor="#475569"
               value={additionalComments}
               onChangeText={setAdditionalComments}
               multiline
@@ -238,14 +236,15 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
           onPress={handleSubmit}
           disabled={submitting}
           testID="submit-feedback"
+          activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#4A90E2', '#357ABD']}
+            colors={['#3B82F6', '#1D4ED8']}
             style={styles.gradientButton}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Send color="#FFFFFF" size={20} />
+            <Send color="#FFFFFF" size={18} />
             <Text style={styles.submitButtonText}>
               {submitting ? 'Submitting...' : 'Submit Feedback'}
             </Text>
@@ -269,15 +268,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: '#E2E8F0',
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(30, 58, 95, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -289,19 +290,19 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#CCCCCC',
-    marginBottom: 32,
+    fontSize: 15,
+    color: '#94A3B8',
+    marginBottom: 28,
     lineHeight: 22,
   },
   ratingContainer: {
-    marginBottom: 28,
+    marginBottom: 24,
   },
   ratingLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#CBD5E1',
+    marginBottom: 10,
   },
   starsContainer: {
     flexDirection: 'row',
@@ -314,25 +315,25 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   commentsLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#CBD5E1',
+    marginBottom: 10,
   },
   commentsInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(30, 58, 95, 0.4)',
+    borderRadius: 14,
     padding: 16,
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: '#E2E8F0',
+    fontSize: 15,
     minHeight: 100,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(59, 130, 246, 0.15)',
     textAlignVertical: 'top',
   },
   submitButton: {
     margin: 20,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   gradientButton: {
@@ -344,8 +345,8 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700' as const,
   },
   disabledButton: {
     opacity: 0.6,

@@ -38,7 +38,7 @@ export default function SignupScreen() {
         setConnectionStatus("Connection issue detected. Use demo account.");
       }
     };
-    checkConnection().catch(console.error);
+    void checkConnection();
   }, []);
 
   const handleSignup = async () => {
@@ -115,8 +115,8 @@ export default function SignupScreen() {
         message = error.message;
         
         if (message.includes("Too many signup attempts") || message.includes("rate limit")) {
-          title = "⏰ Rate Limit Reached";
-          message = "Supabase email rate limit exceeded. This happens when creating multiple accounts in a short time.\n\n✅ Solutions:\n1️⃣ Wait 15-30 minutes and try again\n2️⃣ Check if your account exists - try logging in\n3️⃣ Contact support to disable email verification\n4️⃣ Use demo: demo@dripmaxx.ai / password";
+          title = "Rate Limit Reached";
+          message = "Supabase email rate limit exceeded. This happens when creating multiple accounts in a short time.\n\nSolutions:\n1. Wait 15-30 minutes and try again\n2. Check if your account exists - try logging in\n3. Contact support to disable email verification\n4. Use demo: demo@dripmaxx.ai / password";
         } else if (message.includes("already exists") || message.includes("already registered")) {
           title = "Account Exists";
           message = "An account with this email already exists. Please sign in instead.";
@@ -147,7 +147,7 @@ export default function SignupScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#0B1120", "#0F1A2E", "#0B1526"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -161,7 +161,7 @@ export default function SignupScreen() {
           >
             <View style={styles.header}>
               <View style={styles.logoContainer}>
-                <Sparkles color="#FFD700" size={40} />
+                <Sparkles color="#60A5FA" size={36} />
               </View>
               <Text style={styles.title}>Join DripMaxx AI</Text>
               <Text style={styles.subtitle}>Create your fashion profile</Text>
@@ -174,12 +174,12 @@ export default function SignupScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputContainer}>
-                <User color="#666" size={20} style={styles.inputIcon} />
+                <User color="#475569" size={20} style={styles.inputIcon} />
                 <TextInput
                   testID="signup-name"
                   style={styles.input}
                   placeholder="Full Name"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#475569"
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
@@ -187,12 +187,12 @@ export default function SignupScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Mail color="#666" size={20} style={styles.inputIcon} />
+                <Mail color="#475569" size={20} style={styles.inputIcon} />
                 <TextInput
                   testID="signup-email"
                   style={styles.input}
                   placeholder="Email"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#475569"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -201,12 +201,12 @@ export default function SignupScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Lock color="#666" size={20} style={styles.inputIcon} />
+                <Lock color="#475569" size={20} style={styles.inputIcon} />
                 <TextInput
                   testID="signup-password"
                   style={styles.input}
                   placeholder="Password"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#475569"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -214,12 +214,12 @@ export default function SignupScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Calendar color="#666" size={20} style={styles.inputIcon} />
+                <Calendar color="#475569" size={20} style={styles.inputIcon} />
                 <TextInput
                   testID="signup-age"
                   style={styles.input}
                   placeholder="Age"
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#475569"
                   value={age}
                   onChangeText={setAge}
                   keyboardType="numeric"
@@ -231,9 +231,10 @@ export default function SignupScreen() {
                 style={[styles.signupButton, loading && styles.disabledButton]}
                 onPress={handleSignup}
                 disabled={loading}
+                activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={["#FFD700", "#FFA500"]}
+                  colors={["#3B82F6", "#1D4ED8"]}
                   style={styles.gradientButton}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -271,30 +272,32 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 24,
   },
   header: {
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 48,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    width: 76,
+    height: 76,
+    borderRadius: 22,
+    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.25)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 8,
+    fontSize: 30,
+    fontWeight: "800" as const,
+    color: "#E2E8F0",
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#888",
+    fontSize: 15,
+    color: "#64748B",
   },
   form: {
     width: "100%",
@@ -302,36 +305,36 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: "rgba(30, 58, 95, 0.4)",
+    borderRadius: 14,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(59, 130, 246, 0.15)",
   },
   inputIcon: {
     marginLeft: 16,
   },
   input: {
     flex: 1,
-    height: 56,
-    paddingHorizontal: 16,
-    color: "#FFFFFF",
-    fontSize: 16,
+    height: 54,
+    paddingHorizontal: 14,
+    color: "#E2E8F0",
+    fontSize: 15,
   },
   signupButton: {
     marginTop: 8,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
   },
   gradientButton: {
-    height: 56,
+    height: 54,
     justifyContent: "center",
     alignItems: "center",
   },
   signupButtonText: {
-    color: "#000000",
-    fontSize: 18,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "700" as const,
   },
   disabledButton: {
     opacity: 0.6,
@@ -342,25 +345,25 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   loginText: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 14,
   },
   loginLink: {
-    color: "#FFD700",
+    color: "#3B82F6",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   connectionStatus: {
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "rgba(255, 165, 0, 0.15)",
-    borderRadius: 8,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 165, 0, 0.3)",
+    borderColor: "rgba(59, 130, 246, 0.2)",
   },
   connectionStatusText: {
-    color: "#FFA500",
+    color: "#60A5FA",
     fontSize: 12,
     textAlign: "center",
   },
