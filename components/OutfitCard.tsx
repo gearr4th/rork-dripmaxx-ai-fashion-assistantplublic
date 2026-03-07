@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.12)",
+    borderColor: "rgba(249, 115, 22, 0.12)",
   },
   imagesContainer: {
     flexDirection: "row",

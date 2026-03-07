@@ -112,7 +112,7 @@ export default function HistoryScreen() {
 
   return (
     <LinearGradient
-      colors={["#0B1120", "#111B2E", "#0A1628"]}
+      colors={["#020B1C", "#0A1A2F", "#071E2B", "#0C1425"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -220,9 +220,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    borderColor: 'rgba(249, 115, 22, 0.22)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -246,13 +246,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: "rgba(30, 58, 95, 0.4)",
+    backgroundColor: "rgba(8, 30, 50, 0.5)",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.15)",
+    borderColor: "rgba(249, 115, 22, 0.12)",
   },
   filterButtonActive: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
+    backgroundColor: "#F97316",
+    borderColor: "#F97316",
   },
   filterButtonText: {
     color: "#64748B",
@@ -271,8 +271,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(30, 58, 95, 0.5)',
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+    backgroundColor: 'rgba(8, 30, 50, 0.5)',
+    borderColor: 'rgba(249, 115, 22, 0.12)',
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(30, 58, 95, 0.3)",
+    backgroundColor: "rgba(8, 30, 50, 0.4)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,

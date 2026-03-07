@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(30, 58, 95, 0.35)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.12)",
+    borderColor: "rgba(249, 115, 22, 0.12)",
   },
   statItem: {
     alignItems: "center",
@@ -538,12 +538,12 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
   },
   statNumber: {
     fontSize: 22,
     fontWeight: "700" as const,
-    color: "#60A5FA",
+    color: "#FB923C",
   },
   statLabel: {
     fontSize: 11,
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'rgba(30, 58, 95, 0.5)',
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: 'rgba(249, 115, 22, 0.2)',
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   badge: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#0891B2',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   recPrice: {
-    color: '#60A5FA',
+    color: '#22D3EE',
     fontSize: 14,
     fontWeight: '700' as const,
   },

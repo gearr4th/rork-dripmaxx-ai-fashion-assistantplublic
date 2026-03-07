@@ -14,7 +14,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator color="#3B82F6" />
+        <ActivityIndicator color="#F97316" />
       </View>
     );
   }
@@ -25,7 +25,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
         <Text style={styles.errorText}>{error || "Unable to fetch weather"}</Text>
         {onRefresh && (
           <TouchableOpacity style={styles.retryButton} onPress={onRefresh} activeOpacity={0.7}>
-            <RefreshCw color="#3B82F6" size={16} />
+            <RefreshCw color="#F97316" size={16} />
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         )}
@@ -37,7 +37,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.location}>
-          <MapPin color="#3B82F6" size={14} />
+          <MapPin color="#F97316" size={14} />
           <Text style={styles.locationText}>{weather.location}</Text>
         </View>
         <Text style={styles.temperature}>{weather.temperature}°C</Text>
@@ -59,7 +59,7 @@ export default function WeatherCard({ weather, loading, error, onRefresh }: Weat
               }}
               activeOpacity={0.7}
             >
-              <Settings color="#3B82F6" size={14} />
+              <Settings color="#F97316" size={14} />
               <Text style={styles.settingsText}>Enable Location</Text>
             </TouchableOpacity>
           )}
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.12)",
+    borderColor: "rgba(249, 115, 22, 0.12)",
   },
   header: {
     flexDirection: "row",
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: {
-    color: "#60A5FA",
+    color: "#FB923C",
     fontSize: 13,
     fontWeight: "600" as const,
   },
@@ -147,13 +147,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.25)",
+    borderColor: "rgba(249, 115, 22, 0.25)",
   },
   retryText: {
-    color: "#3B82F6",
+    color: "#F97316",
     fontSize: 14,
     fontWeight: "600" as const,
   },
@@ -167,14 +167,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.2)",
+    borderColor: "rgba(249, 115, 22, 0.2)",
     alignSelf: "flex-start",
   },
   settingsText: {
-    color: "#3B82F6",
+    color: "#F97316",
     fontSize: 11,
     fontWeight: "500" as const,
   },

@@ -13,9 +13,10 @@ import { SavedOutfitsProvider } from "@/providers/SavedOutfitsProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { CloudSyncProvider } from "@/providers/CloudSyncProvider";
 import { SubscriptionProvider } from "@/providers/SubscriptionProvider";
+import { OnboardingProvider } from "@/providers/OnboardingProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="select-age" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="select-budget" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="subscription" options={{ headerShown: false, presentation: 'modal' }} />
@@ -49,7 +51,7 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    void SplashScreen.hideAsync();
   }, []);
 
   return (
@@ -57,6 +59,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.flex1}>
           <AuthProvider>
+            <OnboardingProvider>
             <CloudSyncProvider>
                 <SubscriptionProvider>
                   <WeatherProvider>
@@ -79,6 +82,7 @@ export default function RootLayout() {
                   </WeatherProvider>
                 </SubscriptionProvider>
             </CloudSyncProvider>
+            </OnboardingProvider>
           </AuthProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

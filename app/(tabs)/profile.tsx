@@ -21,9 +21,11 @@ import {
   ChevronRight,
   Wallet,
   MessageSquare,
+  RotateCcw,
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
+import { useOnboarding } from "@/providers/OnboardingProvider";
 import { useBudget } from "@/providers/BudgetProvider";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import FeedbackModal from "@/components/FeedbackModal";
@@ -34,6 +36,7 @@ export default function ProfileScreen() {
   const { budget } = useBudget();
   const { savedOutfits } = useSavedOutfits();
   const { tier, subscription, getRemainingGenerations } = useSubscription();
+  const { preferences, resetOnboarding } = useOnboarding();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
 
   const handleUpgrade = () => {
@@ -56,7 +59,7 @@ export default function ProfileScreen() {
 
   return (
     <LinearGradient
-      colors={["#0B1120", "#111B2E", "#0A1628"]}
+      colors={["#020B1C", "#0A1A2F", "#071E2B", "#0C1425"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -66,7 +69,7 @@ export default function ProfileScreen() {
         >
           <View style={styles.header}>
             <View style={styles.avatarContainer}>
-              <User color="#60A5FA" size={36} />
+              <User color="#FB923C" size={36} />
             </View>
             <Text style={styles.name}>{user?.name || "Demo User"}</Text>
             <Text style={styles.email}>{user?.email || "demo@dripmaxx.ai"}</Text>
@@ -74,12 +77,12 @@ export default function ProfileScreen() {
 
           <TouchableOpacity style={styles.premiumCard} onPress={handleUpgrade} activeOpacity={0.8}>
             <LinearGradient
-              colors={["#2563EB", "#1D4ED8"]}
+              colors={["#F97316", "#C2410C"]}
               style={styles.premiumGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Crown color="#FCD34D" size={24} />
+              <Crown color="#FEF3C7" size={24} />
               <View style={styles.premiumContent}>
                 <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
                 <Text style={styles.premiumSubtitle}>
@@ -95,7 +98,7 @@ export default function ProfileScreen() {
             
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <User color="#60A5FA" size={18} />
+                <User color="#FB923C" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Name</Text>
@@ -105,7 +108,7 @@ export default function ProfileScreen() {
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <Mail color="#60A5FA" size={18} />
+                <Mail color="#FB923C" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Email</Text>
@@ -117,7 +120,7 @@ export default function ProfileScreen() {
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <Calendar color="#60A5FA" size={18} />
+                <Calendar color="#FB923C" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Age Group</Text>
@@ -129,7 +132,7 @@ export default function ProfileScreen() {
 
             <TouchableOpacity style={styles.infoItem} onPress={() => router.push('/subscription' as any)} activeOpacity={0.7}>
               <View style={styles.infoIcon}>
-                <CreditCard color="#60A5FA" size={18} />
+                <CreditCard color="#FB923C" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Subscription</Text>
@@ -150,7 +153,7 @@ export default function ProfileScreen() {
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
-                <Wallet color="#60A5FA" size={18} />
+                <Wallet color="#FB923C" size={18} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Monthly Budget</Text>
@@ -187,11 +190,21 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Settings</Text>
 
-            <TouchableOpacity style={styles.menuItem} activeOpacity={0.6}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/onboarding' as any)} activeOpacity={0.6}>
               <Settings color="#64748B" size={20} />
-              <Text style={styles.menuText}>Preferences</Text>
+              <Text style={styles.menuText}>Style Preferences</Text>
               <ChevronRight color="#334155" size={18} />
             </TouchableOpacity>
+
+            {preferences.styleVibes.length > 0 && (
+              <View style={styles.prefChipsWrap}>
+                {preferences.styleVibes.map((v) => (
+                  <View key={v} style={styles.prefChip}>
+                    <Text style={styles.prefChipText}>{v}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <TouchableOpacity style={styles.menuItem} activeOpacity={0.6}>
               <CreditCard color="#64748B" size={20} />
@@ -208,6 +221,31 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.menuItem} onPress={() => setFeedbackModalVisible(true)} activeOpacity={0.6}>
               <MessageSquare color="#64748B" size={20} />
               <Text style={styles.menuText}>Give Feedback</Text>
+              <ChevronRight color="#334155" size={18} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                Alert.alert(
+                  "Reset Style Profile",
+                  "This will reset your style preferences and take you through onboarding again.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Reset",
+                      style: "destructive",
+                      onPress: () => {
+                        void resetOnboarding().then(() => router.replace('/onboarding' as any));
+                      },
+                    },
+                  ]
+                );
+              }}
+              activeOpacity={0.6}
+            >
+              <RotateCcw color="#64748B" size={20} />
+              <Text style={styles.menuText}>Reset Style Profile</Text>
               <ChevronRight color="#334155" size={18} />
             </TouchableOpacity>
 
@@ -252,9 +290,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     borderWidth: 2,
-    borderColor: "rgba(59, 130, 246, 0.25)",
+    borderColor: "rgba(249, 115, 22, 0.25)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 14,
@@ -306,18 +344,18 @@ const styles = StyleSheet.create({
   infoItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(30, 58, 95, 0.35)",
+    backgroundColor: "rgba(8, 30, 50, 0.5)",
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.1)",
+    borderColor: "rgba(249, 115, 22, 0.1)",
   },
   infoIcon: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
@@ -342,7 +380,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   changeLink: {
-    color: "#3B82F6",
+    color: "#FB923C",
     fontSize: 14,
     fontWeight: "600" as const,
   },
@@ -351,7 +389,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(30, 58, 95, 0.4)",
+    borderBottomColor: "rgba(249, 115, 22, 0.08)",
   },
   menuText: {
     flex: 1,
@@ -380,8 +418,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   savedOutfitCard: {
-    backgroundColor: 'rgba(30, 58, 95, 0.35)',
-    borderColor: 'rgba(59, 130, 246, 0.12)',
+    backgroundColor: 'rgba(8, 30, 50, 0.5)',
+    borderColor: 'rgba(249, 115, 22, 0.1)',
     borderWidth: 1,
     borderRadius: 14,
     padding: 12,
@@ -398,7 +436,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginRight: -10,
     borderWidth: 2,
-    borderColor: '#0F1729',
+    borderColor: '#020B1C',
   },
   savedThumb: {
     width: 36,
@@ -409,5 +447,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
     fontWeight: "500" as const,
+  },
+  prefChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingBottom: 10,
+  },
+  prefChip: {
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(249, 115, 22, 0.2)',
+  },
+  prefChipText: {
+    color: '#FDBA74',
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
 });

@@ -1,13 +1,25 @@
-import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion, OutfitRating } from "@/types";
+import { ClothingItem, Outfit, Weather, ImageAnalysisResult, DripLevel, BudgetRecommendation, Occasion } from "@/types";
 import { BudgetOption } from '@/providers/BudgetProvider';
 import { CONFIG } from './config';
 import { Platform } from 'react-native';
+
+export interface StylePrefs {
+  gender?: string;
+  ageRange?: string;
+  bodyType?: string;
+  favoriteColors?: string[];
+  styleVibes?: string[];
+  occasions?: string[];
+  budgetRange?: string;
+  fashionGoals?: string[];
+}
 
 interface GenerateOutfitParams {
   weather: Weather | null;
   trends: string[];
   prompt: string;
   clothes: ClothingItem[];
+  stylePreferences?: StylePrefs;
 }
 
 export interface ParsedUserRequest {
@@ -188,7 +200,7 @@ export async function fetchSocialTrends(params: { prompt: string; location?: str
       { role: 'user', content: trendPrompt },
     ]);
     console.log('Trend AI raw:', text);
-    const jsonMatch = text.match(/[\[][\s\S]*[\]]/);
+    const jsonMatch = text.match(/[[][\s\S]*[\]]/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       if (Array.isArray(parsed)) {
@@ -346,13 +358,13 @@ async function verifyOfficialProduct(base: ImageAnalysisResult): Promise<Partial
         const preferred = links.find((u) => (mappedDomain ? u.includes(mappedDomain) : /nike|adidas|zara|hm|uniqlo|puma|newbalance|reebok|asos|cos|arket|bershka|pullandbear/.test(u)));
         const verifiedStoreLink = preferred ?? base.storeLink ?? null;
 
-        const priceMatch = html.match(/(US\$|A\$|\$|€|£)\s?\d{1,4}(?:[\.,]\d{2})?/);
+        const priceMatch = html.match(/(US\$|A\$|\$|€|£)\s?\d{1,4}(?:[.,]\d{2})?/);
         let verifiedPrice: number | null = base.averagePrice ?? null;
         let verifiedCurrency: string = base.currency || 'USD';
         if (priceMatch) {
           const raw = priceMatch[0];
           verifiedCurrency = raw.includes('€') ? 'EUR' : raw.includes('£') ? 'GBP' : raw.includes('A$') ? 'AUD' : 'USD';
-          const num = raw.replace(/[^0-9\.]/g, '');
+          const num = raw.replace(/[^0-9.]/g, '');
           const parsed = parseFloat(num);
           verifiedPrice = Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : verifiedPrice;
         }
@@ -372,15 +384,29 @@ async function verifyOfficialProduct(base: ImageAnalysisResult): Promise<Partial
   }
 }
 
+function buildPrefsBlock(prefs: StylePrefs): string {
+  const lines: string[] = ['User Style Profile:'];
+  if (prefs.gender) lines.push(`- Gender: ${prefs.gender}`);
+  if (prefs.ageRange) lines.push(`- Age range: ${prefs.ageRange}`);
+  if (prefs.bodyType) lines.push(`- Body type: ${prefs.bodyType}`);
+  if (prefs.favoriteColors?.length) lines.push(`- Preferred colors: ${prefs.favoriteColors.join(', ')}`);
+  if (prefs.styleVibes?.length) lines.push(`- Style vibes: ${prefs.styleVibes.join(', ')}`);
+  if (prefs.occasions?.length) lines.push(`- Usual occasions: ${prefs.occasions.join(', ')}`);
+  if (prefs.budgetRange) lines.push(`- Budget range: ${prefs.budgetRange}`);
+  if (prefs.fashionGoals?.length) lines.push(`- Fashion goals: ${prefs.fashionGoals.join(', ')}`);
+  return lines.join('\n');
+}
+
 export async function generateOutfit({
   weather,
   trends,
   prompt,
   clothes,
+  stylePreferences,
 }: GenerateOutfitParams): Promise<Outfit> {
   try {
     console.log('Generating outfit with AI...');
-    const aiPrompt = createOutfitPrompt(weather, trends, prompt, clothes);
+    const aiPrompt = createOutfitPrompt(weather, trends, prompt, clothes, stylePreferences);
     const text = await callLLM([
       { role: 'assistant', content: 'You are a professional mobile fashion stylist. Return ONLY JSON as instructed.' },
       { role: 'user', content: aiPrompt },
@@ -398,7 +424,8 @@ function createOutfitPrompt(
   weather: Weather | null,
   trends: string[],
   prompt: string,
-  clothes: ClothingItem[]
+  clothes: ClothingItem[],
+  stylePrefs?: StylePrefs
 ): string {
   const weatherInfo = weather 
     ? `Weather: ${weather.condition}, ${weather.temperature}°C, humidity ${weather.humidity}%, wind ${weather.windSpeed} km/h`
@@ -421,12 +448,14 @@ Variability key: ${variabilityHint}
 Available clothing items:
 ${clothesInfo}
 
+${stylePrefs ? buildPrefsBlock(stylePrefs) : ''}
 Rules:
 1. Weather appropriateness.
 2. Reflect social trends but keep it wearable.
 3. Color harmony and style cohesion.
 4. Vary selections across calls even for similar prompts to avoid repetition.
 5. Only choose from the provided closet.
+6. If user style preferences are provided, strongly factor them in — preferred colors, vibes, body type, and budget.
 
 Respond in EXACT JSON:
 {

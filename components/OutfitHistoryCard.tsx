@@ -40,7 +40,7 @@ export default function OutfitHistoryCard({ history, selectable = false, selecte
         {selectable && (
           <View style={styles.selectIcon}>
             {selected ? (
-              <CheckCircle color="#3B82F6" size={22} fill="#3B82F6" />
+              <CheckCircle color="#F97316" size={22} fill="#F97316" />
             ) : (
               <Circle color="#334155" size={22} />
             )}
@@ -89,11 +89,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.12)",
+    borderColor: "rgba(249, 115, 22, 0.12)",
   },
   containerSelected: {
-    borderColor: "#3B82F6",
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    borderColor: "#F97316",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
   },
   headerRow: {
     flexDirection: "row",

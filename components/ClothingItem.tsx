@@ -74,7 +74,7 @@ export default function ClothingItem({ item }: ClothingItemProps) {
           {item.brand ? <Text style={styles.brand}>{item.brand}</Text> : <View />}
           {analysis && analysis.averagePrice ? (
             <View style={styles.priceRow}>
-              <DollarSign color="#3B82F6" size={12} />
+              <DollarSign color="#F97316" size={12} />
               <Text style={styles.price}>{formatPrice(analysis.averagePrice, analysis.currency)}</Text>
             </View>
           ) : null}
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 12,
-    color: "#60A5FA",
+    color: "#FB923C",
     fontWeight: "600" as const,
   },
   dripLevel: {

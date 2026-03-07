@@ -26,6 +26,7 @@ import { useClothes } from "@/providers/ClothesProvider";
 import { router } from "expo-router";
 import OutfitCard from "@/components/OutfitCard";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
+import { useOnboarding } from "@/providers/OnboardingProvider";
 import WeatherCard from "@/components/WeatherCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
@@ -34,6 +35,7 @@ import FeedbackModal from "@/components/FeedbackModal";
 export default function HomeScreen() {
   const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
   const { clothes } = useClothes();
+  const { hasCompletedOnboarding, preferences } = useOnboarding();
   const [prompt, setPrompt] = useState<string>("");
   const [generating, setGenerating] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -74,6 +76,12 @@ export default function HomeScreen() {
     const interval = setInterval(updateGreeting, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (hasCompletedOnboarding === false) {
+      router.replace("/onboarding" as any);
+    }
+  }, [hasCompletedOnboarding]);
 
   useEffect(() => {
     void fetchWeather();
@@ -154,6 +162,7 @@ export default function HomeScreen() {
         trends: dynamicTrends,
         prompt: enrichedPrompt,
         clothes,
+        stylePreferences: preferences,
       });
       setOutfit(newOutfit);
       try {
@@ -170,7 +179,7 @@ export default function HomeScreen() {
     } finally {
       setGenerating(false);
     }
-  }, [weather, prompt, clothes, fetchWeather]);
+  }, [weather, prompt, clothes, fetchWeather, preferences]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -185,7 +194,7 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient
-      colors={["#0B1120", "#111B2E", "#0A1628"]}
+      colors={["#020B1C", "#0A1A2F", "#071E2B", "#0C1425"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -196,7 +205,7 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#3B82F6"
+              tintColor="#F97316"
             />
           }
         >
@@ -234,7 +243,7 @@ export default function HomeScreen() {
                   style={styles.refreshChip}
                   activeOpacity={0.7}
                 >
-                  <RefreshCw color="#3B82F6" size={14} />
+                  <RefreshCw color="#F97316" size={14} />
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -245,7 +254,7 @@ export default function HomeScreen() {
                 testID="scan-outfit-button"
                 activeOpacity={0.7}
               >
-                <ScanLine color="#06B6D4" size={22} />
+                <ScanLine color="#FB923C" size={22} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addButton}
@@ -253,7 +262,7 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <LinearGradient
-                  colors={["#3B82F6", "#2563EB"]}
+                  colors={["#F97316", "#EA580C"]}
                   style={styles.addButtonGradient}
                 >
                   <Plus color="#FFFFFF" size={22} />
@@ -271,7 +280,7 @@ export default function HomeScreen() {
 
           <View style={styles.promptSection}>
             <View style={styles.sectionTitleRow}>
-              <MapPin color="#3B82F6" size={18} />
+              <MapPin color="#F97316" size={18} />
               <Text style={styles.sectionTitle}>Where are you going?</Text>
             </View>
             <TextInput
@@ -294,7 +303,7 @@ export default function HomeScreen() {
           >
             <Animated.View style={{ opacity: generating ? pulseAnim : 1 }}>
               <LinearGradient
-                colors={["#3B82F6", "#1D4ED8"]}
+                colors={["#F97316", "#EA580C"]}
                 style={styles.gradientButton}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -318,7 +327,7 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.feedbackInner}>
-              <MessageSquare color="#06B6D4" size={20} />
+              <MessageSquare color="#FB923C" size={20} />
               <Text style={styles.feedbackButtonLargeText}>Give Feedback</Text>
             </View>
           </TouchableOpacity>
@@ -394,7 +403,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 15,
-    color: "#60A5FA",
+    color: "#FB923C",
     marginBottom: 4,
     fontWeight: "600",
     letterSpacing: 0.5,
@@ -410,9 +419,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(6, 182, 212, 0.12)",
+    backgroundColor: "rgba(249, 115, 22, 0.12)",
     borderWidth: 1.5,
-    borderColor: "rgba(6, 182, 212, 0.3)",
+    borderColor: "rgba(249, 115, 22, 0.3)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -443,14 +452,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   promptInput: {
-    backgroundColor: "rgba(30, 58, 95, 0.5)",
+    backgroundColor: "rgba(8, 30, 50, 0.6)",
     borderRadius: 14,
     padding: 16,
     color: "#E2E8F0",
     fontSize: 15,
     minHeight: 80,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.2)",
+    borderColor: "rgba(249, 115, 22, 0.18)",
     textAlignVertical: "top",
   },
   generateButton: {
@@ -477,9 +486,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     marginBottom: 20,
-    backgroundColor: "rgba(6, 182, 212, 0.08)",
+    backgroundColor: "rgba(249, 115, 22, 0.06)",
     borderWidth: 1,
-    borderColor: "rgba(6, 182, 212, 0.2)",
+    borderColor: "rgba(249, 115, 22, 0.18)",
   },
   feedbackInner: {
     flexDirection: "row",
@@ -490,7 +499,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   feedbackButtonLargeText: {
-    color: "#06B6D4",
+    color: "#FB923C",
     fontSize: 15,
     fontWeight: "600" as const,
   },
@@ -498,8 +507,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   parsedBubble: {
-    backgroundColor: "rgba(59, 130, 246, 0.06)",
-    borderColor: "rgba(59, 130, 246, 0.15)",
+    backgroundColor: "rgba(249, 115, 22, 0.06)",
+    borderColor: "rgba(249, 115, 22, 0.12)",
     borderWidth: 1,
     borderRadius: 14,
     padding: 14,
@@ -520,14 +529,14 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 14,
     borderRadius: 17,
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.3)",
+    borderColor: "rgba(249, 115, 22, 0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
   trendChipText: {
-    color: "#93C5FD",
+    color: "#FDBA74",
     fontSize: 13,
     fontWeight: "600" as const,
   },
@@ -535,9 +544,9 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    backgroundColor: "rgba(249, 115, 22, 0.08)",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.25)",
+    borderColor: "rgba(249, 115, 22, 0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
