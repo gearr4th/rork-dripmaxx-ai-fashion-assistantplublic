@@ -21,12 +21,12 @@ export default function AuthCallback() {
 
   return (
     <View style={styles.c} testID="auth-callback-loading">
-      {error ? <Text style={styles.error}>Error: {error}</Text> : <ActivityIndicator color="#FFD700" />}
+      {error ? <Text style={styles.error}>Error: {error}</Text> : <ActivityIndicator color="#F97316" />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  c: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' },
-  error: { color: '#ff6b6b', fontSize: 14 },
+  c: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#020B1C' },
+  error: { color: '#EF4444', fontSize: 14 },
 });

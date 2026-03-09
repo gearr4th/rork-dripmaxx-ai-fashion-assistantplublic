@@ -4,10 +4,9 @@ import { StyleSheet, Text, View } from "react-native";
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: "Oops!" }} />
+      <Stack.Screen options={{ title: "Oops!", headerStyle: { backgroundColor: '#020B1C' }, headerTintColor: '#E2E8F0' }} />
       <View style={styles.container}>
         <Text style={styles.title}>This screen doesn&apos;t exist.</Text>
-
         <Link href="/" style={styles.link}>
           <Text style={styles.linkText}>Go to home screen!</Text>
         </Link>
@@ -22,10 +21,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+    backgroundColor: "#020B1C",
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "700" as const,
+    color: "#E2E8F0",
   },
   link: {
     marginTop: 15,
@@ -33,6 +34,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: "#2e78b7",
+    color: "#FB923C",
+    fontWeight: "600" as const,
   },
 });

@@ -178,7 +178,7 @@ export default function ScanClothesScreen() {
 
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A2E", "#0A0A0A"]}
+      colors={["#020B1C", "#0A1A2F", "#071E2B", "#0C1425"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -200,7 +200,7 @@ export default function ScanClothesScreen() {
                 style={styles.imagePickerButton}
                 onPress={() => pickImage(true)}
               >
-                <Camera color="#FFD700" size={32} />
+                <Camera color="#F97316" size={32} />
                 <Text style={styles.imagePickerText}>Take Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -208,7 +208,7 @@ export default function ScanClothesScreen() {
                 style={styles.imagePickerButton}
                 onPress={() => pickImage(false)}
               >
-                <ImageIcon color="#FFD700" size={32} />
+                <ImageIcon color="#F97316" size={32} />
                 <Text style={styles.imagePickerText}>Choose from Gallery</Text>
               </TouchableOpacity>
             </View>
@@ -221,7 +221,7 @@ export default function ScanClothesScreen() {
                   style={styles.actionButton}
                   onPress={retakePhoto}
                 >
-                  <RotateCcw color="#FFD700" size={20} />
+                  <RotateCcw color="#FB923C" size={20} />
                   <Text style={styles.actionButtonText}>Retake</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -240,12 +240,12 @@ export default function ScanClothesScreen() {
                 onPress={handleAnalyze}
                 disabled={analyzing}
               >
-                <LinearGradient colors={["#FFD700", "#FFA500"]} style={styles.gradientButtonRow}>
+                <LinearGradient colors={["#F97316", "#EA580C"]} style={styles.gradientButtonRow}>
                   {analyzing ? (
                     <ActivityIndicator color="#000" />
                   ) : (
                     <>
-                      <ScanSearch color="#000" size={22} />
+                      <ScanSearch color="#FFF" size={22} />
                       <Text style={styles.analyzeText}>Analyze Item</Text>
                     </>
                   )}
@@ -418,7 +418,7 @@ export default function ScanClothesScreen() {
             disabled={saving}
           >
             <LinearGradient
-              colors={["#FFD700", "#FFA500"]}
+              colors={["#F97316", "#EA580C"]}
               style={styles.gradientButton}
             >
               <Text style={styles.saveButtonText}>
@@ -447,14 +447,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+    fontWeight: "800" as const,
+    color: "#E2E8F0",
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -470,19 +470,19 @@ const styles = StyleSheet.create({
   imagePickerButton: {
     flex: 1,
     height: 120,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(8, 30, 50, 0.4)",
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: "rgba(255, 215, 0, 0.3)",
+    borderColor: "rgba(249, 115, 22, 0.3)",
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
   imagePickerText: {
-    color: "#FFD700",
+    color: "#FB923C",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   imageContainer: {
     marginBottom: 32,
@@ -504,17 +504,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(8, 30, 50, 0.4)",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.3)",
+    borderColor: "rgba(249, 115, 22, 0.25)",
     gap: 6,
   },
   deleteButton: {
     borderColor: "rgba(239, 68, 68, 0.3)",
   },
   actionButtonText: {
-    color: "#60A5FA",
+    color: "#FB923C",
     fontSize: 14,
     fontWeight: "600" as const,
   },
@@ -546,18 +546,18 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: "600" as const,
+    color: "#CBD5E1",
     marginBottom: 12,
   },
   input: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
+    backgroundColor: "rgba(8, 30, 50, 0.6)",
+    borderRadius: 14,
     padding: 16,
-    color: "#FFFFFF",
+    color: "#E2E8F0",
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(249, 115, 22, 0.18)",
   },
   typeScroll: {
     flexDirection: "row",
@@ -566,22 +566,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(8, 30, 50, 0.6)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(249, 115, 22, 0.15)",
     marginRight: 12,
   },
   typeButtonActive: {
-    backgroundColor: "#FFD700",
-    borderColor: "#FFD700",
+    backgroundColor: "#F97316",
+    borderColor: "#F97316",
   },
   typeButtonText: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   typeButtonTextActive: {
-    color: "#000000",
+    color: "#FFFFFF",
   },
   colorGrid: {
     flexDirection: "row",
@@ -593,12 +593,12 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(100, 116, 139, 0.3)",
     justifyContent: "center",
     alignItems: "center",
   },
   colorButtonActive: {
-    borderColor: "#FFD700",
+    borderColor: "#F97316",
     borderWidth: 3,
   },
   saveButton: {
@@ -629,25 +629,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(8, 30, 50, 0.6)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(249, 115, 22, 0.15)",
     marginRight: 12,
     gap: 6,
   },
   occasionButtonActive: {
-    backgroundColor: "#FFD700",
-    borderColor: "#FFD700",
+    backgroundColor: "#F97316",
+    borderColor: "#F97316",
   },
   occasionIcon: {
     fontSize: 16,
   },
   occasionText: {
-    color: "#888",
+    color: "#64748B",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   occasionTextActive: {
-    color: "#000000",
+    color: "#FFFFFF",
   },
 });

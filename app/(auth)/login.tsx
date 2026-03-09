@@ -116,7 +116,7 @@ export default function LoginScreen() {
 
   return (
     <LinearGradient
-      colors={["#0B1120", "#0F1A2E", "#0B1526"]}
+      colors={["#020B1C", "#0A1A2F", "#071E2B", "#0C1425"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -130,7 +130,7 @@ export default function LoginScreen() {
           >
             <View style={styles.header}>
               <View style={styles.logoContainer}>
-                <Sparkles color="#60A5FA" size={36} />
+                <Sparkles color="#F97316" size={36} />
               </View>
               <Text style={styles.title}>DripMaxx AI</Text>
               <Text style={styles.subtitle}>Your AI Fashion Assistant</Text>
@@ -177,7 +177,7 @@ export default function LoginScreen() {
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={["#3B82F6", "#1D4ED8"]}
+                  colors={["#F97316", "#EA580C"]}
                   style={styles.gradientButton}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -235,9 +235,9 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 22,
-    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    backgroundColor: "rgba(249, 115, 22, 0.12)",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.25)",
+    borderColor: "rgba(249, 115, 22, 0.25)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
@@ -258,11 +258,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(30, 58, 95, 0.4)",
+    backgroundColor: "rgba(8, 30, 50, 0.6)",
     borderRadius: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.15)",
+    borderColor: "rgba(249, 115, 22, 0.15)",
   },
   inputIcon: {
     marginLeft: 16,
@@ -296,14 +296,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     height: 48,
     borderRadius: 14,
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.3)",
+    borderColor: "rgba(249, 115, 22, 0.25)",
     alignItems: "center",
     justifyContent: "center",
   },
   demoPrimaryText: {
-    color: "#60A5FA",
+    color: "#FB923C",
     fontSize: 15,
     fontWeight: "600" as const,
   },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signupLink: {
-    color: "#3B82F6",
+    color: "#F97316",
     fontSize: 14,
     fontWeight: "600" as const,
   },
@@ -325,13 +325,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    backgroundColor: "rgba(249, 115, 22, 0.08)",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.2)",
+    borderColor: "rgba(249, 115, 22, 0.2)",
   },
   connectionStatusText: {
-    color: "#60A5FA",
+    color: "#FB923C",
     fontSize: 12,
     textAlign: "center",
   },

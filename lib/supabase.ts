@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/config';
 
 const validUrl = SUPABASE_URL && SUPABASE_URL !== '' && !SUPABASE_URL.includes('placeholder') && SUPABASE_URL.startsWith('https://');
@@ -28,7 +29,7 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      storage: undefined,
+      storage: AsyncStorage,
       storageKey: 'dripmaxx-auth-token',
       flowType: 'pkce',
     },

@@ -259,7 +259,7 @@ export default function ProfileScreen() {
 
           <View style={styles.footer}>
             <Text style={styles.version}>DripMaxx AI v1.0.0</Text>
-            <Text style={styles.copyright}>© 2024 DripMaxx AI</Text>
+            <Text style={styles.copyright}>© 2026 DripMaxx AI</Text>
           </View>
         </ScrollView>
       </SafeAreaView>

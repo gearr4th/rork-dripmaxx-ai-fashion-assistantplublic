@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ClothesProvider } from "@/providers/ClothesProvider";
 import { WeatherProvider } from "@/providers/WeatherProvider";
@@ -45,6 +45,28 @@ function RootLayoutNav() {
           headerShown: false 
         }} 
       />
+      <Stack.Screen 
+        name="scan-outfit" 
+        options={{ 
+          presentation: "modal",
+          headerShown: false 
+        }} 
+      />
+      <Stack.Screen 
+        name="recommendation-details" 
+        options={{ 
+          headerShown: true,
+          headerStyle: { backgroundColor: '#020B1C' },
+          headerTintColor: '#E2E8F0',
+          title: 'Recommendation',
+        }} 
+      />
+      <Stack.Screen 
+        name="item" 
+        options={{ 
+          headerShown: false,
+        }} 
+      />
     </Stack>
   );
 }
@@ -68,12 +90,7 @@ export default function RootLayout() {
                         <BudgetProvider>
                           <SavedOutfitsProvider>
                             <ErrorBoundary>
-                              <View style={styles.container} testID="app-root">
-                                <RootLayoutNav />
-                                <View style={styles.debugBadge} pointerEvents="none" testID="debug-badge">
-                                  <Text style={styles.debugText}>Preview Ready</Text>
-                                </View>
-                              </View>
+                              <RootLayoutNav />
                             </ErrorBoundary>
                           </SavedOutfitsProvider>
                         </BudgetProvider>
@@ -92,15 +109,4 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
-  container: { flex: 1 },
-  debugBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  debugText: { color: "#fff", fontSize: 10, fontWeight: "600" as const },
 });

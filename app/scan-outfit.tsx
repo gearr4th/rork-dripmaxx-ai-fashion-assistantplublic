@@ -505,13 +505,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: 'rgba(30, 58, 95, 0.4)',
+    backgroundColor: 'rgba(8, 30, 50, 0.4)',
     borderWidth: 2,
-    borderColor: 'rgba(59, 130, 246, 0.25)',
+    borderColor: 'rgba(249, 115, 22, 0.25)',
   },
   categoryText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '800' as const,
   },
   criteriaContainer: {
     marginBottom: 24,
@@ -543,8 +543,8 @@ const styles = StyleSheet.create({
   },
   criteriaScore: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#60A5FA',
+    fontWeight: '700' as const,
+    color: '#FB923C',
   },
   progressBar: {
     height: 8,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#F97316',
     borderRadius: 4,
   },
   criteriaFeedback: {
@@ -565,15 +565,15 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     padding: 16,
-    backgroundColor: 'rgba(59, 130, 246, 0.06)',
+    backgroundColor: 'rgba(249, 115, 22, 0.06)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(249, 115, 22, 0.15)',
   },
   summaryTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#60A5FA',
+    fontWeight: '700' as const,
+    color: '#FB923C',
     marginBottom: 8,
   },
   summaryText: {
