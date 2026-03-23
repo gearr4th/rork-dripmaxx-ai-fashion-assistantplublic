@@ -29,18 +29,24 @@ for each row execute procedure public.set_user_profile_updated_at();
 alter table public.user_profiles enable row level security;
 
 -- Policies: users can only read/write their own profile
-create policy if not exists "Users can view own profile"
+drop policy if exists "Users can view own profile" on public.user_profiles;
+create policy "Users can view own profile"
   on public.user_profiles for select
   using (auth.uid() = id);
 
-create policy if not exists "Users can insert own profile"
+drop policy if exists "Users can insert own profile" on public.user_profiles;
+create policy "Users can insert own profile"
   on public.user_profiles for insert
   with check (auth.uid() = id);
 
-create policy if not exists "Users can update own profile"
+drop policy if exists "Users can update own profile" on public.user_profiles;
+create policy "Users can update own profile"
   on public.user_profiles for update
   using (auth.uid() = id)
   with check (auth.uid() = id);
+
+-- Grant permissions
+grant select, insert, update on public.user_profiles to authenticated;
 
 -- Function to automatically create profile on user signup
 create or replace function public.handle_new_user()

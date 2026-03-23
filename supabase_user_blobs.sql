@@ -38,3 +38,6 @@ create policy "Allow user update own blob"
   on public.user_blobs for update
   using (auth.uid() = id)
   with check (auth.uid() = id);
+
+-- Grant permissions
+grant select, insert, update on public.user_blobs to authenticated;

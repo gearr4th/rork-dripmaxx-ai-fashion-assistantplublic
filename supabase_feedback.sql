@@ -16,12 +16,14 @@ CREATE TABLE IF NOT EXISTS public.feedback (
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can insert their own feedback
+DROP POLICY IF EXISTS "Users can insert their own feedback" ON public.feedback;
 CREATE POLICY "Users can insert their own feedback"
   ON public.feedback
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy: Users can view their own feedback
+DROP POLICY IF EXISTS "Users can view their own feedback" ON public.feedback;
 CREATE POLICY "Users can view their own feedback"
   ON public.feedback
   FOR SELECT
@@ -32,5 +34,4 @@ CREATE INDEX IF NOT EXISTS feedback_user_id_idx ON public.feedback(user_id);
 CREATE INDEX IF NOT EXISTS feedback_created_at_idx ON public.feedback(created_at DESC);
 
 -- Grant permissions
-GRANT SELECT, INSERT ON public.feedback TO anon;
 GRANT SELECT, INSERT ON public.feedback TO authenticated;
