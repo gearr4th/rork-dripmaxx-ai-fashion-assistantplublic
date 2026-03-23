@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Platform } from 'react-native';
 
 export interface ConnectionTestResult {
@@ -10,34 +10,43 @@ export interface ConnectionTestResult {
 }
 
 export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
-  console.log('\n=== Testing Supabase Connection ===');
-  console.log('Platform:', Platform.OS);
-  
+  console.log('[TestSupabase] === Testing Supabase Connection ===');
+  console.log('[TestSupabase] Platform:', Platform.OS);
+
+  if (!isSupabaseConfigured) {
+    console.log('[TestSupabase] Supabase not configured');
+    return {
+      success: false,
+      error: 'Supabase not configured',
+    };
+  }
+
   try {
     const startTime = Date.now();
-    
-    const { data, error } = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise<{ data: null; error: Error }>((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 10000)
-      )
-    ]);
-    
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Connection timeout after 10s')), 10000)
+    );
+
+    const sessionPromise = supabase.auth.getSession();
+
+    const { data, error } = await Promise.race([sessionPromise, timeoutPromise]);
+
     const duration = Date.now() - startTime;
-    console.log('Request completed in:', duration + 'ms');
-    
+    console.log('[TestSupabase] Request completed in:', duration + 'ms');
+
     if (error) {
-      console.error('❌ Supabase connection failed:', error.message);
+      console.error('[TestSupabase] Connection failed:', error.message);
       return {
         success: false,
         error: error.message,
         duration,
       };
     }
-    
-    console.log('✅ Supabase connection successful!');
-    console.log('Session status:', data.session ? 'Active' : 'No active session');
-    
+
+    console.log('[TestSupabase] Connection successful!');
+    console.log('[TestSupabase] Session status:', data.session ? 'Active' : 'No active session');
+
     return {
       success: true,
       status: 200,
@@ -45,14 +54,9 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
       duration,
     };
   } catch (error) {
-    console.error('❌ Connection test failed:', error);
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('Error message:', errorMsg);
-    
-    if (typeof navigator !== 'undefined') {
-      console.log('Browser online status:', navigator.onLine);
-    }
-    
+    console.error('[TestSupabase] Connection test failed:', errorMsg);
+
     return {
       success: false,
       error: errorMsg,

@@ -81,8 +81,8 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.flex1}>
           <AuthProvider>
-            <OnboardingProvider>
             <CloudSyncProvider>
+              <OnboardingProvider>
                 <SubscriptionProvider>
                   <WeatherProvider>
                     <ClothesProvider>
@@ -98,8 +98,8 @@ export default function RootLayout() {
                     </ClothesProvider>
                   </WeatherProvider>
                 </SubscriptionProvider>
+              </OnboardingProvider>
             </CloudSyncProvider>
-            </OnboardingProvider>
           </AuthProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
