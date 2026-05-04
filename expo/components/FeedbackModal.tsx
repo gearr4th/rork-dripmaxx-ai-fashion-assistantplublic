@@ -66,30 +66,85 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
     setAdditionalComments('');
   };
 
-  const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
-    const backupLocally = async () => {
-      const emailBackup = {
-        to: 'gearr4th@gmail.com',
-        subject: `Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
-        body: `Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\nRatings:\n- Ease of Use: ${feedbackData.easeOfUse}/5\n- Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n- Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\nComments: ${feedbackData.additionalComments || 'None'}`,
-        timestamp: new Date().toISOString()
-      };
+  const FEEDBACK_RECIPIENT = 'nmam.amnm@gmail.com';
 
-      const existingEmails = await AsyncStorage.getItem('pending_emails');
-      const emailArray = existingEmails ? JSON.parse(existingEmails) : [];
-      emailArray.push(emailBackup);
-      await AsyncStorage.setItem('pending_emails', JSON.stringify(emailArray));
+  const sendDirectEmail = async (feedbackData: FeedbackData): Promise<boolean> => {
+    try {
+      const overall = (
+        (feedbackData.easeOfUse +
+          feedbackData.accuracyOfDripRating +
+          feedbackData.usefulnessOfRecommendations) /
+        3
+      ).toFixed(2);
+      const message = [
+        `Overall: ${overall}/5`,
+        `• Ease of use: ${feedbackData.easeOfUse}/5`,
+        `• Drip accuracy: ${feedbackData.accuracyOfDripRating}/5`,
+        `• Recommendations usefulness: ${feedbackData.usefulnessOfRecommendations}/5`,
+        '',
+        'Comments:',
+        feedbackData.additionalComments?.trim() || '(none)',
+        '',
+        `App version: ${feedbackData.appVersion ?? '1.0.0'}`,
+        `Device: ${feedbackData.deviceInfo ?? Platform.OS}`,
+        `Sent: ${feedbackData.timestamp.toISOString()}`,
+      ].join('\n');
 
-      console.log('[Feedback] Backed up locally - will retry when connection improves');
+      const res = await fetch(
+        `https://formsubmit.co/ajax/${encodeURIComponent(FEEDBACK_RECIPIENT)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            _subject: `Drip App Feedback (${overall}/5)`,
+            _template: 'box',
+            _captcha: 'false',
+            name: 'Drip user',
+            email: 'noreply@dripapp.local',
+            message,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        console.error('[Feedback] Direct email failed:', res.status, await res.text());
+        return false;
+      }
+      console.log('[Feedback] Direct email sent to', FEEDBACK_RECIPIENT);
+      return true;
+    } catch (err) {
+      console.error('[Feedback] Direct email error:', err);
       return false;
-    };
+    }
+  };
 
+  const backupLocally = async (feedbackData: FeedbackData) => {
+    const emailBackup = {
+      to: FEEDBACK_RECIPIENT,
+      subject: `Drip App Feedback - ${feedbackData.timestamp.toLocaleDateString()}`,
+      body: `Overall Rating: ${((feedbackData.easeOfUse + feedbackData.accuracyOfDripRating + feedbackData.usefulnessOfRecommendations) / 3).toFixed(1)}/5\n\nRatings:\n- Ease of Use: ${feedbackData.easeOfUse}/5\n- Drip Accuracy: ${feedbackData.accuracyOfDripRating}/5\n- Recommendations: ${feedbackData.usefulnessOfRecommendations}/5\n\nComments: ${feedbackData.additionalComments || 'None'}`,
+      timestamp: new Date().toISOString(),
+    };
+    const existingEmails = await AsyncStorage.getItem('pending_emails');
+    const emailArray = existingEmails ? JSON.parse(existingEmails) : [];
+    emailArray.push(emailBackup);
+    await AsyncStorage.setItem('pending_emails', JSON.stringify(emailArray));
+    console.log('[Feedback] Backed up locally - will retry when connection improves');
+    return false;
+  };
+
+  const sendFeedbackEmail = async (feedbackData: FeedbackData) => {
     try {
       const accessToken = await AsyncStorage.getItem('accessToken');
-      
+
       if (!accessToken) {
-        console.warn('[Feedback] No access token, backing up locally');
-        return await backupLocally();
+        console.warn('[Feedback] No access token, sending email directly');
+        const ok = await sendDirectEmail(feedbackData);
+        if (ok) return true;
+        return await backupLocally(feedbackData);
       }
 
       const result = await trpcClient.feedback.send.mutate({
@@ -103,14 +158,18 @@ export default function FeedbackModal({ visible, onClose }: FeedbackModalProps) 
       });
 
       if (result.success) {
-        console.log('[Feedback] Email sent successfully to gearr4th@gmail.com');
+        console.log(`[Feedback] Sent (emailed: ${('emailSent' in result ? result.emailSent : 'unknown')})`);
         return true;
       }
-      
-      return await backupLocally();
+
+      const ok = await sendDirectEmail(feedbackData);
+      if (ok) return true;
+      return await backupLocally(feedbackData);
     } catch (error) {
       console.error('[Feedback] Error sending feedback:', error);
-      return await backupLocally();
+      const ok = await sendDirectEmail(feedbackData);
+      if (ok) return true;
+      return await backupLocally(feedbackData);
     }
   };
 
