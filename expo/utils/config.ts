@@ -15,8 +15,21 @@ const getEnvVar = (key: string): string => {
   return '';
 };
 
-export const SUPABASE_URL: string = getEnvVar('EXPO_PUBLIC_SUPABASE_URL');
-export const SUPABASE_ANON_KEY: string = getEnvVar('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+// Live Supabase project (qfvwpchklysqgmylhqvn). Hardcoded because the
+// platform-managed .env points at a stale/dead project. Env var still wins
+// if set to a valid value, so prod overrides remain possible.
+const FALLBACK_SUPABASE_URL = 'https://qfvwpchklysqgmylhqvn.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdndwY2hrbHlzcWdteWxocXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTUxNzQsImV4cCI6MjA3NjEzMTE3NH0.5Z3BZyanLVSuB_yCwjvEnPtpXdA2oNMAsqcuBpA-8Z0';
+
+const envUrl = getEnvVar('EXPO_PUBLIC_SUPABASE_URL');
+const envKey = getEnvVar('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+
+// Known-dead project ref — always override to fallback.
+const DEAD_REFS = ['uhzxvsdopehhziyoblqa'];
+const isDeadUrl = (u: string): boolean => DEAD_REFS.some((r) => u.includes(r));
+
+export const SUPABASE_URL: string = envUrl && !isDeadUrl(envUrl) ? envUrl : FALLBACK_SUPABASE_URL;
+export const SUPABASE_ANON_KEY: string = envUrl && !isDeadUrl(envUrl) && envKey ? envKey : FALLBACK_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn('[Config] Supabase environment variables not found!');
