@@ -51,6 +51,7 @@ interface SubscriptionContextType {
   /** Opens Stripe Checkout for a paid tier. Returns true if payment succeeded. */
   purchaseTier: (target: SubscriptionTier) => Promise<boolean>;
   startTrial: () => Promise<void>;
+  cancelTrial: () => Promise<void>;
   cancelSubscription: () => Promise<void>;
   restoreSubscription: () => Promise<void>;
 }
@@ -227,6 +228,20 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     await persist({ ...subscription, tier: TRIAL_TIER, status: "trialing", trial });
   }, [user, subscription, persist]);
 
+  /** Cancel trial early — revert to DripLite */
+  const cancelTrial = useCallback(async () => {
+    if (!subscription) return;
+    const updated: UserSubscription = {
+      ...subscription,
+      tier: "driplite",
+      status: "active",
+      trial: subscription.trial ? { ...subscription.trial, isActive: false } : undefined,
+      cancelAtPeriodEnd: false,
+    };
+    await persist(updated);
+    console.log("[Subscription] Trial cancelled — reverted to DripLite");
+  }, [subscription, persist]);
+
   // Upgrade to a tier (local/demo only — no Stripe)
   const upgradeToTier = useCallback(async (target: SubscriptionTier) => {
     if (!user) throw new Error("User must be logged in to upgrade");
@@ -355,6 +370,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     upgradeToTier,
     purchaseTier,
     startTrial,
+    cancelTrial,
     cancelSubscription,
     restoreSubscription,
   }), [
@@ -364,6 +380,6 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     trySaveOutfit, canUseCostPerWear, canUseWeatherSuggestions,
     canUseOutfitRepeatTracking, canUseEventPlanning,
     canUseTrendAnalysis, hasWatermark, upgradeToTier,
-    purchaseTier, startTrial, cancelSubscription, restoreSubscription,
+    purchaseTier, startTrial, cancelTrial, cancelSubscription, restoreSubscription,
   ]);
 });

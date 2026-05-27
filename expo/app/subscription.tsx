@@ -52,12 +52,38 @@ export default function SubscriptionScreen() {
     trialDaysLeft,
     purchaseTier,
     startTrial,
+    cancelTrial,
     subscription,
   } = useSubscription();
   const [loading, setLoading] = useState<SubscriptionTier | null>(null);
+  const [cancellingTrial, setCancellingTrial] = useState(false);
 
-  const handleUpgrade = async (targetTier: SubscriptionTier) => {
-    if (targetTier === "driplite" || targetTier === tier) return;
+  const handleTierAction = async (targetTier: SubscriptionTier) => {
+    // If in trial and tapping DripLite → exit trial
+    if (isTrialing && targetTier === "driplite") {
+      setCancellingTrial(true);
+      try {
+        await cancelTrial();
+        Alert.alert(
+          "Trial Cancelled",
+          "You're now on the DripLite free plan. You can upgrade anytime.",
+          [{ text: "OK" }]
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to exit trial";
+        Alert.alert("Error", message);
+      } finally {
+        setCancellingTrial(false);
+      }
+      return;
+    }
+
+    // If not in trial and same tier → no-op
+    if (!isTrialing && targetTier === tier) return;
+    
+    // DripLite when not in trial → no-op (already free)
+    if (targetTier === "driplite" && !isTrialing) return;
+
     setLoading(targetTier);
 
     try {
@@ -83,7 +109,7 @@ export default function SubscriptionScreen() {
     }
   };
 
-  const handleStartTrial = async () => {
+    const handleStartTrial = async () => {
     try {
       await startTrial();
       Alert.alert("Trial Started!", "Enjoy 3 days of DripMaxx for free!", [
@@ -96,8 +122,8 @@ export default function SubscriptionScreen() {
   };
 
   const showTrialBanner = useMemo(() => {
-    return tier === "driplite" && !isTrialing;
-  }, [tier, isTrialing]);
+    return tier === "driplite" && !isTrialing && !subscription?.trial;
+  }, [tier, isTrialing, subscription?.trial]);
 
   const tiers: SubscriptionTier[] = ["driplite", "dripplus", "dripmaxx"];
 
@@ -162,6 +188,18 @@ export default function SubscriptionScreen() {
                   Trial active — {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left
                 </Text>
               </LinearGradient>
+              <TouchableOpacity
+                style={styles.skipTrialButton}
+                onPress={() => handleTierAction("driplite")}
+                disabled={cancellingTrial}
+                activeOpacity={0.7}
+              >
+                {cancellingTrial ? (
+                  <ActivityIndicator color="#CBD5E1" size="small" />
+                ) : (
+                  <Text style={styles.skipTrialText}>Exit Trial → DripLite</Text>
+                )}
+              </TouchableOpacity>
             </View>
           )}
 
@@ -169,7 +207,9 @@ export default function SubscriptionScreen() {
           <View style={styles.tiersContainer}>
             {tiers.map((planTier) => {
               const plan = SUBSCRIPTION_PLANS[planTier];
+              // During trial: DripMaxx is "current" visually but purchasable; DripLite exits trial
               const isCurrentPlan = tier === planTier && !isTrialing;
+              const isTrialTier = isTrialing && planTier === "dripmaxx";
               const isHighlighted = plan.highlighted;
               const isRevenue = planTier === "dripmaxx";
 
@@ -181,9 +221,10 @@ export default function SubscriptionScreen() {
                     isHighlighted && styles.highlightedCard,
                     isRevenue && styles.revenueCard,
                     isCurrentPlan && styles.currentPlanCard,
+                    isTrialTier && styles.trialActiveCard,
                   ]}
-                  onPress={() => handleUpgrade(planTier)}
-                  disabled={isCurrentPlan || loading !== null}
+                  onPress={() => handleTierAction(planTier)}
+                  disabled={(isCurrentPlan && !isTrialing) || loading !== null || cancellingTrial}
                   activeOpacity={0.8}
                 >
                   {isHighlighted && (
@@ -284,24 +325,28 @@ export default function SubscriptionScreen() {
                       isHighlighted && styles.highlightedButton,
                       isRevenue && styles.revenueButton,
                     ]}
-                    onPress={() => handleUpgrade(planTier)}
-                    disabled={isCurrentPlan || loading !== null}
+                    onPress={() => handleTierAction(planTier)}
+                    disabled={(isCurrentPlan && !isTrialing) || loading !== null || cancellingTrial}
                     activeOpacity={0.8}
                   >
-                    {loading === planTier ? (
+                    {(loading === planTier || (isTrialing && planTier === "driplite" && cancellingTrial)) ? (
                       <ActivityIndicator color="#FFFFFF" />
                     ) : (
                       <Text
                         style={[
                           styles.upgradeButtonText,
-                          isCurrentPlan && styles.currentButtonText,
+                          isCurrentPlan && !isTrialing && styles.currentButtonText,
                         ]}
                       >
-                        {isCurrentPlan
+                        {isCurrentPlan && !isTrialing
                           ? "Current Plan"
-                          : plan.price === 0
-                            ? "Get Started Free"
-                            : `Upgrade to ${plan.name}`}
+                          : isTrialing && planTier === "driplite"
+                            ? "Exit Trial"
+                            : isTrialing && planTier === "dripmaxx"
+                              ? "Keep DripMaxx — $9.99/mo"
+                              : plan.price === 0
+                                ? "Get Started Free"
+                                : `Upgrade to ${plan.name}`}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -421,6 +466,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600" as const,
   },
+  skipTrialButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    alignItems: "center" as const,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
+  skipTrialText: {
+    color: "#CBD5E1",
+    fontSize: 13,
+    fontWeight: "600" as const,
+  },
 
   /* Tier cards */
   tiersContainer: {
@@ -446,6 +506,10 @@ const styles = StyleSheet.create({
   currentPlanCard: {
     borderColor: "#059669",
     backgroundColor: "rgba(5, 150, 105, 0.06)",
+  },
+  trialActiveCard: {
+    borderColor: "#7C3AED",
+    backgroundColor: "rgba(124, 58, 237, 0.06)",
   },
 
   /* Badges */

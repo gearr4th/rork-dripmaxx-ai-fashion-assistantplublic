@@ -9,8 +9,8 @@ export default publicProcedure
       tier: z.enum(["dripplus", "dripmaxx"]),
       userId: z.string().min(1),
       userEmail: z.string().email().optional(),
-      successUrl: z.string().url(),
-      cancelUrl: z.string().url(),
+      successUrl: z.string().min(1),
+      cancelUrl: z.string().min(1),
     })
   )
   .mutation(async ({ input }) => {
