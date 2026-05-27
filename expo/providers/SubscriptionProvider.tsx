@@ -1,55 +1,131 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import createContextHook from '@nkzw/create-context-hook';
-import { SubscriptionTier, UserSubscription } from '@/types/subscription';
-import { useAuth } from './AuthProvider';
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import createContextHook from "@nkzw/create-context-hook";
+import {
+  SubscriptionTier,
+  UserSubscription,
+  SUBSCRIPTION_PLANS,
+  TRIAL_DURATION_MS,
+  TRIAL_RULES,
+  TRIAL_TIER,
+  TrialInfo,
+} from "@/types/subscription";
+import { useAuth } from "./AuthProvider";
 
 interface SubscriptionContextType {
   subscription: UserSubscription | null;
   isLoading: boolean;
   tier: SubscriptionTier;
-  canUseFeature: (feature: string) => boolean;
-  getRemainingGenerations: () => number;
-  incrementGenerationCount: () => Promise<void>;
-  upgradeToPremium: () => Promise<void>;
-  upgradeToPro: () => Promise<void>;
+  isTrialing: boolean;
+  trialDaysLeft: number;
+  /** The *effective* plan rules (trial overrides DripLite limits during trial) */
+  effectivePlan: typeof SUBSCRIPTION_PLANS["driplite"];
+  /** Closet items remaining (null = unlimited) */
+  closetRemaining: number | null;
+  /** Outfit generations remaining today (null = unlimited) */
+  generationsRemaining: number | null;
+  /** Saved outfits remaining (null = unlimited) */
+  savedOutfitsRemaining: number | null;
+  /** Tries to consume 1 generation. Returns false if limit hit. */
+  tryUseGeneration: () => Promise<boolean>;
+  /** Tries to add 1 item to closet. Returns false if limit hit. */
+  tryAddItem: (currentCount: number) => boolean;
+  /** Tries to save 1 outfit. Returns false if limit hit. */
+  trySaveOutfit: (currentCount: number) => boolean;
+  /** Feature flags */
+  canUseCostPerWear: boolean;
+  canUseWeatherSuggestions: boolean;
+  canUseOutfitRepeatTracking: boolean;
+  canUseEventPlanning: boolean;
+  canUseTrendAnalysis: boolean;
+  hasWatermark: boolean;
+  /** Upgrade actions */
+  upgradeToTier: (target: SubscriptionTier) => Promise<void>;
+  startTrial: () => Promise<void>;
   cancelSubscription: () => Promise<void>;
   restoreSubscription: () => Promise<void>;
 }
 
-const GENERATION_LIMIT_FREE = 5;
+const DAY_KEY = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
+
+function isTrialActive(trial: TrialInfo | undefined): boolean {
+  if (!trial) return false;
+  return trial.isActive && new Date(trial.expiresAt).getTime() > Date.now();
+}
+
+function trialDaysLeft(trial: TrialInfo | undefined): number {
+  if (!trial) return 0;
+  const ms = new Date(trial.expiresAt).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+}
 
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [generationCount, setGenerationCount] = useState<number>(0);
+  const [generationDate, setGenerationDate] = useState<string>("");
+  const didAutoTrialRef = useRef<boolean>(false);
 
+  // Load stored subscription data
   const loadSubscription = useCallback(async () => {
     try {
       setIsLoading(true);
-      const storedSub = await AsyncStorage.getItem('user_subscription');
-      const storedCount = await AsyncStorage.getItem('generation_count');
-      
+      const uid = user?.id ?? "guest";
+      const storedSub = await AsyncStorage.getItem(`subscription:${uid}`);
+      const storedCount = await AsyncStorage.getItem(`gen_count:${uid}`);
+      const storedDate = await AsyncStorage.getItem(`gen_date:${uid}`);
+      const todayKey = DAY_KEY();
+
+      if (storedDate !== todayKey) {
+        setGenerationCount(0);
+        setGenerationDate(todayKey);
+        await AsyncStorage.setItem(`gen_count:${uid}`, "0");
+        await AsyncStorage.setItem(`gen_date:${uid}`, todayKey);
+      } else if (storedCount) {
+        setGenerationCount(parseInt(storedCount, 10) || 0);
+        setGenerationDate(storedDate);
+      }
+
       if (storedSub) {
         const parsed = JSON.parse(storedSub) as UserSubscription;
+        // Migrate old tier names
+        if (parsed.tier === "free") parsed.tier = "driplite";
+        if (parsed.tier === "premium") parsed.tier = "dripplus";
+        if (parsed.tier === "pro") parsed.tier = "dripmaxx";
+        // Check if trial expired
+        if (parsed.trial && !isTrialActive(parsed.trial) && parsed.status === "trialing") {
+          parsed.status = "active";
+          parsed.trial = { ...parsed.trial, isActive: false };
+          if (parsed.tier === TRIAL_TIER) parsed.tier = "driplite";
+          console.log("[Subscription] Trial expired, resetting to DripLite");
+        }
         setSubscription(parsed);
-      } else if (user) {
+      } else if (user && !didAutoTrialRef.current) {
+        didAutoTrialRef.current = true;
+        // New user — auto-start 3-day trial
+        const now = new Date();
+        const trial: TrialInfo = {
+          startedAt: now.toISOString(),
+          expiresAt: new Date(now.getTime() + TRIAL_DURATION_MS).toISOString(),
+          isActive: true,
+        };
         const defaultSub: UserSubscription = {
           id: Date.now().toString(),
-          userId: user.id,
-          tier: 'free',
-          status: 'active'
+          userId: uid,
+          tier: TRIAL_TIER,
+          status: "trialing",
+          trial,
         };
         setSubscription(defaultSub);
-        await AsyncStorage.setItem('user_subscription', JSON.stringify(defaultSub));
-      }
-      
-      if (storedCount) {
-        setGenerationCount(parseInt(storedCount, 10));
+        await AsyncStorage.setItem(`subscription:${uid}`, JSON.stringify(defaultSub));
+        console.log("[Subscription] Auto-started 3-day DripMaxx trial");
       }
     } catch (error) {
-      console.error('[Subscription] Failed to load subscription', error);
+      console.error("[Subscription] Failed to load subscription", error);
     } finally {
       setIsLoading(false);
     }
@@ -59,103 +135,147 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     void loadSubscription();
   }, [loadSubscription]);
 
+  const persist = useCallback(async (sub: UserSubscription) => {
+    const uid = user?.id ?? "guest";
+    setSubscription(sub);
+    await AsyncStorage.setItem(`subscription:${uid}`, JSON.stringify(sub));
+  }, [user?.id]);
 
+  // Effective tier & plan
+  const tier = useMemo<SubscriptionTier>(() => subscription?.tier ?? "driplite", [subscription]);
+  const isTrialing = useMemo(() => subscription?.status === "trialing" && isTrialActive(subscription?.trial), [subscription]);
+  const daysLeft = useMemo(() => trialDaysLeft(subscription?.trial), [subscription?.trial]);
 
-  const tier = useMemo(() => subscription?.tier ?? 'free', [subscription]);
+  const effectivePlan = useMemo(() => {
+    if (isTrialing) return TRIAL_RULES;
+    return SUBSCRIPTION_PLANS[tier];
+  }, [tier, isTrialing]);
 
-  const canUseFeature = useCallback((feature: string): boolean => {
-    if (tier === 'pro') return true;
-    if (tier === 'premium') {
-      return !['AI personal stylist', 'Virtual wardrobe management', 'Shopping assistant with deals', 'Brand collaborations', 'Early access to new features', 'Dedicated account manager'].includes(feature);
-    }
-    return ['5 outfit generations per month', 'Basic drip rating', 'Budget recommendations', 'Community support'].includes(feature);
-  }, [tier]);
+  // Limit calculations
+  const closetRemaining = useMemo<number | null>(() => {
+    if (effectivePlan.closetLimit === null) return null;
+    return effectivePlan.closetLimit; // caller passes current count and we return true/false via tryAddItem
+  }, [effectivePlan]);
 
-  const getRemainingGenerations = useCallback((): number => {
-    if (tier === 'premium' || tier === 'pro') return Infinity;
-    return Math.max(0, GENERATION_LIMIT_FREE - generationCount);
-  }, [tier, generationCount]);
+  const generationsRemaining = useMemo<number | null>(() => {
+    if (effectivePlan.dailyGenerationLimit === null) return null;
+    return Math.max(0, effectivePlan.dailyGenerationLimit - generationCount);
+  }, [effectivePlan, generationCount]);
 
-  const incrementGenerationCount = useCallback(async () => {
-    if (tier === 'premium' || tier === 'pro') return;
-    
-    const newCount = generationCount + 1;
-    setGenerationCount(newCount);
-    await AsyncStorage.setItem('generation_count', newCount.toString());
-  }, [tier, generationCount]);
+  const savedOutfitsRemaining = useMemo<number | null>(() => {
+    if (effectivePlan.maxSavedOutfits === null) return null;
+    return effectivePlan.maxSavedOutfits;
+  }, [effectivePlan]);
 
-  const upgradeToPremium = useCallback(async () => {
-    if (!user) {
-      throw new Error('User must be logged in to upgrade');
-    }
+  // Feature flags
+  const canUseCostPerWear = effectivePlan.features.costPerWear;
+  const canUseWeatherSuggestions = effectivePlan.features.weatherSuggestions;
+  const canUseOutfitRepeatTracking = effectivePlan.features.outfitRepeatTracking;
+  const canUseEventPlanning = effectivePlan.features.eventPlanning;
+  const canUseTrendAnalysis = effectivePlan.features.seasonalTrendAnalysis;
+  const hasWatermark = effectivePlan.features.watermark;
 
-    const updatedSub: UserSubscription = {
-      id: subscription?.id ?? Date.now().toString(),
-      userId: user.id,
-      tier: 'premium',
-      status: 'active',
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  // Generation counting
+  const tryUseGeneration = useCallback(async (): Promise<boolean> => {
+    const uid = user?.id ?? "guest";
+    const todayKey = DAY_KEY();
+    const limit = effectivePlan.dailyGenerationLimit;
+    if (limit === null) return true; // unlimited
+
+    const effectiveCount = generationDate === todayKey ? generationCount : 0;
+    if (effectiveCount >= limit) return false;
+
+    const next = effectiveCount + 1;
+    setGenerationCount(next);
+    setGenerationDate(todayKey);
+    await AsyncStorage.setItem(`gen_count:${uid}`, String(next));
+    await AsyncStorage.setItem(`gen_date:${uid}`, todayKey);
+    return true;
+  }, [user?.id, effectivePlan, generationCount, generationDate]);
+
+  // Item/closet gating
+  const tryAddItem = useCallback((currentCount: number): boolean => {
+    if (effectivePlan.closetLimit === null) return true;
+    return currentCount < effectivePlan.closetLimit;
+  }, [effectivePlan]);
+
+  // Outfit save gating
+  const trySaveOutfit = useCallback((currentCount: number): boolean => {
+    if (effectivePlan.maxSavedOutfits === null) return true;
+    return currentCount < effectivePlan.maxSavedOutfits;
+  }, [effectivePlan]);
+
+  // Trial start (manual start if not auto)
+  const startTrial = useCallback(async () => {
+    if (!user) throw new Error("User must be logged in");
+    if (!subscription) return;
+    const now = new Date();
+    const trial: TrialInfo = {
+      startedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + TRIAL_DURATION_MS).toISOString(),
+      isActive: true,
     };
+    await persist({ ...subscription, tier: TRIAL_TIER, status: "trialing", trial });
+  }, [user, subscription, persist]);
 
-    setSubscription(updatedSub);
-    await AsyncStorage.setItem('user_subscription', JSON.stringify(updatedSub));
-    console.log('[Subscription] Upgraded to Premium');
-  }, [user, subscription]);
-
-  const upgradeToPro = useCallback(async () => {
-    if (!user) {
-      throw new Error('User must be logged in to upgrade');
-    }
-
-    const updatedSub: UserSubscription = {
-      id: subscription?.id ?? Date.now().toString(),
+  // Upgrade to a tier
+  const upgradeToTier = useCallback(async (target: SubscriptionTier) => {
+    if (!user) throw new Error("User must be logged in to upgrade");
+    if (!subscription) return;
+    const updated: UserSubscription = {
+      ...subscription,
+      id: subscription.id || Date.now().toString(),
       userId: user.id,
-      tier: 'pro',
-      status: 'active',
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      tier: target,
+      status: "active",
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      trial: undefined,
+      cancelAtPeriodEnd: false,
     };
-
-    setSubscription(updatedSub);
-    await AsyncStorage.setItem('user_subscription', JSON.stringify(updatedSub));
-    console.log('[Subscription] Upgraded to Pro');
-  }, [user, subscription]);
+    await persist(updated);
+    console.log(`[Subscription] Upgraded to ${target}`);
+  }, [user, subscription, persist]);
 
   const cancelSubscription = useCallback(async () => {
-    if (!subscription || subscription.tier === 'free') return;
-
-    const updatedSub: UserSubscription = {
-      ...subscription,
-      cancelAtPeriodEnd: true
-    };
-
-    setSubscription(updatedSub);
-    await AsyncStorage.setItem('user_subscription', JSON.stringify(updatedSub));
-    console.log('[Subscription] Subscription will cancel at period end');
-  }, [subscription]);
+    if (!subscription || subscription.tier === "driplite") return;
+    await persist({ ...subscription, cancelAtPeriodEnd: true });
+  }, [subscription, persist]);
 
   const restoreSubscription = useCallback(async () => {
     if (!subscription) return;
-
-    const updatedSub: UserSubscription = {
-      ...subscription,
-      cancelAtPeriodEnd: false
-    };
-
-    setSubscription(updatedSub);
-    await AsyncStorage.setItem('user_subscription', JSON.stringify(updatedSub));
-    console.log('[Subscription] Subscription restored');
-  }, [subscription]);
+    await persist({ ...subscription, cancelAtPeriodEnd: false });
+  }, [subscription, persist]);
 
   return useMemo(() => ({
     subscription,
     isLoading,
     tier,
-    canUseFeature,
-    getRemainingGenerations,
-    incrementGenerationCount,
-    upgradeToPremium,
-    upgradeToPro,
+    isTrialing,
+    trialDaysLeft: daysLeft,
+    effectivePlan,
+    closetRemaining,
+    generationsRemaining,
+    savedOutfitsRemaining,
+    tryUseGeneration,
+    tryAddItem,
+    trySaveOutfit,
+    canUseCostPerWear,
+    canUseWeatherSuggestions,
+    canUseOutfitRepeatTracking,
+    canUseEventPlanning,
+    canUseTrendAnalysis,
+    hasWatermark,
+    upgradeToTier,
+    startTrial,
     cancelSubscription,
-    restoreSubscription
-  }), [subscription, isLoading, tier, canUseFeature, getRemainingGenerations, incrementGenerationCount, upgradeToPremium, upgradeToPro, cancelSubscription, restoreSubscription]);
+    restoreSubscription,
+  }), [
+    subscription, isLoading, tier, isTrialing, daysLeft,
+    effectivePlan, closetRemaining, generationsRemaining,
+    savedOutfitsRemaining, tryUseGeneration, tryAddItem,
+    trySaveOutfit, canUseCostPerWear, canUseWeatherSuggestions,
+    canUseOutfitRepeatTracking, canUseEventPlanning,
+    canUseTrendAnalysis, hasWatermark, upgradeToTier,
+    startTrial, cancelSubscription, restoreSubscription,
+  ]);
 });

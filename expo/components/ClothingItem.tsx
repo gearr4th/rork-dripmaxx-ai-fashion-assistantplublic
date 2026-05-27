@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Image } from "react-native";
 import { Sparkles, DollarSign, Repeat } from "lucide-react-native";
 
 import { ClothingItem as ClothingItemType, DripLevel, ImageAnalysisResult } from "@/types";
+import Watermark from "./Watermark";
+import { useSubscription } from "@/providers/SubscriptionProvider";
 
 interface ClothingItemProps {
   item: ClothingItemType;
@@ -25,6 +27,7 @@ function formatPrice(price: number | null, currency?: string): string {
 }
 
 export default function ClothingItem({ item }: ClothingItemProps) {
+  const { hasWatermark } = useSubscription();
   const analysis: ImageAnalysisResult | undefined = useMemo(() => {
     if (item.analysis) return item.analysis;
     const base = (name: string) => name.toLowerCase();
@@ -58,6 +61,7 @@ export default function ClothingItem({ item }: ClothingItemProps) {
   return (
     <View style={styles.container} testID={`clothing-card-${item.id}`}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      {hasWatermark && <Watermark />}
 
       <View style={styles.overlay}>
         <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />

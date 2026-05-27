@@ -30,12 +30,13 @@ import { useBudget } from "@/providers/BudgetProvider";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import FeedbackModal from "@/components/FeedbackModal";
 import { useSubscription } from "@/providers/SubscriptionProvider";
+import { tierDisplayName } from "@/types/subscription";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { budget } = useBudget();
   const { savedOutfits } = useSavedOutfits();
-  const { tier, subscription, getRemainingGenerations } = useSubscription();
+  const { tier, subscription, isTrialing, trialDaysLeft, generationsRemaining, closetRemaining } = useSubscription();
   const { preferences, resetOnboarding } = useOnboarding();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
 
@@ -137,16 +138,15 @@ export default function ProfileScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Subscription</Text>
                 <Text style={styles.infoValue}>
-                  {tier === 'free' && 'Free Plan'}
-                  {tier === 'premium' && 'Premium'}
-                  {tier === 'pro' && 'Pro'}
-                  {tier !== 'free' && subscription?.cancelAtPeriodEnd && ' (Canceling)'}
+                  {tierDisplayName(tier)}
+                  {isTrialing && ` (Trial: ${trialDaysLeft}d left)`}
+                  {subscription?.cancelAtPeriodEnd && ' (Canceling)'}
                 </Text>
-                {tier === 'free' && (
-                  <Text style={styles.infoSubtext}>
-                    {getRemainingGenerations()} generations remaining
-                  </Text>
-                )}
+                <Text style={styles.infoSubtext}>
+                  {generationsRemaining !== null
+                    ? `${generationsRemaining} generations today`
+                    : 'Unlimited generations'}
+                </Text>
               </View>
               <ChevronRight color="#475569" size={18} />
             </TouchableOpacity>
@@ -186,6 +186,18 @@ export default function ProfileScreen() {
               )}
             </ScrollView>
           </View>
+
+          {!isTrialing && tier === "driplite" && (
+            <TouchableOpacity style={styles.trialBannerSmall} onPress={() => router.push('/subscription' as any)} activeOpacity={0.8}>
+              <View style={styles.trialBannerInner}>
+                <Crown color="#FBBF24" size={20} />
+                <Text style={styles.trialBannerText}>
+                  Start your 3-day free trial of DripMaxx
+                </Text>
+                <ChevronRight color="#FBBF24" size={16} />
+              </View>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Settings</Text>
@@ -466,6 +478,27 @@ const styles = StyleSheet.create({
   prefChipText: {
     color: '#FDBA74',
     fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  trialBannerSmall: {
+    marginBottom: 28,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  trialBannerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+  },
+  trialBannerText: {
+    flex: 1,
+    color: '#FBBF24',
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

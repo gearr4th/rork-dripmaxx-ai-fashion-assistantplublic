@@ -15,13 +15,16 @@ import { X, Save, ExternalLink } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import { useClothes } from "@/providers/ClothesProvider";
+import { useSubscription } from "@/providers/SubscriptionProvider";
 import { Outfit, ClothingItem } from "@/types";
 import { useSession } from "@/providers/SessionProvider";
+import Watermark from "@/components/Watermark";
 
 export default function OutfitDetailsScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const { savedOutfits, saveOutfit } = useSavedOutfits();
   const { clothes } = useClothes();
+  const { hasWatermark } = useSubscription();
   const { ageGroup } = useSession();
 
   const outfit: Outfit | null = useMemo(() => {
@@ -178,7 +181,10 @@ export default function OutfitDetailsScreen() {
             <Text style={styles.sectionTitle}>Items</Text>
             {resolvedItems.map((it) => (
               <View key={it.id} style={styles.itemCard} testID={`outfit-item-${it.id}`}>
-                <Image source={{ uri: it.imageUrl }} style={styles.itemThumb} />
+                <View>
+                  <Image source={{ uri: it.imageUrl }} style={styles.itemThumb} />
+                  {hasWatermark && <Watermark />}
+                </View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{it.name}</Text>
                   <Text style={styles.itemMeta} numberOfLines={1}>

@@ -27,6 +27,7 @@ import { router } from "expo-router";
 import OutfitCard from "@/components/OutfitCard";
 import { useSavedOutfits } from "@/providers/SavedOutfitsProvider";
 import { useOnboarding } from "@/providers/OnboardingProvider";
+import { useSubscription } from "@/providers/SubscriptionProvider";
 import WeatherCard from "@/components/WeatherCard";
 import { generateOutfit, fetchSocialTrends, interpretUserStyleRequest, ParsedUserRequest } from "@/utils/aiService";
 import { Outfit } from "@/types";
@@ -36,11 +37,12 @@ export default function HomeScreen() {
   const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
   const { clothes } = useClothes();
   const { hasCompletedOnboarding, preferences } = useOnboarding();
+  const { tryUseGeneration, trySaveOutfit, generationsRemaining, tier } = useSubscription();
   const [prompt, setPrompt] = useState<string>("");
   const [generating, setGenerating] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
-  const { saveOutfit } = useSavedOutfits();
+  const { saveOutfit, savedOutfits } = useSavedOutfits();
   const [trends, setTrends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist"]);
   const [isFetchingDailyTrends, setIsFetchingDailyTrends] = useState<boolean>(false);
   const [parsed, setParsed] = useState<ParsedUserRequest | null>(null);
@@ -130,6 +132,18 @@ export default function HomeScreen() {
   }, [fetchDailyTrends]);
 
   const handleCreateSmartOutfit = useCallback(async () => {
+    const canGen = await tryUseGeneration();
+    if (!canGen) {
+      Alert.alert(
+        "Daily Limit Reached",
+        "You've used all your outfit generations for today. Upgrade to get more!",
+        [
+          { text: "OK", style: "default" },
+          { text: "Upgrade", onPress: () => router.push("/subscription" as any) },
+        ]
+      );
+      return;
+    }
     if (clothes.length === 0) {
       Alert.alert(
         "No Wardrobe Items",
@@ -353,6 +367,17 @@ export default function HomeScreen() {
                 style={[styles.generateButton, { marginTop: 12 }]}
                 onPress={async () => {
                   try {
+                    if (!trySaveOutfit(savedOutfits.length)) {
+                      Alert.alert(
+                        "Save Limit Reached",
+                        "You've reached your maximum saved outfits. Upgrade to save more!",
+                        [
+                          { text: "OK", style: "default" },
+                          { text: "Upgrade", onPress: () => router.push("/subscription" as any) },
+                        ]
+                      );
+                      return;
+                    }
                     await saveOutfit(outfit);
                     router.push({ pathname: '/outfit-details', params: { id: outfit.id } } as any);
                   } catch {

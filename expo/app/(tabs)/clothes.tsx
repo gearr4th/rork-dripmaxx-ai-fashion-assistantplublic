@@ -14,6 +14,7 @@ import { Plus, Shirt, TrendingUp, Camera, Sparkles, Trash2, X, CheckSquare } fro
 import { router, useLocalSearchParams } from "expo-router";
 import { useClothes } from "@/providers/ClothesProvider";
 import { useWeather } from "@/providers/WeatherProvider";
+import { useSubscription } from "@/providers/SubscriptionProvider";
 import ClothingItem from "@/components/ClothingItem";
 import WardrobeUpliftCard from "@/components/WardrobeUpliftCard";
 import TrendCard from "@/components/TrendCard";
@@ -33,6 +34,7 @@ interface RecommendedItem {
 export default function ClothesScreen() {
   const { clothes, removeClothingItems, removeClothingItem } = useClothes();
   const { weather } = useWeather();
+  const { tryAddItem, tier, isTrialing } = useSubscription();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [analysisResults] = useState<ImageAnalysisResult[]>([]);
   const [trends] = useState<string[]>(["Modern casual", "Streetwear", "Minimalist", "Y2K Revival"]);
@@ -146,7 +148,20 @@ export default function ClothesScreen() {
             ) : (
               <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => router.push("/scan-clothes" as any)}
+                onPress={() => {
+                  if (!tryAddItem(clothes.length)) {
+                    Alert.alert(
+                      "Upload Limit Reached",
+                      "Upgrade to Drip+ or DripMaxx to add more items to your closet.",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Upgrade", onPress: () => router.push("/subscription" as any) },
+                      ]
+                    );
+                    return;
+                  }
+                  router.push("/scan-clothes" as any);
+                }}
                 activeOpacity={0.7}
               >
                 <LinearGradient

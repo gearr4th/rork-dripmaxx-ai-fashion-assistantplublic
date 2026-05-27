@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,180 +8,347 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, Crown, X, Zap } from 'lucide-react-native';
-import { router } from 'expo-router';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { SUBSCRIPTION_PLANS, SubscriptionTier } from '@/types/subscription';
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Check, Crown, X, Zap, Timer, Star, Infinity, Sparkles } from "lucide-react-native";
+import { router } from "expo-router";
+import { useSubscription } from "@/providers/SubscriptionProvider";
+import {
+  SUBSCRIPTION_PLANS,
+  SubscriptionTier,
+  tierDisplayName,
+  TRIAL_RULES,
+} from "@/types/subscription";
+
+interface FeatureRowProps {
+  label: string;
+  included: boolean;
+  proOnly?: boolean;
+}
+
+function FeatureRow({ label, included, proOnly }: FeatureRowProps) {
+  return (
+    <View style={styles.featureRow}>
+      {included ? (
+        <Check color="#34D399" size={16} />
+      ) : (
+        <X color="#475569" size={16} />
+      )}
+      <Text style={[styles.featureText, !included && styles.featureTextDisabled]}>
+        {label}
+      </Text>
+      {proOnly && included && (
+        <View style={styles.proBadge}>
+          <Text style={styles.proBadgeText}>PRO</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function SubscriptionScreen() {
-  const { tier, upgradeToPremium, upgradeToPro, subscription } = useSubscription();
-  const [loading, setLoading] = useState<string | null>(null);
+  const {
+    tier,
+    isTrialing,
+    trialDaysLeft,
+    upgradeToTier,
+    startTrial,
+    subscription,
+    canUseCostPerWear,
+  } = useSubscription();
+  const [loading, setLoading] = useState<SubscriptionTier | null>(null);
 
   const handleUpgrade = async (targetTier: SubscriptionTier) => {
-    if (targetTier === 'free') return;
-    
+    if (targetTier === "driplite" || targetTier === tier) return;
     setLoading(targetTier);
-    
+
     try {
-      if (Platform.OS === 'web') {
+      // In production, this will redirect to Stripe Checkout via RevenueCat
+      if (Platform.OS === "web") {
         Alert.alert(
-          'Stripe Integration',
-          'In production, this will redirect to Stripe Checkout. For now, upgrading locally for demo purposes.',
+          "Stripe Integration",
+          `This will process a ${targetTier === "driplite" ? "$0" : targetTier === "dripplus" ? "$4.99" : "$9.99"}/mo subscription via Stripe. For now, upgrading locally for demo purposes.`,
           [
+            { text: "Cancel", style: "cancel" },
             {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Continue',
+              text: "Continue",
               onPress: async () => {
-                if (targetTier === 'premium') {
-                  await upgradeToPremium();
-                } else if (targetTier === 'pro') {
-                  await upgradeToPro();
-                }
-                Alert.alert('Success!', `You've been upgraded to ${targetTier}!`, [
-                  { text: 'OK', onPress: () => router.back() }
+                await upgradeToTier(targetTier);
+                Alert.alert("Upgraded!", `You're now on ${tierDisplayName(targetTier)}!`, [
+                  { text: "OK", onPress: () => router.back() },
                 ]);
-              }
-            }
+              },
+            },
           ]
         );
       } else {
         Alert.alert(
-          'Coming Soon',
-          'Stripe integration for mobile is being finalized. Use the web version or upgrade locally for testing.',
+          "Coming Soon",
+          `Stripe integration for ${tierDisplayName(targetTier)} is being finalized. Upgrade locally for testing.`,
           [
+            { text: "Cancel", style: "cancel" },
             {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Test Upgrade',
+              text: "Test Upgrade",
               onPress: async () => {
-                if (targetTier === 'premium') {
-                  await upgradeToPremium();
-                } else if (targetTier === 'pro') {
-                  await upgradeToPro();
-                }
-                Alert.alert('Success!', `You've been upgraded to ${targetTier}!`, [
-                  { text: 'OK', onPress: () => router.back() }
+                await upgradeToTier(targetTier);
+                Alert.alert("Upgraded!", `You're now on ${tierDisplayName(targetTier)}!`, [
+                  { text: "OK", onPress: () => router.back() },
                 ]);
-              }
-            }
+              },
+            },
           ]
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to process upgrade';
-      Alert.alert('Error', message);
+      const message = error instanceof Error ? error.message : "Failed to process upgrade";
+      Alert.alert("Error", message);
     } finally {
       setLoading(null);
     }
   };
 
-  return (
-    <LinearGradient colors={['#0B1120', '#111B2E', '#0A1628']} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <X color="#CBD5E1" size={24} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Choose Your Plan</Text>
-          <Text style={styles.subtitle}>Unlock premium features and elevate your style</Text>
-        </View>
+  const handleStartTrial = async () => {
+    try {
+      await startTrial();
+      Alert.alert("Trial Started!", "Enjoy 3 days of DripMaxx for free!", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to start trial";
+      Alert.alert("Error", message);
+    }
+  };
 
+  const showTrialBanner = useMemo(() => {
+    return tier === "driplite" && !isTrialing;
+  }, [tier, isTrialing]);
+
+  const tiers: SubscriptionTier[] = ["driplite", "dripplus", "dripmaxx"];
+
+  return (
+    <LinearGradient colors={["#060B18", "#0D1525", "#080F1E"]} style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
         <ScrollView
-          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {(['free', 'premium', 'pro'] as SubscriptionTier[]).map((planTier) => {
-            const plan = SUBSCRIPTION_PLANS[planTier];
-            const isCurrentPlan = tier === planTier;
-            const isHighlighted = plan.highlighted;
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.closeButton}
+              activeOpacity={0.7}
+            >
+              <X color="#CBD5E1" size={22} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Choose Your Plan</Text>
+            <Text style={styles.subtitle}>
+              Elevate your style with AI-powered outfit intelligence
+            </Text>
+          </View>
 
-            return (
-              <TouchableOpacity
-                key={plan.id}
-                style={[
-                  styles.planCard,
-                  isHighlighted && styles.highlightedCard,
-                  isCurrentPlan && styles.currentPlanCard
-                ]}
-                onPress={() => handleUpgrade(planTier)}
-                disabled={isCurrentPlan || loading !== null}
+          {/* Trial banner */}
+          {showTrialBanner && (
+            <TouchableOpacity
+              style={styles.trialBanner}
+              onPress={handleStartTrial}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={["#7C3AED", "#5B21B6"]}
+                style={styles.trialBannerGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
               >
-                {isHighlighted && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>MOST POPULAR</Text>
-                  </View>
-                )}
-
-                <View style={styles.planHeader}>
-                  <View style={styles.planIcon}>
-                    {planTier === 'free' && <Zap color="#64748B" size={28} />}
-                    {planTier === 'premium' && <Crown color="#FBBF24" size={28} />}
-                    {planTier === 'pro' && <Crown color="#3B82F6" size={28} />}
-                  </View>
-                  <Text style={styles.planName}>{plan.name}</Text>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.currency}>$</Text>
-                    <Text style={styles.price}>{plan.price}</Text>
-                    <Text style={styles.interval}>/{plan.interval}</Text>
-                  </View>
+                <View style={styles.trialIconWrap}>
+                  <Timer color="#C4B5FD" size={28} />
                 </View>
-
-                <View style={styles.featuresContainer}>
-                  {plan.features.map((feature, index) => (
-                    <View key={index} style={styles.featureRow}>
-                      <Check color="#34D399" size={20} />
-                      <Text style={styles.featureText}>{feature}</Text>
-                    </View>
-                  ))}
+                <View style={styles.trialContent}>
+                  <Text style={styles.trialTitle}>3-Day Free Trial</Text>
+                  <Text style={styles.trialSubtitle}>
+                    Try DripMaxx with 20 items, 3 generations/day — no commitment
+                  </Text>
                 </View>
+                <Crown color="#FBBF24" size={20} />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
+          {/* Active trial indicator */}
+          {isTrialing && (
+            <View style={styles.activeTrialBanner}>
+              <LinearGradient
+                colors={["#059669", "#047857"]}
+                style={styles.activeTrialGradient}
+              >
+                <Sparkles color="#D1FAE5" size={18} />
+                <Text style={styles.activeTrialText}>
+                  Trial active — {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left
+                </Text>
+              </LinearGradient>
+            </View>
+          )}
+
+          {/* Tier cards */}
+          <View style={styles.tiersContainer}>
+            {tiers.map((planTier) => {
+              const plan = SUBSCRIPTION_PLANS[planTier];
+              const isCurrentPlan = tier === planTier && !isTrialing;
+              const isHighlighted = plan.highlighted;
+              const isRevenue = planTier === "dripmaxx";
+
+              return (
                 <TouchableOpacity
+                  key={plan.id}
                   style={[
-                    styles.upgradeButton,
-                    isCurrentPlan && styles.currentButton,
-                    isHighlighted && !isCurrentPlan && styles.highlightedButton
+                    styles.planCard,
+                    isHighlighted && styles.highlightedCard,
+                    isRevenue && styles.revenueCard,
+                    isCurrentPlan && styles.currentPlanCard,
                   ]}
                   onPress={() => handleUpgrade(planTier)}
                   disabled={isCurrentPlan || loading !== null}
+                  activeOpacity={0.8}
                 >
-                  {loading === planTier ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text
+                  {isHighlighted && (
+                    <View style={styles.popularBadge}>
+                      <Star color="#FBBF24" size={12} />
+                      <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+                    </View>
+                  )}
+                  {isRevenue && !isHighlighted && (
+                    <View style={styles.revenueBadge}>
+                      <Crown color="#F97316" size={12} />
+                      <Text style={styles.revenueBadgeText}>BEST VALUE</Text>
+                    </View>
+                  )}
+
+                  {/* Plan header */}
+                  <View style={styles.planHeader}>
+                    <View
                       style={[
-                        styles.upgradeButtonText,
-                        isCurrentPlan && styles.currentButtonText
+                        styles.planIcon,
+                        isRevenue && styles.planIconPro,
                       ]}
                     >
-                      {isCurrentPlan ? 'Current Plan' : `Upgrade to ${plan.name}`}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </TouchableOpacity>
-            );
-          })}
+                      {planTier === "driplite" && <Zap color="#64748B" size={24} />}
+                      {planTier === "dripplus" && <Star color="#FBBF24" size={24} />}
+                      {planTier === "dripmaxx" && <Crown color="#F97316" size={24} />}
+                    </View>
+                    <Text style={styles.planName}>{plan.name}</Text>
+                    <View style={styles.priceRow}>
+                      <Text style={styles.currency}>$</Text>
+                      <Text style={styles.price}>{plan.price === 0 ? "0" : plan.price}</Text>
+                      {plan.price > 0 && (
+                        <Text style={styles.interval}>/mo</Text>
+                      )}
+                    </View>
+                    {plan.price === 0 && (
+                      <Text style={styles.freeLabel}>Free forever</Text>
+                    )}
+                  </View>
 
+                  {/* Feature list */}
+                  <View style={styles.featuresContainer}>
+                    <FeatureRow
+                      label={`${plan.closetLimit === null ? "Unlimited" : plan.closetLimit} closet items`}
+                      included={true}
+                      proOnly={plan.closetLimit === null}
+                    />
+                    <FeatureRow
+                      label={`${plan.dailyGenerationLimit === null ? "Unlimited" : plan.dailyGenerationLimit} outfit${plan.dailyGenerationLimit === 1 ? "" : "s"}/day`}
+                      included={true}
+                    />
+                    <FeatureRow
+                      label={`${plan.maxSavedOutfits === null ? "Unlimited" : plan.maxSavedOutfits} saved looks`}
+                      included={true}
+                    />
+                    <FeatureRow
+                      label="AI outfit generation"
+                      included={true}
+                    />
+                    <FeatureRow
+                      label="Weather-based suggestions"
+                      included={plan.features.weatherSuggestions}
+                    />
+                    <FeatureRow
+                      label="Cost-per-wear tracking"
+                      included={plan.features.costPerWear}
+                    />
+                    <FeatureRow
+                      label="Outfit repeat tracking"
+                      included={plan.features.outfitRepeatTracking}
+                    />
+                    <FeatureRow
+                      label="Event-based planning"
+                      included={plan.features.eventPlanning}
+                      proOnly={plan.features.eventPlanning}
+                    />
+                    <FeatureRow
+                      label="Seasonal trend analysis"
+                      included={plan.features.seasonalTrendAnalysis}
+                      proOnly={plan.features.seasonalTrendAnalysis}
+                    />
+                    <FeatureRow
+                      label="Priority generation speed"
+                      included={plan.features.priorityGeneration}
+                      proOnly={plan.features.priorityGeneration}
+                    />
+                    <FeatureRow
+                      label="Watermark-free"
+                      included={!plan.features.watermark}
+                    />
+                  </View>
+
+                  {/* CTA button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.upgradeButton,
+                      isCurrentPlan && styles.currentButton,
+                      isHighlighted && styles.highlightedButton,
+                      isRevenue && styles.revenueButton,
+                    ]}
+                    onPress={() => handleUpgrade(planTier)}
+                    disabled={isCurrentPlan || loading !== null}
+                    activeOpacity={0.8}
+                  >
+                    {loading === planTier ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text
+                        style={[
+                          styles.upgradeButtonText,
+                          isCurrentPlan && styles.currentButtonText,
+                        ]}
+                      >
+                        {isCurrentPlan
+                          ? "Current Plan"
+                          : plan.price === 0
+                            ? "Get Started Free"
+                            : `Upgrade to ${plan.name}`}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Warning about cancellation */}
           {subscription?.cancelAtPeriodEnd && (
             <View style={styles.warningCard}>
               <Text style={styles.warningText}>
-                Your subscription will be canceled at the end of the current billing period on{' '}
-                {subscription.currentPeriodEnd?.toLocaleDateString()}
+                Your subscription will be canceled at the end of the current billing period.
               </Text>
             </View>
           )}
 
+          {/* Disclaimer */}
           <Text style={styles.disclaimer}>
-            • Subscriptions auto-renew unless canceled{'\n'}
-            • Cancel anytime from your account settings{'\n'}
+            • Subscriptions auto-renew unless canceled{"\n"}
+            • Cancel anytime from your account settings{"\n"}
+            • Free trial converts to DripLite after 3 days{"\n"}
             • Prices in USD, may vary by region
           </Text>
         </ScrollView>
@@ -191,168 +358,284 @@ export default function SubscriptionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  scrollContent: { paddingBottom: 60 },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 28,
+    alignItems: "center",
   },
   closeButton: {
-    position: 'absolute',
-    right: 20,
-    top: 20,
+    position: "absolute",
+    right: 24,
+    top: 24,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(30, 58, 95, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(30, 58, 95, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800' as const,
-    color: '#E2E8F0',
+    fontSize: 28,
+    fontWeight: "800" as const,
+    color: "#F1F5F9",
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
-    color: '#64748B',
-    textAlign: 'center',
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 22,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  planCard: {
-    backgroundColor: 'rgba(30, 58, 95, 0.35)',
+
+  /* Trial banner */
+  trialBanner: {
+    marginHorizontal: 20,
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(59, 130, 246, 0.12)',
-  },
-  highlightedCard: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
-  },
-  currentPlanCard: {
-    borderColor: '#059669',
-    backgroundColor: 'rgba(5, 150, 105, 0.08)',
-  },
-  badge: {
-    position: 'absolute',
-    top: -10,
-    right: 20,
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  planHeader: {
-    alignItems: 'center',
+    overflow: "hidden",
     marginBottom: 24,
   },
-  planIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  planName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#E2E8F0',
-    marginBottom: 8,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  currency: {
-    fontSize: 20,
-    color: '#E2E8F0',
-    fontWeight: '600',
-  },
-  price: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#E2E8F0',
-  },
-  interval: {
-    fontSize: 16,
-    color: '#64748B',
-  },
-  featuresContainer: {
-    marginBottom: 24,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  trialBannerGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 18,
     gap: 12,
   },
-  featureText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#94A3B8',
+  trialIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(196, 181, 253, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  upgradeButton: {
-    backgroundColor: '#3B82F6',
+  trialContent: { flex: 1 },
+  trialTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#F1F5F9",
+    marginBottom: 2,
+  },
+  trialSubtitle: {
+    fontSize: 12,
+    color: "#C4B5FD",
+    lineHeight: 16,
+  },
+
+  /* Active trial */
+  activeTrialBanner: {
+    marginHorizontal: 20,
     borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
+    overflow: "hidden",
+    marginBottom: 24,
+  },
+  activeTrialGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+    gap: 10,
+  },
+  activeTrialText: {
+    color: "#D1FAE5",
+    fontSize: 14,
+    fontWeight: "600" as const,
+  },
+
+  /* Tier cards */
+  tiersContainer: {
+    paddingHorizontal: 20,
+  },
+  planCard: {
+    backgroundColor: "rgba(15, 23, 42, 0.8)",
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: "rgba(51, 65, 85, 0.4)",
+    overflow: "hidden",
+  },
+  highlightedCard: {
+    borderColor: "#FBBF24",
+    backgroundColor: "rgba(251, 191, 36, 0.05)",
+  },
+  revenueCard: {
+    borderColor: "#F97316",
+    backgroundColor: "rgba(249, 115, 22, 0.06)",
+  },
+  currentPlanCard: {
+    borderColor: "#059669",
+    backgroundColor: "rgba(5, 150, 105, 0.06)",
+  },
+
+  /* Badges */
+  popularBadge: {
+    position: "absolute",
+    top: 12,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FBBF24",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+  },
+  popularBadgeText: {
+    color: "#0F172A",
+    fontSize: 10,
+    fontWeight: "800" as const,
+    letterSpacing: 0.5,
+  },
+  revenueBadge: {
+    position: "absolute",
+    top: 12,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F97316",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+  },
+  revenueBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800" as const,
+    letterSpacing: 0.5,
+  },
+
+  /* Plan header */
+  planHeader: { alignItems: "center", marginBottom: 20 },
+  planIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(51, 65, 85, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  planIconPro: {
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
+  },
+  planName: {
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: "#F1F5F9",
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  currency: {
+    fontSize: 18,
+    color: "#F1F5F9",
+    fontWeight: "600" as const,
+  },
+  price: {
+    fontSize: 42,
+    fontWeight: "800" as const,
+    color: "#F1F5F9",
+    letterSpacing: -1,
+  },
+  interval: {
+    fontSize: 14,
+    color: "#64748B",
+    marginLeft: 2,
+  },
+  freeLabel: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 2,
+  },
+
+  /* Features */
+  featuresContainer: { marginBottom: 20, gap: 10 },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  featureText: {
+    fontSize: 13,
+    color: "#CBD5E1",
+    flex: 1,
+  },
+  featureTextDisabled: {
+    color: "#334155",
+  },
+  proBadge: {
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  proBadgeText: {
+    color: "#FB923C",
+    fontSize: 8,
+    fontWeight: "800" as const,
+    letterSpacing: 0.5,
+  },
+
+  /* Buttons */
+  upgradeButton: {
+    backgroundColor: "#334155",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
   },
   highlightedButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: "#FBBF24",
+  },
+  revenueButton: {
+    backgroundColor: "#F97316",
   },
   currentButton: {
-    backgroundColor: 'rgba(5, 150, 105, 0.15)',
+    backgroundColor: "rgba(5, 150, 105, 0.15)",
     borderWidth: 1,
-    borderColor: '#059669',
+    borderColor: "#059669",
   },
   upgradeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: "#F1F5F9",
+    fontSize: 15,
+    fontWeight: "700" as const,
   },
   currentButtonText: {
-    color: '#34D399',
+    color: "#34D399",
   },
+
+  /* Warning */
   warningCard: {
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    marginHorizontal: 20,
+    backgroundColor: "rgba(251, 191, 36, 0.08)",
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+    padding: 14,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.2)',
+    borderColor: "rgba(251, 191, 36, 0.2)",
   },
   warningText: {
-    color: '#FBBF24',
-    fontSize: 14,
-    textAlign: 'center',
+    color: "#FBBF24",
+    fontSize: 13,
+    textAlign: "center",
   },
+
+  /* Disclaimer */
   disclaimer: {
     fontSize: 12,
-    color: '#475569',
-    textAlign: 'center',
-    marginTop: 20,
-    lineHeight: 18,
+    color: "#475569",
+    textAlign: "center",
+    marginTop: 12,
+    paddingHorizontal: 40,
+    lineHeight: 20,
   },
 });

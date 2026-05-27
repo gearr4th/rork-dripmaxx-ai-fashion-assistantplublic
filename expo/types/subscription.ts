@@ -1,4 +1,4 @@
-export type SubscriptionTier = 'free' | 'premium' | 'pro';
+export type SubscriptionTier = "driplite" | "dripplus" | "dripmaxx";
 
 export interface SubscriptionPlan {
   id: string;
@@ -6,10 +6,31 @@ export interface SubscriptionPlan {
   name: string;
   price: number;
   currency: string;
-  interval: 'month' | 'year';
+  interval: "month";
   stripePriceId?: string;
-  features: string[];
+  /** Limit of clothing items the user can upload */
+  closetLimit: number | null;
+  /** Max outfit generations per day */
+  dailyGenerationLimit: number | null;
+  /** Max saved outfits (null = unlimited) */
+  maxSavedOutfits: number | null;
+  /** Features enabled at this tier */
+  features: {
+    weatherSuggestions: boolean;
+    costPerWear: boolean;
+    outfitRepeatTracking: boolean;
+    eventPlanning: boolean;
+    seasonalTrendAnalysis: boolean;
+    priorityGeneration: boolean;
+    watermark: boolean;
+  };
   highlighted?: boolean;
+}
+
+export interface TrialInfo {
+  startedAt: string;
+  expiresAt: string;
+  isActive: boolean;
 }
 
 export interface UserSubscription {
@@ -18,60 +39,112 @@ export interface UserSubscription {
   tier: SubscriptionTier;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  status: 'active' | 'canceled' | 'past_due' | 'trialing';
+  status: "active" | "canceled" | "past_due" | "trialing";
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
+  trial?: TrialInfo;
 }
 
+/** 3 days in milliseconds */
+export const TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
+
 export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
-  free: {
-    id: 'free',
-    tier: 'free',
-    name: 'Free',
+  driplite: {
+    id: "driplite",
+    tier: "driplite",
+    name: "DripLite",
     price: 0,
-    currency: 'USD',
-    interval: 'month',
-    features: [
-      '5 outfit generations per month',
-      'Basic drip rating',
-      'Budget recommendations',
-      'Community support'
-    ]
+    currency: "USD",
+    interval: "month",
+    closetLimit: 5,
+    dailyGenerationLimit: 1,
+    maxSavedOutfits: 3,
+    features: {
+      weatherSuggestions: false,
+      costPerWear: false,
+      outfitRepeatTracking: false,
+      eventPlanning: false,
+      seasonalTrendAnalysis: false,
+      priorityGeneration: false,
+      watermark: true,
+    },
   },
-  premium: {
-    id: 'premium',
-    tier: 'premium',
-    name: 'Premium',
+  dripplus: {
+    id: "dripplus",
+    tier: "dripplus",
+    name: "Drip+",
+    price: 4.99,
+    currency: "USD",
+    interval: "month",
+    stripePriceId: process.env.EXPO_PUBLIC_STRIPE_DRIPPLUS_PRICE_ID,
+    closetLimit: 20,
+    dailyGenerationLimit: 2,
+    maxSavedOutfits: null,
+    features: {
+      weatherSuggestions: true,
+      costPerWear: true,
+      outfitRepeatTracking: true,
+      eventPlanning: false,
+      seasonalTrendAnalysis: false,
+      priorityGeneration: false,
+      watermark: false,
+    },
+    highlighted: true,
+  },
+  dripmaxx: {
+    id: "dripmaxx",
+    tier: "dripmaxx",
+    name: "DripMaxx",
     price: 9.99,
-    currency: 'USD',
-    interval: 'month',
-    stripePriceId: process.env.EXPO_PUBLIC_STRIPE_PREMIUM_PRICE_ID,
-    features: [
-      'Unlimited outfit generations',
-      'Advanced drip analytics',
-      'Personalized style tips',
-      'Priority support',
-      'Save unlimited outfits',
-      'Exclusive trends access'
-    ],
-    highlighted: true
+    currency: "USD",
+    interval: "month",
+    stripePriceId: process.env.EXPO_PUBLIC_STRIPE_DRIPMAXX_PRICE_ID,
+    closetLimit: null,
+    dailyGenerationLimit: 10,
+    maxSavedOutfits: null,
+    features: {
+      weatherSuggestions: true,
+      costPerWear: true,
+      outfitRepeatTracking: true,
+      eventPlanning: true,
+      seasonalTrendAnalysis: true,
+      priorityGeneration: true,
+      watermark: false,
+    },
   },
-  pro: {
-    id: 'pro',
-    tier: 'pro',
-    name: 'Pro',
-    price: 19.99,
-    currency: 'USD',
-    interval: 'month',
-    stripePriceId: process.env.EXPO_PUBLIC_STRIPE_PRO_PRICE_ID,
-    features: [
-      'Everything in Premium',
-      'AI personal stylist',
-      'Virtual wardrobe management',
-      'Shopping assistant with deals',
-      'Brand collaborations',
-      'Early access to new features',
-      'Dedicated account manager'
-    ]
-  }
 };
+
+/** Trial tier: Drip+ limits applied during 3-day trial */
+export const TRIAL_TIER = "dripmaxx" as const;
+
+/** What features & limits apply during the 3-day free trial.
+ *  Matches the user's spec: Drip+ limits, basic features, watermark ON. */
+export const TRIAL_RULES: SubscriptionPlan = {
+  id: "trial",
+  tier: TRIAL_TIER,
+  name: "DripMaxx Trial",
+  price: 0,
+  currency: "USD",
+  interval: "month",
+  closetLimit: 20,
+  dailyGenerationLimit: 3,
+  maxSavedOutfits: 3,
+  features: {
+    weatherSuggestions: true,
+    costPerWear: true,
+    outfitRepeatTracking: true,
+    eventPlanning: false,
+    seasonalTrendAnalysis: true,
+    priorityGeneration: false,
+    watermark: true,
+  },
+};
+
+/** Human-readable tier display name */
+export function tierDisplayName(tier: SubscriptionTier): string {
+  switch (tier) {
+    case "driplite": return "DripLite";
+    case "dripplus": return "Drip+";
+    case "dripmaxx": return "DripMaxx";
+  }
+}
