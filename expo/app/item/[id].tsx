@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useClothes } from '@/providers/ClothesProvider';
 import { ClothingItem as ClothingItemType, DripLevel, ImageAnalysisResult } from '@/types';
-import { Sparkles, DollarSign, TrendingUp, Star } from 'lucide-react-native';
+import { Sparkles, DollarSign, TrendingUp, Star, Repeat, Plus, Minus, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 function deriveAnalysis(item: ClothingItemType): ImageAnalysisResult {
@@ -40,8 +40,32 @@ const DRIP_COLORS: Record<DripLevel, string> = {
 
 export default function ItemDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { clothes } = useClothes();
+  const { clothes, updateClothingItem, incrementWearCount } = useClothes();
   const item = useMemo(() => clothes.find(c => c.id === String(id)), [clothes, id]);
+  const [priceInput, setPriceInput] = useState<string>('');
+
+  useEffect(() => {
+    if (item?.purchasePrice != null) {
+      setPriceInput(String(item.purchasePrice));
+    } else {
+      setPriceInput('');
+    }
+  }, [item?.id, item?.purchasePrice]);
+
+  const handleSavePrice = async () => {
+    if (!item) return;
+    const trimmed = priceInput.trim();
+    if (trimmed === '') {
+      await updateClothingItem(item.id, { purchasePrice: undefined });
+      return;
+    }
+    const parsed = Number(trimmed.replace(/[^0-9.]/g, ''));
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      Alert.alert('Invalid price', 'Enter a positive number.');
+      return;
+    }
+    await updateClothingItem(item.id, { purchasePrice: parsed });
+  };
 
   if (!item) {
     return (
@@ -56,6 +80,9 @@ export default function ItemDetails() {
 
   const analysis = deriveAnalysis(item);
   const dripColor = DRIP_COLORS[analysis.dripLevel];
+  const wearCount = item.wearCount ?? 0;
+  const purchasePrice = item.purchasePrice ?? null;
+  const costPerWear = purchasePrice != null && wearCount > 0 ? purchasePrice / wearCount : null;
 
   return (
     <LinearGradient colors={['#020B1C', '#0A1A2F', '#071E2B', '#0C1425']} style={styles.container}>
@@ -91,6 +118,85 @@ export default function ItemDetails() {
         </View>
 
         <View style={styles.card}>
+          <View style={styles.cpwHeader}>
+            <Repeat color="#22D3EE" size={18} />
+            <Text style={styles.cardTitle}>Cost per wear</Text>
+          </View>
+
+          <View style={styles.cpwHero}>
+            <Text style={styles.cpwValue}>
+              {costPerWear != null ? `${costPerWear.toFixed(2)}` : '—'}
+            </Text>
+            <Text style={styles.cpwSub}>
+              {costPerWear != null
+                ? `per wear • ${wearCount} ${wearCount === 1 ? 'wear' : 'wears'}`
+                : purchasePrice == null
+                  ? 'Set a price to start tracking'
+                  : `${wearCount} ${wearCount === 1 ? 'wear' : 'wears'} • log a wear`}
+            </Text>
+          </View>
+
+          <Text style={styles.fieldLabel}>What you paid</Text>
+          <View style={styles.priceInputRow}>
+            <DollarSign color="#94A3B8" size={16} />
+            <TextInput
+              testID="purchase-price-input"
+              value={priceInput}
+              onChangeText={setPriceInput}
+              onBlur={handleSavePrice}
+              onSubmitEditing={handleSavePrice}
+              placeholder="0"
+              placeholderTextColor="#475569"
+              keyboardType="decimal-pad"
+              style={styles.priceInput}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              onPress={handleSavePrice}
+              accessibilityRole="button"
+              testID="save-price"
+              style={styles.saveBtn}
+              activeOpacity={0.8}
+            >
+              <Check color="#0F172A" size={16} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.fieldLabel, { marginTop: 14 }]}>Wears</Text>
+          <View style={styles.wearRow}>
+            <TouchableOpacity
+              onPress={() => incrementWearCount(item.id, -1)}
+              disabled={wearCount === 0}
+              accessibilityRole="button"
+              testID="decrement-wear"
+              style={[styles.stepBtn, wearCount === 0 && styles.stepBtnDisabled]}
+              activeOpacity={0.8}
+            >
+              <Minus color="#E2E8F0" size={18} />
+            </TouchableOpacity>
+            <Text style={styles.wearCount}>{wearCount}</Text>
+            <TouchableOpacity
+              onPress={() => incrementWearCount(item.id, 1)}
+              accessibilityRole="button"
+              testID="increment-wear"
+              style={styles.stepBtn}
+              activeOpacity={0.8}
+            >
+              <Plus color="#E2E8F0" size={18} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => incrementWearCount(item.id, 1)}
+              accessibilityRole="button"
+              testID="log-wear"
+              style={styles.logWearBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.logWearText}>+ Log a wear</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>How to level this up</Text>
           <Text style={styles.tip}>Pair with complimentary pieces for a higher fit score:</Text>
           <View style={styles.bullets}>
@@ -123,4 +229,18 @@ const styles = StyleSheet.create({
   tip: { color: '#CBD5E1', fontSize: 13, marginBottom: 8 },
   bullets: { gap: 6 },
   bullet: { color: '#94A3B8', fontSize: 13, lineHeight: 18 },
+  cpwHeader: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginBottom: 10 },
+  cpwHero: { alignItems: 'center' as const, paddingVertical: 12, marginBottom: 8 },
+  cpwValue: { color: '#22D3EE', fontSize: 36, fontWeight: '800' as const, letterSpacing: -0.5 },
+  cpwSub: { color: '#64748B', fontSize: 12, marginTop: 4 },
+  fieldLabel: { color: '#94A3B8', fontSize: 12, fontWeight: '600' as const, marginBottom: 6, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  priceInputRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, backgroundColor: 'rgba(15, 23, 42, 0.6)', borderColor: 'rgba(148, 163, 184, 0.15)', borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  priceInput: { flex: 1, color: '#E2E8F0', fontSize: 15, fontWeight: '600' as const, paddingVertical: 0 },
+  saveBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#22D3EE', alignItems: 'center' as const, justifyContent: 'center' as const },
+  wearRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
+  stepBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(15, 23, 42, 0.6)', borderColor: 'rgba(148, 163, 184, 0.15)', borderWidth: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
+  stepBtnDisabled: { opacity: 0.4 },
+  wearCount: { color: '#E2E8F0', fontSize: 18, fontWeight: '700' as const, minWidth: 32, textAlign: 'center' as const },
+  logWearBtn: { flex: 1, marginLeft: 4, backgroundColor: '#22D3EE', borderRadius: 12, paddingVertical: 10, alignItems: 'center' as const, justifyContent: 'center' as const },
+  logWearText: { color: '#0F172A', fontSize: 14, fontWeight: '800' as const },
 });

@@ -9,6 +9,10 @@ export interface ClothingItem {
   addedToWardrobe?: boolean;
   dateAdded?: Date;
   jewelrySubtype?: 'watch' | 'chain' | 'bracelet' | 'ring' | 'earrings' | 'other';
+  /** What the user paid for this item, used to compute cost per wear. */
+  purchasePrice?: number;
+  /** Number of times the user has worn this item. */
+  wearCount?: number;
 }
 
 export interface Weather {

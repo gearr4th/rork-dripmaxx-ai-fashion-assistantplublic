@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
-import { Sparkles, DollarSign } from "lucide-react-native";
+import { Sparkles, DollarSign, Repeat } from "lucide-react-native";
 
 import { ClothingItem as ClothingItemType, DripLevel, ImageAnalysisResult } from "@/types";
 
@@ -82,6 +82,16 @@ export default function ClothingItem({ item }: ClothingItemProps) {
         <View style={[styles.dripLevel, { backgroundColor: `${dripColor}15` }]}>
           <Text style={[styles.dripText, { color: dripColor }]}>{analysis?.dripLevel ?? 'Lowkey Drip'}</Text>
         </View>
+        {item.purchasePrice != null && item.purchasePrice > 0 ? (
+          <View style={styles.cpwRow}>
+            <Repeat color="#22D3EE" size={11} />
+            <Text style={styles.cpwText}>
+              {(item.wearCount ?? 0) > 0
+                ? `${(item.purchasePrice / (item.wearCount ?? 1)).toFixed(2)}/wear`
+                : `${Math.round(item.purchasePrice)} • 0 wears`}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -164,5 +174,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700" as const,
     textTransform: "uppercase" as const,
+  },
+  cpwRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+  },
+  cpwText: {
+    fontSize: 11,
+    color: "#22D3EE",
+    fontWeight: "600" as const,
   },
 });

@@ -11,6 +11,8 @@ interface ClothesContextType {
   addClothingItemWithAnalysis: (item: Omit<ClothingItem, "id" | "analysis">, analysis: ImageAnalysisResult) => Promise<void>;
   removeClothingItem: (id: string) => Promise<void>;
   removeClothingItems: (ids: string[]) => Promise<void>;
+  updateClothingItem: (id: string, patch: Partial<ClothingItem>) => Promise<void>;
+  incrementWearCount: (id: string, delta?: number) => Promise<void>;
   clearAll: () => Promise<void>;
   loading: boolean;
 }
@@ -218,6 +220,20 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     console.log('[Clothes] Items removed successfully. Remaining items:', updated.length);
   }, [clothes, persist]);
 
+  const updateClothingItem = useCallback(async (id: string, patch: Partial<ClothingItem>) => {
+    const updated = clothes.map(item => item.id === id ? { ...item, ...patch } : item);
+    await persist(updated);
+  }, [clothes, persist]);
+
+  const incrementWearCount = useCallback(async (id: string, delta: number = 1) => {
+    const updated = clothes.map(item => {
+      if (item.id !== id) return item;
+      const next = Math.max(0, (item.wearCount ?? 0) + delta);
+      return { ...item, wearCount: next };
+    });
+    await persist(updated);
+  }, [clothes, persist]);
+
   const clearAll = useCallback(async () => {
     console.log('[Clothes] Clearing all items');
     await persist([]);
@@ -230,7 +246,9 @@ export const [ClothesProvider, useClothes] = createContextHook<ClothesContextTyp
     addClothingItemWithAnalysis,
     removeClothingItem,
     removeClothingItems,
+    updateClothingItem,
+    incrementWearCount,
     clearAll,
     loading,
-  }), [clothes, addClothingItem, addClothingItemWithAnalysis, removeClothingItem, removeClothingItems, clearAll, loading]);
+  }), [clothes, addClothingItem, addClothingItemWithAnalysis, removeClothingItem, removeClothingItems, updateClothingItem, incrementWearCount, clearAll, loading]);
 });
