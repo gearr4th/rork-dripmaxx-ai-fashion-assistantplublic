@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as WebBrowser from "expo-web-browser";
+import { Platform } from "react-native";
 import createContextHook from "@nkzw/create-context-hook";
 import {
   SubscriptionTier,
@@ -11,6 +13,11 @@ import {
   TrialInfo,
 } from "@/types/subscription";
 import { useAuth } from "./AuthProvider";
+import { trpc } from "@/lib/trpc";
+
+const APP_SCHEME = "dripmaxx";
+const STRIPE_SUCCESS_PATH = `${APP_SCHEME}://stripe-success`;
+const STRIPE_CANCEL_PATH = `${APP_SCHEME}://stripe-cancel`;
 
 interface SubscriptionContextType {
   subscription: UserSubscription | null;
@@ -41,6 +48,8 @@ interface SubscriptionContextType {
   hasWatermark: boolean;
   /** Upgrade actions */
   upgradeToTier: (target: SubscriptionTier) => Promise<void>;
+  /** Opens Stripe Checkout for a paid tier. Returns true if payment succeeded. */
+  purchaseTier: (target: SubscriptionTier) => Promise<boolean>;
   startTrial: () => Promise<void>;
   cancelSubscription: () => Promise<void>;
   restoreSubscription: () => Promise<void>;
@@ -218,7 +227,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     await persist({ ...subscription, tier: TRIAL_TIER, status: "trialing", trial });
   }, [user, subscription, persist]);
 
-  // Upgrade to a tier
+  // Upgrade to a tier (local/demo only — no Stripe)
   const upgradeToTier = useCallback(async (target: SubscriptionTier) => {
     if (!user) throw new Error("User must be logged in to upgrade");
     if (!subscription) return;
@@ -234,6 +243,84 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     };
     await persist(updated);
     console.log(`[Subscription] Upgraded to ${target}`);
+  }, [user, subscription, persist]);
+
+  // Purchase via Stripe Checkout
+  const purchaseTier = useCallback(async (target: SubscriptionTier): Promise<boolean> => {
+    if (!user) throw new Error("User must be logged in to purchase");
+    if (target === "driplite") return true; // free tier
+
+    console.log(`[Subscription] Starting Stripe purchase for ${target}`);
+
+    // 1. Create checkout session via tRPC
+    const result = await trpc.stripe.createCheckoutSession.mutate({
+      tier: target as "dripplus" | "dripmaxx",
+      userId: user.id,
+      userEmail: user.email ?? undefined,
+      successUrl: STRIPE_SUCCESS_PATH,
+      cancelUrl: STRIPE_CANCEL_PATH,
+    });
+
+    if (!result.checkoutUrl) {
+      throw new Error("Failed to create checkout session");
+    }
+
+    console.log(`[Subscription] Checkout URL: ${result.checkoutUrl}`);
+
+    // 2. Open Stripe Checkout in browser
+    const browserResult = await WebBrowser.openAuthSessionAsync(
+      result.checkoutUrl,
+      STRIPE_SUCCESS_PATH
+    );
+
+    console.log(`[Subscription] Browser result type: ${browserResult.type}`);
+
+    if (browserResult.type !== "success") {
+      console.log("[Subscription] User cancelled or browser dismissed");
+      return false;
+    }
+
+    // 3. Parse session_id from redirect URL (regex works on any URL scheme)
+    const redirectUrl = browserResult.url;
+    const match = redirectUrl.match(/[?&]session_id=([^&]+)/);
+    const sessionId = match ? decodeURIComponent(match[1]) : null;
+
+    if (!sessionId) {
+      console.error("[Subscription] No session_id in redirect URL:", redirectUrl);
+      return false;
+    }
+
+    console.log(`[Subscription] Verifying session: ${sessionId}`);
+
+    // 4. Verify the session via tRPC
+    const verification = await trpc.stripe.verifySession.mutate({
+      sessionId,
+    });
+
+    console.log(`[Subscription] Verification result:`, verification);
+
+    if (!verification.success) {
+      console.error("[Subscription] Payment not successful:", verification.status);
+      return false;
+    }
+
+    // 5. Update local subscription state
+    if (!subscription) return false;
+    const updated: UserSubscription = {
+      ...subscription,
+      id: subscription.id || Date.now().toString(),
+      userId: user.id,
+      tier: target,
+      status: "active",
+      stripeCustomerId: verification.customerId ?? undefined,
+      stripeSubscriptionId: verification.subscriptionId ?? undefined,
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      trial: undefined,
+      cancelAtPeriodEnd: false,
+    };
+    await persist(updated);
+    console.log(`[Subscription] Stripe purchase complete — upgraded to ${target}`);
+    return true;
   }, [user, subscription, persist]);
 
   const cancelSubscription = useCallback(async () => {
@@ -266,6 +353,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     canUseTrendAnalysis,
     hasWatermark,
     upgradeToTier,
+    purchaseTier,
     startTrial,
     cancelSubscription,
     restoreSubscription,
@@ -276,6 +364,6 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     trySaveOutfit, canUseCostPerWear, canUseWeatherSuggestions,
     canUseOutfitRepeatTracking, canUseEventPlanning,
     canUseTrendAnalysis, hasWatermark, upgradeToTier,
-    startTrial, cancelSubscription, restoreSubscription,
+    purchaseTier, startTrial, cancelSubscription, restoreSubscription,
   ]);
 });

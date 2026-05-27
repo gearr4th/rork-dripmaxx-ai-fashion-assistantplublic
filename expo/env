@@ -2,6 +2,9 @@
 EXPO_PUBLIC_SUPABASE_URL=https://qfvwpchklysqgmylhqvn.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdndwY2hrbHlzcWdteWxocXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTUxNzQsImV4cCI6MjA3NjEzMTE3NH0.5Z3BZyanLVSuB_yCwjvEnPtpXdA2oNMAsqcuBpA-8Z0
 
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_51SWTrOLYf49waSeTSNJvfirFOQe64Mw8WCWyqsWio3zhlP8r0mNuuKbTk8tgwbAv7CNRWJuoGxxWf79T2uoR9cxH00tYveIi8K
+
 # Web3Forms API Key for sending feedback emails
 # Get yours at: https://web3forms.com
 WEB3FORMS_ACCESS_KEY=10c958e9-abf0-44be-9513-4a2882c3ccef

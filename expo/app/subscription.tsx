@@ -7,18 +7,16 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Check, Crown, X, Zap, Timer, Star, Infinity, Sparkles } from "lucide-react-native";
+import { Check, Crown, X, Zap, Timer, Star, Sparkles } from "lucide-react-native";
 import { router } from "expo-router";
 import { useSubscription } from "@/providers/SubscriptionProvider";
 import {
   SUBSCRIPTION_PLANS,
   SubscriptionTier,
   tierDisplayName,
-  TRIAL_RULES,
 } from "@/types/subscription";
 
 interface FeatureRowProps {
@@ -52,10 +50,9 @@ export default function SubscriptionScreen() {
     tier,
     isTrialing,
     trialDaysLeft,
-    upgradeToTier,
+    purchaseTier,
     startTrial,
     subscription,
-    canUseCostPerWear,
   } = useSubscription();
   const [loading, setLoading] = useState<SubscriptionTier | null>(null);
 
@@ -64,45 +61,23 @@ export default function SubscriptionScreen() {
     setLoading(targetTier);
 
     try {
-      // In production, this will redirect to Stripe Checkout via RevenueCat
-      if (Platform.OS === "web") {
+      const success = await purchaseTier(targetTier);
+      if (success) {
         Alert.alert(
-          "Stripe Integration",
-          `This will process a ${targetTier === "driplite" ? "$0" : targetTier === "dripplus" ? "$4.99" : "$9.99"}/mo subscription via Stripe. For now, upgrading locally for demo purposes.`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Continue",
-              onPress: async () => {
-                await upgradeToTier(targetTier);
-                Alert.alert("Upgraded!", `You're now on ${tierDisplayName(targetTier)}!`, [
-                  { text: "OK", onPress: () => router.back() },
-                ]);
-              },
-            },
-          ]
+          "Welcome to " + tierDisplayName(targetTier) + "!",
+          "Your subscription is now active. Enjoy your new features!",
+          [{ text: "Awesome!", onPress: () => router.back() }]
         );
       } else {
         Alert.alert(
-          "Coming Soon",
-          `Stripe integration for ${tierDisplayName(targetTier)} is being finalized. Upgrade locally for testing.`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Test Upgrade",
-              onPress: async () => {
-                await upgradeToTier(targetTier);
-                Alert.alert("Upgraded!", `You're now on ${tierDisplayName(targetTier)}!`, [
-                  { text: "OK", onPress: () => router.back() },
-                ]);
-              },
-            },
-          ]
+          "Payment Not Completed",
+          "The payment was cancelled or didn't go through. You can try again anytime.",
+          [{ text: "OK" }]
         );
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to process upgrade";
-      Alert.alert("Error", message);
+      Alert.alert("Something Went Wrong", message);
     } finally {
       setLoading(null);
     }
