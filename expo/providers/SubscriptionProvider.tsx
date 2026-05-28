@@ -13,7 +13,7 @@ import {
   TrialInfo,
 } from "@/types/subscription";
 import { useAuth } from "./AuthProvider";
-import { trpc } from "@/lib/trpc";
+import { trpcClient } from "@/lib/trpc";
 
 const APP_SCHEME = "dripmaxx";
 const STRIPE_SUCCESS_PATH = `${APP_SCHEME}://stripe-success`;
@@ -268,7 +268,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     console.log(`[Subscription] Starting Stripe purchase for ${target}`);
 
     // 1. Create checkout session via tRPC
-    const result = await trpc.stripe.createCheckoutSession.mutate({
+    const result = await trpcClient.stripe.createCheckoutSession.mutate({
       tier: target as "dripplus" | "dripmaxx",
       userId: user.id,
       userEmail: user.email ?? undefined,
@@ -308,7 +308,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     console.log(`[Subscription] Verifying session: ${sessionId}`);
 
     // 4. Verify the session via tRPC
-    const verification = await trpc.stripe.verifySession.mutate({
+    const verification = await trpcClient.stripe.verifySession.mutate({
       sessionId,
     });
 
