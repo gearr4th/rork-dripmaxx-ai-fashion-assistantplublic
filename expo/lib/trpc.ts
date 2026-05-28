@@ -6,7 +6,9 @@ import superjson from "superjson";
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
+  const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  if (envUrl && envUrl.length > 0) return envUrl;
+  if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
   return 'https://rork.app';
