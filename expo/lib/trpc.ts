@@ -5,13 +5,12 @@ import superjson from "superjson";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-const getBaseUrl = () => {
+const getBaseUrl = (): string => {
   const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   if (envUrl && envUrl.length > 0) return envUrl;
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
-  }
-  return 'https://rork.app';
+  throw new Error(
+    "EXPO_PUBLIC_RORK_API_BASE_URL is not set. The backend may not be deployed yet."
+  );
 };
 
 export const trpcClient = trpc.createClient({
