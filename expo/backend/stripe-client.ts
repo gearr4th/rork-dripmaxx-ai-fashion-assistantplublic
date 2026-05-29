@@ -3,11 +3,13 @@ import Stripe from "stripe";
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 
 if (!STRIPE_KEY) {
-  console.warn("[Stripe] ⚠️ STRIPE_SECRET_KEY not set. Stripe features will throw.");
+  console.error("[Stripe] ❌ STRIPE_SECRET_KEY not set. Stripe features will throw.");
+} else {
+  console.log(`[Stripe] ✅ Key loaded (${STRIPE_KEY.substring(0, 7)}...${STRIPE_KEY.slice(-4)})`);
 }
 
 export const stripe = new Stripe(STRIPE_KEY ?? "sk_test_missing", {
-  apiVersion: "2025-05-27.remittance",
+  apiVersion: "2025-03-31",
 });
 
 /** Price IDs cached after first lookup/creation */
@@ -38,6 +40,9 @@ const PRODUCTS: Record<string, ProductDef> = {
 /** Ensure a product + monthly price exist; return the price ID */
 async function ensurePriceId(tier: string): Promise<string> {
   if (priceIdCache[tier]) return priceIdCache[tier];
+  if (!STRIPE_KEY || STRIPE_KEY === "sk_test_missing") {
+    throw new Error("STRIPE_SECRET_KEY is not configured. Stripe payments are unavailable.");
+  }
 
   const def = PRODUCTS[tier];
   if (!def) throw new Error(`Unknown tier: ${tier}`);

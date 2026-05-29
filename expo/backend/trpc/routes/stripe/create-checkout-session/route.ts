@@ -55,10 +55,12 @@ export default publicProcedure
         checkoutUrl: session.url,
       };
     } catch (error) {
-      console.error("[Stripe] Checkout session error:", error);
+      const stripeError = error as { type?: string; raw?: { message?: string }; message?: string };
+      const detail = stripeError?.raw?.message ?? stripeError?.message ?? String(error);
+      console.error("[Stripe] Checkout session error:", detail);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create checkout session. Please try again.",
+        message: `Stripe error: ${detail}`,
       });
     }
   });
