@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { TRPCError } from "@trpc/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseServer as supabase } from "@/backend/supabase-server";
 
 export default publicProcedure
   .input(

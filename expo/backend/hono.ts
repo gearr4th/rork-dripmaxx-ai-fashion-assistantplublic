@@ -11,14 +11,14 @@ app.use("*", cors());
 app.use(
   "/trpc/*",
   trpcServer({
-    endpoint: "/api/trpc",
+    endpoint: "/trpc",
     router: appRouter,
     createContext,
   })
 );
 
 app.get("/", (c) => {
-  return c.json({ status: "ok", message: "API is running" });
+  return c.json({ status: "ok", message: "DripMaxx API is running" });
 });
 
 export default app;

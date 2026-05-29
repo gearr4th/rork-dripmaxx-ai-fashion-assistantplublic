@@ -1,24 +1,44 @@
 import { createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/config';
 
 const validUrl = SUPABASE_URL && SUPABASE_URL !== '' && !SUPABASE_URL.includes('placeholder') && SUPABASE_URL.startsWith('https://');
 const validKey = SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== '' && !SUPABASE_ANON_KEY.includes('placeholder') && SUPABASE_ANON_KEY.length > 20;
 
+// Detect runtime: Deno (server) vs React Native (client).
+// Deno exposes a global `Deno` namespace; React Native does not.
+const isServer = typeof (globalThis as any).Deno !== 'undefined';
+
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('[Supabase] ❌ CRITICAL: Missing Supabase configuration!');
-  console.error('[Supabase] SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
-  console.error('[Supabase] SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
-  console.error('[Supabase] Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file');
+  if (!isServer) {
+    console.error('[Supabase] ❌ CRITICAL: Missing Supabase configuration!');
+  }
 } else if (!validUrl || !validKey) {
-  console.error('[Supabase] ❌ Invalid Supabase credentials detected:');
-  if (!validUrl) console.error('[Supabase]   - URL is invalid or placeholder');
-  if (!validKey) console.error('[Supabase]   - Anon key is invalid or placeholder');
-  console.error('[Supabase] App will run in local-only mode');
-} else {
+  if (!isServer) {
+    console.error('[Supabase] ❌ Invalid Supabase credentials detected:');
+  }
+} else if (!isServer) {
   console.log('[Supabase] ✅ Configuration validated successfully');
-  console.log('[Supabase] URL:', SUPABASE_URL.substring(0, 40) + '...');
-  console.log('[Supabase] Key:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
+}
+
+// On the server, use a simple in-memory storage with no session persistence.
+// On the client, use React Native's AsyncStorage for persistent sessions.
+let authStorage: {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+};
+
+if (isServer) {
+  const store: Record<string, string> = {};
+  authStorage = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+  };
+} else {
+  // Client only — AsyncStorage is available via Metro bundler.
+  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+  authStorage = AsyncStorage;
 }
 
 export const supabase = createClient(
@@ -26,10 +46,10 @@ export const supabase = createClient(
   SUPABASE_ANON_KEY || 'placeholder-key',
   {
     auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      storage: AsyncStorage,
+      autoRefreshToken: !isServer,
+      persistSession: !isServer,
+      detectSessionInUrl: !isServer,
+      storage: authStorage,
       storageKey: 'dripmaxx-auth-token',
       flowType: 'pkce',
     },
