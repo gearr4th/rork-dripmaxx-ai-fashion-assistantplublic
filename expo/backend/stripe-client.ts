@@ -9,7 +9,7 @@ if (!STRIPE_KEY) {
 }
 
 export const stripe = new Stripe(STRIPE_KEY ?? "sk_test_missing", {
-  apiVersion: "2025-03-31",
+  apiVersion: "2026-05-27.dahlia",
 });
 
 /** Price IDs cached after first lookup/creation */
@@ -61,11 +61,10 @@ async function ensurePriceId(tier: string): Promise<string> {
   } else {
     // Create product
     product = await stripe.products.create({
-      lookup_key: def.id,
       name: def.name,
       description: def.description,
       active: true,
-      metadata: { tier: def.id },
+      metadata: { tier: def.id, lookup_key: def.id },
     });
     console.log(`[Stripe] Created product: ${product.name} (${product.id})`);
   }

@@ -103,9 +103,10 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       if (storedSub) {
         const parsed = JSON.parse(storedSub) as UserSubscription;
         // Migrate old tier names
-        if (parsed.tier === "free") parsed.tier = "driplite";
-        if (parsed.tier === "premium") parsed.tier = "dripplus";
-        if (parsed.tier === "pro") parsed.tier = "dripmaxx";
+        const tierStr = parsed.tier as string;
+        if (tierStr === "free") parsed.tier = "driplite";
+        else if (tierStr === "premium") parsed.tier = "dripplus";
+        else if (tierStr === "pro") parsed.tier = "dripmaxx";
         // Check if trial expired
         if (parsed.trial && !isTrialActive(parsed.trial) && parsed.status === "trialing") {
           parsed.status = "active";

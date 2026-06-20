@@ -249,10 +249,6 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       return;
     }
 
-    if (!isSupabaseConfigured) {
-      throw new Error('Authentication service is not configured. Please use the demo account.');
-    }
-
     try {
       console.log('[Auth] Authenticating with Supabase...');
 
@@ -299,9 +295,17 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       console.log('[Auth] ========== SIGN IN SUCCESS ==========');
     } catch (error: unknown) {
       console.error('[Auth] Login error:', error);
-      if (error && typeof error === 'object' && 'message' in error) {
-        throw new Error(String(error.message));
+      const errMsg = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : '';
+
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('Network request failed')) {
+        throw new Error(
+          'Unable to reach the authentication service. The demo account is available — use email "demo@dripmaxx.ai" with password "password".'
+        );
       }
+
+      if (errMsg) throw new Error(errMsg);
       throw new Error('Failed to sign in. Please try again.');
     }
   }, []);
@@ -309,10 +313,6 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   const signUp = useCallback(async (email: string, password: string, name: string, age: number): Promise<SignUpResult | undefined> => {
     console.log('[Auth] ========== SIGN UP STARTED ==========');
     console.log('[Auth] Email:', email?.slice(0, 3) + '***');
-
-    if (!isSupabaseConfigured) {
-      throw new Error('Authentication service is not configured. Please use the demo account.');
-    }
 
     try {
       console.log('[Auth] Creating account with Supabase...');
@@ -385,9 +385,17 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       };
     } catch (error: unknown) {
       console.error('[Auth] Signup error:', error);
-      if (error && typeof error === 'object' && 'message' in error) {
-        throw new Error(String(error.message));
+      const errMsg = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : '';
+
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('Network request failed')) {
+        throw new Error(
+          'Unable to reach the authentication service. Use the demo account — email "demo@dripmaxx.ai" with password "password".'
+        );
       }
+
+      if (errMsg) throw new Error(errMsg);
       throw new Error('Failed to create account. Please try again.');
     }
   }, []);
