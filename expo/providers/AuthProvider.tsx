@@ -226,10 +226,14 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // signIn — calls Supabase directly from the client.
+  // ---------------------------------------------------------------------------
   const signIn = useCallback(async (email: string, password: string) => {
     console.log('[Auth] ========== SIGN IN STARTED ==========');
     console.log('[Auth] Email:', email?.slice(0, 3) + '***');
 
+    // Demo login — no network call needed
     if (email === "demo@dripmaxx.ai" && password === "password") {
       console.log('[Auth] Demo login');
       const demoUser: User = {
@@ -250,7 +254,9 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
 
     if (!isSupabaseConfigured) {
-      throw new Error('Authentication service is not configured. Use the demo account — email "demo@dripmaxx.ai" with password "password".');
+      throw new Error(
+        'Authentication service is not configured. Use the demo account — email "demo@dripmaxx.ai" with password "password".'
+      );
     }
 
     try {
@@ -262,171 +268,154 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       });
 
       if (error) {
-        console.error('[Auth] Supabase login error:', error.message);
-        if (error.message.toLowerCase().includes('invalid login credentials') ||
-            error.message.toLowerCase().includes('invalid credentials')) {
+        console.error('[Auth] Supabase signin error:', error.message, error.status);
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid') || msg.includes('credentials')) {
           throw new Error('Invalid email or password. Please check your credentials.');
         }
-        if (error.message.toLowerCase().includes('email not confirmed')) {
+        if (msg.includes('email not confirmed') || msg.includes('verify')) {
           throw new Error('Please verify your email before signing in. Check your inbox.');
         }
-        if (error.message.toLowerCase().includes('too many requests')) {
+        if (msg.includes('too many') || msg.includes('rate limit')) {
           throw new Error('Too many login attempts. Please try again in a few minutes.');
         }
         throw new Error(error.message);
       }
 
-      if (!data.user || !data.session) {
-        throw new Error('Login failed - no user data returned');
+      if (!data?.session) {
+        throw new Error('Sign in failed. No session returned.');
       }
 
-      console.log('[Auth] Supabase login successful:', data.user.email);
-
-      const u: User = {
-        id: data.user.id,
-        email: data.user.email || email,
-        name: data.user.user_metadata?.name,
-        age: data.user.user_metadata?.age,
-        emailVerified: Boolean(data.user.email_confirmed_at),
-      };
-
-      setUser(u);
-      setIsAuthenticated(true);
-      setIsSessionValid(true);
-      setAccessToken(data.session.access_token);
-      setRefreshToken(data.session.refresh_token);
-
-      await AsyncStorage.setItem('user', JSON.stringify(u));
-      await AsyncStorage.setItem('accessToken', data.session.access_token);
-      await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
+      console.log('[Auth] Supabase signin success, user:', data.session.user.email);
+      updateUserFromSession(data.session);
       console.log('[Auth] ========== SIGN IN SUCCESS ==========');
     } catch (error: unknown) {
       console.error('[Auth] Login error:', error);
-      const errMsg = error && typeof error === 'object' && 'message' in error
-        ? String(error.message)
-        : '';
-
-      if (errMsg.includes('Failed to fetch') || errMsg.includes('Network request failed')) {
-        throw new Error(
-          'Unable to reach the authentication service. The demo account is available — use email "demo@dripmaxx.ai" with password "password".'
-        );
-      }
-
-      if (errMsg.includes('Invalid') || errMsg.includes('invalid') || errMsg.includes('credentials') || errMsg.includes('UNAUTHORIZED')) {
-        throw new Error('Invalid email or password. Please check your credentials.');
-      }
-      if (errMsg.includes('verify') || errMsg.includes('confirm') || errMsg.includes('FORBIDDEN')) {
-        throw new Error('Please verify your email before signing in. Check your inbox.');
-      }
-      if (errMsg.includes('too many') || errMsg.includes('rate limit') || errMsg.includes('TOO_MANY_REQUESTS')) {
-        throw new Error('Too many login attempts. Please try again in a few minutes.');
-      }
-
-      if (errMsg) throw new Error(errMsg);
+      if (error instanceof Error) throw error;
       throw new Error('Failed to sign in. Please try again.');
     }
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, name: string, age: number): Promise<SignUpResult | undefined> => {
-    console.log('[Auth] ========== SIGN UP STARTED ==========');
-    console.log('[Auth] Email:', email?.slice(0, 3) + '***');
+  // ---------------------------------------------------------------------------
+  // signUp — calls Supabase directly from the client.
+  // ---------------------------------------------------------------------------
+  const signUp = useCallback(
+    async (email: string, password: string, name: string, age: number): Promise<SignUpResult | undefined> => {
+      console.log('[Auth] ========== SIGN UP STARTED ==========');
+      console.log('[Auth] Email:', email?.slice(0, 3) + '***');
 
-    if (!isSupabaseConfigured) {
-      throw new Error('Authentication service is not configured.');
-    }
+      if (!isSupabaseConfigured) {
+        throw new Error('Authentication service is not configured.');
+      }
 
-    try {
-      console.log('[Auth] Creating account via Supabase...');
+      try {
+        console.log('[Auth] Creating account via Supabase...');
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, age },
-        },
-      });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name, age },
+          },
+        });
 
-      if (error) {
-        console.error('[Auth] Supabase signup error:', error.message);
-        const errMsg = error.message.toLowerCase();
-        if (errMsg.includes('already registered') || errMsg.includes('already exists') || errMsg.includes('user already registered')) {
-          throw new Error('An account with this email already exists. Please sign in instead.');
+        console.log('[Auth] Supabase signup response:', {
+          hasUser: !!data?.user,
+          hasSession: !!data?.session,
+          errorMessage: error?.message,
+          errorStatus: error?.status,
+        });
+
+        if (error) {
+          console.error('[Auth] Supabase signup error:', error.message);
+          const msg = error.message.toLowerCase();
+
+          if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already registered')) {
+            throw new Error('An account with this email already exists. Please sign in instead.');
+          }
+          if (msg.includes('rate limit') || msg.includes('too many')) {
+            throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
+          }
+          if (msg.includes('password')) {
+            throw new Error('Password must be at least 6 characters long.');
+          }
+          if (msg.includes('invalid email')) {
+            throw new Error('Please enter a valid email address.');
+          }
+
+          throw new Error(error.message);
         }
-        if (errMsg.includes('email rate limit') || errMsg.includes('rate limit')) {
-          throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
+
+        if (!data?.user) {
+          throw new Error('Account creation failed. Please try again.');
         }
-        if (errMsg.includes('password')) {
-          throw new Error('Password must be at least 6 characters long.');
+
+        const user = data.user;
+        const session = data.session;
+
+        console.log('[Auth] Signup successful for:', email);
+        console.log('[Auth] User ID:', user.id);
+        console.log('[Auth] Email confirmed:', Boolean(user.email_confirmed_at));
+        console.log('[Auth] Has session:', Boolean(session));
+
+        const isEmailConfirmed = Boolean(user.email_confirmed_at);
+        const hasSession = Boolean(session);
+
+        const u: User = {
+          id: user.id,
+          email: user.email || email,
+          name: name,
+          age: age,
+          emailVerified: isEmailConfirmed,
+        };
+
+        setUser(u);
+        setIsAuthenticated(true);
+        await AsyncStorage.setItem('user', JSON.stringify(u));
+
+        if (session) {
+          setIsSessionValid(true);
+          setAccessToken(session.access_token);
+          setRefreshToken(session.refresh_token);
+          await AsyncStorage.setItem('accessToken', session.access_token);
+          await AsyncStorage.setItem('refreshToken', session.refresh_token);
+        } else {
+          setIsSessionValid(false);
+          setAccessToken(null);
+          setRefreshToken(null);
         }
-        throw new Error(error.message);
+
+        let message = 'Account created successfully!';
+        if (!isEmailConfirmed && hasSession) {
+          message = 'Account created! You can start using the app now.';
+        } else if (!isEmailConfirmed && !hasSession) {
+          message = 'Account created! Please check your email to verify your account before signing in.';
+        }
+
+        console.log('[Auth] ========== SIGN UP SUCCESS ==========');
+
+        return {
+          success: true,
+          message,
+          user: u,
+        };
+      } catch (error: unknown) {
+        console.error('[Auth] Signup error:', error);
+
+        if (error instanceof Error) {
+          const msg = error.message.toLowerCase();
+          if (msg.includes('failed to fetch') || msg.includes('network')) {
+            throw new Error(
+              'Unable to reach the authentication service. Use the demo account — email "demo@dripmaxx.ai" with password "password".'
+            );
+          }
+          throw error;
+        }
+        throw new Error('Failed to create account. Please try again.');
       }
-
-      if (!data.user) {
-        throw new Error('Signup failed - no user data returned');
-      }
-
-      console.log('[Auth] Supabase signup successful:', data.user.email);
-      const hasSession = Boolean(data.session);
-
-      const u: User = {
-        id: data.user.id,
-        email: data.user.email || email,
-        name: name,
-        age: age,
-        emailVerified: Boolean(data.user.email_confirmed_at),
-      };
-
-      setUser(u);
-      setIsAuthenticated(true);
-
-      if (hasSession && data.session) {
-        setIsSessionValid(true);
-        setAccessToken(data.session.access_token);
-        setRefreshToken(data.session.refresh_token);
-        await AsyncStorage.setItem('accessToken', data.session.access_token);
-        await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
-      } else {
-        setIsSessionValid(false);
-        setAccessToken(null);
-        setRefreshToken(null);
-      }
-
-      await AsyncStorage.setItem('user', JSON.stringify(u));
-      console.log('[Auth] User saved to AsyncStorage');
-      console.log('[Auth] ========== SIGN UP SUCCESS ==========');
-
-      const message = hasSession
-        ? 'Account created successfully!'
-        : 'Account created! Please check your email to verify your account before signing in.';
-
-      return {
-        success: true,
-        message,
-        user: u,
-      };
-    } catch (error: unknown) {
-      console.error('[Auth] Signup error:', error);
-      const errMsg = error && typeof error === 'object' && 'message' in error
-        ? String(error.message)
-        : '';
-
-      if (errMsg.includes('Failed to fetch') || errMsg.includes('Network request failed')) {
-        throw new Error(
-          'Unable to reach the authentication service. Use the demo account — email "demo@dripmaxx.ai" with password "password".'
-        );
-      }
-
-      if (errMsg.includes('already exists') || errMsg.includes('already registered') || errMsg.includes('CONFLICT')) {
-        throw new Error('An account with this email already exists. Please sign in instead.');
-      }
-      if (errMsg.includes('rate limit') || errMsg.includes('too many') || errMsg.includes('TOO_MANY_REQUESTS')) {
-        throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
-      }
-
-      if (errMsg) throw new Error(errMsg);
-      throw new Error('Failed to create account. Please try again.');
-    }
-  }, []);
+    },
+    []
+  );
 
   const signOut = useCallback(async () => {
     console.log('[Auth] ========== SIGNING OUT ==========');
