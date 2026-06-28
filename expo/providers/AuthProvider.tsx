@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { trpcClient } from "@/lib/trpc";
 import type { Session } from "@supabase/supabase-js";
 
 interface User {
@@ -250,48 +251,48 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
 
     try {
-      console.log('[Auth] Authenticating with Supabase...');
+      console.log('[Auth] Authenticating via tRPC backend...');
 
-      const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
+      const result = await trpcClient.auth.login.mutate({
         email,
         password,
       });
 
-      if (supabaseError) {
-        console.error('[Auth] Supabase login failed:', supabaseError.message);
-        const msg = supabaseError.message || 'Authentication failed';
-        if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
-          throw new Error('Invalid email or password. Please check your credentials.');
-        }
-        if (msg.toLowerCase().includes('email not confirmed')) {
-          throw new Error('Please verify your email before signing in. Check your inbox.');
-        }
-        throw new Error(msg);
-      }
-
-      if (!data.user || !data.session) {
+      if (!result.success || !result.user) {
         throw new Error('Login failed - no user data returned');
       }
 
-      console.log('[Auth] Supabase login successful:', data.user.email);
+      console.log('[Auth] Backend login successful:', result.user.email);
+
+      // Establish local Supabase session using tokens from backend
+      if (result.accessToken && result.refreshToken) {
+        console.log('[Auth] Setting local Supabase session from backend tokens');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: result.accessToken,
+          refresh_token: result.refreshToken,
+        });
+        if (sessionError) {
+          console.warn('[Auth] setSession warning (non-fatal):', sessionError.message);
+        }
+      }
 
       const u: User = {
-        id: data.user.id,
-        email: data.user.email || email,
-        name: data.user.user_metadata?.name,
-        age: data.user.user_metadata?.age,
-        emailVerified: Boolean(data.user.email_confirmed_at),
+        id: result.user.id,
+        email: result.user.email || email,
+        name: result.user.name,
+        age: result.user.age,
+        emailVerified: Boolean(result.user.emailVerified),
       };
 
       setUser(u);
       setIsAuthenticated(true);
-      setIsSessionValid(true);
-      setAccessToken(data.session.access_token);
-      setRefreshToken(data.session.refresh_token);
+      setIsSessionValid(Boolean(result.accessToken));
+      setAccessToken(result.accessToken ?? null);
+      setRefreshToken(result.refreshToken ?? null);
 
       await AsyncStorage.setItem('user', JSON.stringify(u));
-      await AsyncStorage.setItem('accessToken', data.session.access_token);
-      await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
+      if (result.accessToken) await AsyncStorage.setItem('accessToken', result.accessToken);
+      if (result.refreshToken) await AsyncStorage.setItem('refreshToken', result.refreshToken);
       console.log('[Auth] ========== SIGN IN SUCCESS ==========');
     } catch (error: unknown) {
       console.error('[Auth] Login error:', error);
@@ -305,6 +306,16 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         );
       }
 
+      if (errMsg.includes('Invalid') || errMsg.includes('invalid') || errMsg.includes('credentials') || errMsg.includes('UNAUTHORIZED')) {
+        throw new Error('Invalid email or password. Please check your credentials.');
+      }
+      if (errMsg.includes('verify') || errMsg.includes('confirm') || errMsg.includes('FORBIDDEN')) {
+        throw new Error('Please verify your email before signing in. Check your inbox.');
+      }
+      if (errMsg.includes('too many') || errMsg.includes('rate limit') || errMsg.includes('TOO_MANY_REQUESTS')) {
+        throw new Error('Too many login attempts. Please try again in a few minutes.');
+      }
+
       if (errMsg) throw new Error(errMsg);
       throw new Error('Failed to sign in. Please try again.');
     }
@@ -315,55 +326,51 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     console.log('[Auth] Email:', email?.slice(0, 3) + '***');
 
     try {
-      console.log('[Auth] Creating account with Supabase...');
+      console.log('[Auth] Creating account via tRPC backend...');
 
-      const { data, error: supabaseError } = await supabase.auth.signUp({
+      const result = await trpcClient.auth.signup.mutate({
         email,
         password,
-        options: {
-          data: {
-            name,
-            age,
-          },
-        },
+        name,
+        age,
       });
 
-      if (supabaseError) {
-        console.error('[Auth] Supabase signup failed:', supabaseError.message);
-        const msg = supabaseError.message || 'Signup failed';
-        if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
-          throw new Error('An account with this email already exists. Please sign in instead.');
-        }
-        if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('too many')) {
-          throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
-        }
-        throw new Error(msg);
-      }
-
-      if (!data.user) {
+      if (!result.success || !result.user) {
         throw new Error('Signup failed - no user data returned');
       }
 
-      console.log('[Auth] Supabase signup successful:', data.user.email);
-      console.log('[Auth] Email confirmation required:', !data.session);
+      console.log('[Auth] Backend signup successful:', result.user.email);
+      console.log('[Auth] Has session tokens:', Boolean(result.accessToken));
+
+      // Establish local Supabase session using tokens from backend
+      if (result.accessToken && result.refreshToken) {
+        console.log('[Auth] Setting local Supabase session from backend tokens');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: result.accessToken,
+          refresh_token: result.refreshToken,
+        });
+        if (sessionError) {
+          console.warn('[Auth] setSession warning (non-fatal):', sessionError.message);
+        }
+      }
 
       const u: User = {
-        id: data.user.id,
-        email: data.user.email || email,
+        id: result.user.id,
+        email: result.user.email || email,
         name: name,
         age: age,
-        emailVerified: Boolean(data.user.email_confirmed_at),
+        emailVerified: Boolean(result.user.emailVerified),
       };
 
       setUser(u);
       setIsAuthenticated(true);
 
-      if (data.session) {
+      if (result.accessToken) {
         setIsSessionValid(true);
-        setAccessToken(data.session.access_token);
-        setRefreshToken(data.session.refresh_token);
-        await AsyncStorage.setItem('accessToken', data.session.access_token);
-        await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
+        setAccessToken(result.accessToken);
+        setRefreshToken(result.refreshToken ?? null);
+        await AsyncStorage.setItem('accessToken', result.accessToken);
+        if (result.refreshToken) await AsyncStorage.setItem('refreshToken', result.refreshToken);
       } else {
         setIsSessionValid(false);
         setAccessToken(null);
@@ -374,13 +381,11 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       console.log('[Auth] User saved to AsyncStorage');
       console.log('[Auth] ========== SIGN UP SUCCESS ==========');
 
-      const message = data.session
-        ? 'Account created successfully!'
-        : 'Account created! Please check your email to verify your account.';
-
       return {
         success: true,
-        message,
+        message: result.message ?? (result.accessToken
+          ? 'Account created successfully!'
+          : 'Account created! Please check your email to verify your account.'),
         user: u,
       };
     } catch (error: unknown) {
@@ -393,6 +398,13 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         throw new Error(
           'Unable to reach the authentication service. Use the demo account — email "demo@dripmaxx.ai" with password "password".'
         );
+      }
+
+      if (errMsg.includes('already exists') || errMsg.includes('already registered') || errMsg.includes('CONFLICT')) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      }
+      if (errMsg.includes('rate limit') || errMsg.includes('too many') || errMsg.includes('TOO_MANY_REQUESTS')) {
+        throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
       }
 
       if (errMsg) throw new Error(errMsg);
