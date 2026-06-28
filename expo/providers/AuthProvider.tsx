@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { trpcClient } from "@/lib/trpc";
 import type { Session } from "@supabase/supabase-js";
 
 interface User {
@@ -250,49 +249,56 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       return;
     }
 
-    try {
-      console.log('[Auth] Authenticating via tRPC backend...');
+    if (!isSupabaseConfigured) {
+      throw new Error('Authentication service is not configured. Use the demo account — email "demo@dripmaxx.ai" with password "password".');
+    }
 
-      const result = await trpcClient.auth.login.mutate({
+    try {
+      console.log('[Auth] Signing in via Supabase...');
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (!result.success || !result.user) {
+      if (error) {
+        console.error('[Auth] Supabase login error:', error.message);
+        if (error.message.toLowerCase().includes('invalid login credentials') ||
+            error.message.toLowerCase().includes('invalid credentials')) {
+          throw new Error('Invalid email or password. Please check your credentials.');
+        }
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+          throw new Error('Please verify your email before signing in. Check your inbox.');
+        }
+        if (error.message.toLowerCase().includes('too many requests')) {
+          throw new Error('Too many login attempts. Please try again in a few minutes.');
+        }
+        throw new Error(error.message);
+      }
+
+      if (!data.user || !data.session) {
         throw new Error('Login failed - no user data returned');
       }
 
-      console.log('[Auth] Backend login successful:', result.user.email);
-
-      // Establish local Supabase session using tokens from backend
-      if (result.accessToken && result.refreshToken) {
-        console.log('[Auth] Setting local Supabase session from backend tokens');
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-        });
-        if (sessionError) {
-          console.warn('[Auth] setSession warning (non-fatal):', sessionError.message);
-        }
-      }
+      console.log('[Auth] Supabase login successful:', data.user.email);
 
       const u: User = {
-        id: result.user.id,
-        email: result.user.email || email,
-        name: result.user.name,
-        age: result.user.age,
-        emailVerified: Boolean(result.user.emailVerified),
+        id: data.user.id,
+        email: data.user.email || email,
+        name: data.user.user_metadata?.name,
+        age: data.user.user_metadata?.age,
+        emailVerified: Boolean(data.user.email_confirmed_at),
       };
 
       setUser(u);
       setIsAuthenticated(true);
-      setIsSessionValid(Boolean(result.accessToken));
-      setAccessToken(result.accessToken ?? null);
-      setRefreshToken(result.refreshToken ?? null);
+      setIsSessionValid(true);
+      setAccessToken(data.session.access_token);
+      setRefreshToken(data.session.refresh_token);
 
       await AsyncStorage.setItem('user', JSON.stringify(u));
-      if (result.accessToken) await AsyncStorage.setItem('accessToken', result.accessToken);
-      if (result.refreshToken) await AsyncStorage.setItem('refreshToken', result.refreshToken);
+      await AsyncStorage.setItem('accessToken', data.session.access_token);
+      await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
       console.log('[Auth] ========== SIGN IN SUCCESS ==========');
     } catch (error: unknown) {
       console.error('[Auth] Login error:', error);
@@ -325,52 +331,60 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     console.log('[Auth] ========== SIGN UP STARTED ==========');
     console.log('[Auth] Email:', email?.slice(0, 3) + '***');
 
-    try {
-      console.log('[Auth] Creating account via tRPC backend...');
+    if (!isSupabaseConfigured) {
+      throw new Error('Authentication service is not configured.');
+    }
 
-      const result = await trpcClient.auth.signup.mutate({
+    try {
+      console.log('[Auth] Creating account via Supabase...');
+
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        name,
-        age,
+        options: {
+          data: { name, age },
+        },
       });
 
-      if (!result.success || !result.user) {
+      if (error) {
+        console.error('[Auth] Supabase signup error:', error.message);
+        const errMsg = error.message.toLowerCase();
+        if (errMsg.includes('already registered') || errMsg.includes('already exists') || errMsg.includes('user already registered')) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
+        if (errMsg.includes('email rate limit') || errMsg.includes('rate limit')) {
+          throw new Error('Too many signup attempts. Please wait a few minutes and try again.');
+        }
+        if (errMsg.includes('password')) {
+          throw new Error('Password must be at least 6 characters long.');
+        }
+        throw new Error(error.message);
+      }
+
+      if (!data.user) {
         throw new Error('Signup failed - no user data returned');
       }
 
-      console.log('[Auth] Backend signup successful:', result.user.email);
-      console.log('[Auth] Has session tokens:', Boolean(result.accessToken));
-
-      // Establish local Supabase session using tokens from backend
-      if (result.accessToken && result.refreshToken) {
-        console.log('[Auth] Setting local Supabase session from backend tokens');
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-        });
-        if (sessionError) {
-          console.warn('[Auth] setSession warning (non-fatal):', sessionError.message);
-        }
-      }
+      console.log('[Auth] Supabase signup successful:', data.user.email);
+      const hasSession = Boolean(data.session);
 
       const u: User = {
-        id: result.user.id,
-        email: result.user.email || email,
+        id: data.user.id,
+        email: data.user.email || email,
         name: name,
         age: age,
-        emailVerified: Boolean(result.user.emailVerified),
+        emailVerified: Boolean(data.user.email_confirmed_at),
       };
 
       setUser(u);
       setIsAuthenticated(true);
 
-      if (result.accessToken) {
+      if (hasSession && data.session) {
         setIsSessionValid(true);
-        setAccessToken(result.accessToken);
-        setRefreshToken(result.refreshToken ?? null);
-        await AsyncStorage.setItem('accessToken', result.accessToken);
-        if (result.refreshToken) await AsyncStorage.setItem('refreshToken', result.refreshToken);
+        setAccessToken(data.session.access_token);
+        setRefreshToken(data.session.refresh_token);
+        await AsyncStorage.setItem('accessToken', data.session.access_token);
+        await AsyncStorage.setItem('refreshToken', data.session.refresh_token);
       } else {
         setIsSessionValid(false);
         setAccessToken(null);
@@ -381,11 +395,13 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
       console.log('[Auth] User saved to AsyncStorage');
       console.log('[Auth] ========== SIGN UP SUCCESS ==========');
 
+      const message = hasSession
+        ? 'Account created successfully!'
+        : 'Account created! Please check your email to verify your account before signing in.';
+
       return {
         success: true,
-        message: result.message ?? (result.accessToken
-          ? 'Account created successfully!'
-          : 'Account created! Please check your email to verify your account.'),
+        message,
         user: u,
       };
     } catch (error: unknown) {
