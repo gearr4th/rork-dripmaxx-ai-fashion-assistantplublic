@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 import createContextHook from "@nkzw/create-context-hook";
 import {
@@ -15,9 +16,21 @@ import {
 import { useAuth } from "./AuthProvider";
 import { trpcClient } from "@/lib/trpc";
 
-const APP_SCHEME = "dripmaxx";
-const STRIPE_SUCCESS_PATH = `${APP_SCHEME}://stripe-success`;
-const STRIPE_CANCEL_PATH = `${APP_SCHEME}://stripe-cancel`;
+/** Build a real HTTPS return URL that Stripe accepts and Expo WebBrowser can detect.
+ *  On web we use the current origin; on native we use Linking to get the app's URL. */
+function getStripeReturnUrl(): string {
+  if (Platform.OS === "web" && typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  // On native, Linking.createURL('') returns something like 'dripmaxx://'
+  // but Stripe needs HTTPS. Fall back to the API base URL if available.
+  const apiBase = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  if (apiBase) {
+    // Strip trailing slash and /api if present to get the app root
+    return apiBase.replace(/\/api\/?$/, "");
+  }
+  return Linking.createURL("");
+}
 
 interface SubscriptionContextType {
   subscription: UserSubscription | null;
@@ -268,13 +281,15 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
     console.log(`[Subscription] Starting Stripe purchase for ${target}`);
 
+    const returnUrl = getStripeReturnUrl();
+
     // 1. Create checkout session via tRPC
     const result = await trpcClient.stripe.createCheckoutSession.mutate({
       tier: target as "dripplus" | "dripmaxx",
       userId: user.id,
       userEmail: user.email ?? undefined,
-      successUrl: STRIPE_SUCCESS_PATH,
-      cancelUrl: STRIPE_CANCEL_PATH,
+      successUrl: returnUrl,
+      cancelUrl: returnUrl,
     });
 
     if (!result.checkoutUrl) {
@@ -283,10 +298,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
     console.log(`[Subscription] Checkout URL: ${result.checkoutUrl}`);
 
-    // 2. Open Stripe Checkout in browser
+    // 2. Open Stripe Checkout in browser.
+    // When Stripe redirects to successUrl (matching the app origin),
+    // WebBrowser detects the redirect and closes the popup automatically.
     const browserResult = await WebBrowser.openAuthSessionAsync(
       result.checkoutUrl,
-      STRIPE_SUCCESS_PATH
+      returnUrl
     );
 
     console.log(`[Subscription] Browser result type: ${browserResult.type}`);

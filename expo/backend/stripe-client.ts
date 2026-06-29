@@ -47,9 +47,9 @@ async function ensurePriceId(tier: string): Promise<string> {
   const def = PRODUCTS[tier];
   if (!def) throw new Error(`Unknown tier: ${tier}`);
 
-  // 1. Look for existing product in Stripe by lookup_key
+  // 1. Look for existing product in Stripe by name (lookup_key not typed in this SDK version)
   const existingProducts = await stripe.products.search({
-    query: `lookup_key:"${def.id}" AND active:"true"`,
+    query: `name:"${def.name}" AND active:"true"`,
     limit: 1,
   });
 
@@ -64,7 +64,7 @@ async function ensurePriceId(tier: string): Promise<string> {
       name: def.name,
       description: def.description,
       active: true,
-      metadata: { tier: def.id, lookup_key: def.id },
+      metadata: { tier: def.id },
     });
     console.log(`[Stripe] Created product: ${product.name} (${product.id})`);
   }
@@ -93,6 +93,10 @@ async function ensurePriceId(tier: string): Promise<string> {
     lookup_key: `${def.id}-monthly`,
     metadata: { tier: def.id },
   });
+
+  priceIdCache[tier] = price.id;
+  console.log(`[Stripe] Created price: ${price.id} for ${def.name} ($${def.price}/mo)`);
+  return price.id;
 
   priceIdCache[tier] = price.id;
   console.log(`[Stripe] Created price: ${price.id} for ${def.name} ($${def.price}/mo)`);
