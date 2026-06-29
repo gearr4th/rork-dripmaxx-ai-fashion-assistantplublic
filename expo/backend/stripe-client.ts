@@ -97,10 +97,6 @@ async function ensurePriceId(tier: string): Promise<string> {
   priceIdCache[tier] = price.id;
   console.log(`[Stripe] Created price: ${price.id} for ${def.name} ($${def.price}/mo)`);
   return price.id;
-
-  priceIdCache[tier] = price.id;
-  console.log(`[Stripe] Created price: ${price.id} for ${def.name} ($${def.price}/mo)`);
-  return price.id;
 }
 
 /** Get or create a Stripe price ID for a given tier */

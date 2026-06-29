@@ -1,20 +1,21 @@
-import { trpcServer } from "@hono/trpc-server";
-import { Hono } from "hono";
+import { Hono } from "hono/tiny";
 import { cors } from "hono/cors";
+import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "./trpc/app-router";
 import { createContext } from "./trpc/create-context";
 
+// Hono app — mounted at /api by the Rork platform
 const app = new Hono();
 
-app.use("*", cors());
+// CORS for all routes
+app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"] }));
 
+// Health check
 app.get("/", (c) => c.json({ status: "ok" }));
 app.get("/test", (c) => c.json({ hello: "world" }));
 
-// tRPC — uses @hono/trpc-server middleware.
-// The Hono app is mounted at /api by Rork, so the full client-facing
-// path is /api/trpc. Endpoint must match so tRPC strips the prefix
-// from the raw request URL to extract procedure names.
+// tRPC — mounted at /trpc, endpoint must include /api prefix
+// because c.req.raw.url carries the full platform URL
 app.use(
   "/trpc/*",
   trpcServer({
