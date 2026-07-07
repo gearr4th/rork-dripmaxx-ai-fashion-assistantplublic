@@ -5,13 +5,24 @@ import { createClient } from '@supabase/supabase-js';
 // requests; the server only uses supabase.auth API calls (signUp,
 // signInWithPassword) which don't require local session storage.
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://qfvwpchklysqgmylhqvn.supabase.co';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+// The platform-managed env var points at a stale/dead project (uhzxvsdopehhziyoblqa).
+// Always override to the live project (qfvwpchklysqgmylhqvn) when the dead ref
+// is detected, matching the logic in utils/config.ts.
+const FALLBACK_SUPABASE_URL = 'https://qfvwpchklysqgmylhqvn.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdndwY2hrbHlzcWdteWxocXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTUxNzQsImV4cCI6MjA3NjEzMTE3NH0.5Z3BZyanLVSuB_yCwjvEnPtpXdA2oNMAsqcuBpA-8Z0';
+const DEAD_REFS = ['uhzxvsdopehhziyoblqa'];
+
+const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const envKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const isDeadUrl = (u: string): boolean => DEAD_REFS.some((r) => u.includes(r));
+
+const SUPABASE_URL = envUrl && !isDeadUrl(envUrl) ? envUrl : FALLBACK_SUPABASE_URL;
+const SUPABASE_ANON_KEY = envUrl && !isDeadUrl(envUrl) && envKey ? envKey : FALLBACK_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_ANON_KEY) {
-  console.warn('[Supabase Server] ⚠️ No anon key found in env. Auth calls will fail.');
+  console.warn('[Supabase Server] ⚠️ No anon key found. Auth calls will fail.');
 } else {
-  console.log('[Supabase Server] ✅ Initialized');
+  console.log(`[Supabase Server] ✅ Initialized (${SUPABASE_URL.slice(8, 24)}...)`);
 }
 
 // In-memory storage for the server runtime. Supabase auth-js requires

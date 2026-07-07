@@ -79,12 +79,16 @@ export default publicProcedure
           });
         }
         
-        if (errorMsg.includes("sending confirmation") ||
-            errorMsg.includes("error sending") ||
-            errorMsg.includes("smtp") ||
-            errorMsg.includes("email service") ||
-            errorMsg.includes("mail service")) {
-          
+        // Distinguish email/SMTP errors from network/DNS errors.
+        // "error sending request for url" is a network error, NOT an email error.
+        const isEmailError =
+          errorMsg.includes("sending confirmation") ||
+          errorMsg.includes("smtp") ||
+          errorMsg.includes("email service") ||
+          errorMsg.includes("mail service") ||
+          (errorMsg.includes("error sending") && !errorMsg.includes("request for url"));
+
+        if (isEmailError) {
           console.log("[Backend Auth] Email error detected. Checking if user was created...");
           console.log("[Backend Auth] Response data:", JSON.stringify(response.data, null, 2));
           
@@ -112,6 +116,17 @@ export default publicProcedure
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Unable to send confirmation email. Please contact support or try again later.",
+          });
+        }
+
+        // Network/DNS errors — the Supabase project is unreachable
+        if (errorMsg.includes("request for url") ||
+            errorMsg.includes("dns error") ||
+            errorMsg.includes("failed to fetch") ||
+            errorMsg.includes("network")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Unable to reach the authentication service. Please check your connection and try again.",
           });
         }
         

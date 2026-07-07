@@ -17,7 +17,7 @@ app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"] }));
 
 // Health check
 app.get("/", (c: any) => c.json({ status: "ok" }));
-app.get("/test", (c: any) => c.json({ hello: "world" }));
+app.get("/test", (c: any) => c.json({ hello: "world", version: "v2-supafix", supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL?.slice(8, 24) }));
 
 // Debug: test if Hono can parse JSON bodies
 app.post("/echo", async (c: any) => {

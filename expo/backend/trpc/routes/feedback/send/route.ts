@@ -43,7 +43,7 @@ export const sendFeedbackProcedure = publicProcedure
       email: userData.email || "",
     };
 
-    const FEEDBACK_RECIPIENT = "nmam.amnm@gmail.com";
+    const FEEDBACK_RECIPIENT = "nmam.amnm@gmail.com"; // must match FEEDBACK_TO_EMAIL in utils/config.ts
     const overall = (
       (input.easeOfUse + input.accuracyOfDripRating + input.usefulnessOfRecommendations) /
       3

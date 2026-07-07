@@ -37,10 +37,9 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn('[Config] SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
 }
 
-// Public email service (Web3Forms) for feedback delivery
-// Create a free key at https://web3forms.com/ and paste it here
-export const WEB3FORMS_ACCESS_KEY = '10c958e9-abf0-44be-9513-4a2882c3ccef';
-export const FEEDBACK_TO_EMAIL = 'gearr4th@gmail.com' as const;
+// Feedback is sent via formsubmit.co (no API key needed).
+// Keep a single recipient across the app and backend.
+export const FEEDBACK_TO_EMAIL = 'nmam.amnm@gmail.com' as const;
 
 // Other configuration options
 export const CONFIG = {
