@@ -136,11 +136,8 @@ export default function HomeScreen() {
     if (!canGen) {
       Alert.alert(
         "Daily Limit Reached",
-        "You've used all your outfit generations for today. Upgrade to get more!",
-        [
-          { text: "OK", style: "default" },
-          { text: "Upgrade", onPress: () => router.push("/subscription" as any) },
-        ]
+        "You've used all your outfit generations for today. Come back tomorrow!",
+        [{ text: "OK", style: "default" }]
       );
       return;
     }
@@ -370,11 +367,8 @@ export default function HomeScreen() {
                     if (!trySaveOutfit(savedOutfits.length)) {
                       Alert.alert(
                         "Save Limit Reached",
-                        "You've reached your maximum saved outfits. Upgrade to save more!",
-                        [
-                          { text: "OK", style: "default" },
-                          { text: "Upgrade", onPress: () => router.push("/subscription" as any) },
-                        ]
+                        "You've reached your maximum saved outfits.",
+                        [{ text: "OK", style: "default" }]
                       );
                       return;
                     }

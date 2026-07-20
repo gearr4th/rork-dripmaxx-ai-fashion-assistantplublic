@@ -152,11 +152,8 @@ export default function ClothesScreen() {
                   if (!tryAddItem(clothes.length)) {
                     Alert.alert(
                       "Upload Limit Reached",
-                      "Upgrade to Drip+ or DripMaxx to add more items to your closet.",
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Upgrade", onPress: () => router.push("/subscription" as any) },
-                      ]
+                      "You've reached your closet limit.",
+                      [{ text: "OK", style: "default" }]
                     );
                     return;
                   }

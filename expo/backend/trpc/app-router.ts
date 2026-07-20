@@ -4,9 +4,10 @@ import signupRoute from "./routes/auth/signup/route";
 import loginRoute from "./routes/auth/login/route";
 import getUserRoute from "./routes/auth/getUser/route";
 import sendFeedbackRoute from "./routes/feedback/send/route";
-import createCheckoutSessionRoute from "./routes/stripe/create-checkout-session/route";
-import verifySessionRoute from "./routes/stripe/verify-session/route";
 
+// TestFlight / Beta build: Stripe checkout routes are intentionally removed.
+// The app ships with all features unlocked and no payments. Stripe routes can
+// be re-enabled for the production launch.
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -18,10 +19,6 @@ export const appRouter = createTRPCRouter({
   }),
   feedback: createTRPCRouter({
     send: sendFeedbackRoute,
-  }),
-  stripe: createTRPCRouter({
-    createCheckoutSession: createCheckoutSessionRoute,
-    verifySession: verifySessionRoute,
   }),
 });
 

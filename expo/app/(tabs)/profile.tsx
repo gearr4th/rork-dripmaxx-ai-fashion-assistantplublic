@@ -17,7 +17,6 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  Crown,
   ChevronRight,
   Wallet,
   MessageSquare,
@@ -36,13 +35,9 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { budget } = useBudget();
   const { savedOutfits } = useSavedOutfits();
-  const { tier, subscription, isTrialing, trialDaysLeft, generationsRemaining, closetRemaining } = useSubscription();
+  const { tier } = useSubscription();
   const { preferences, resetOnboarding } = useOnboarding();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
-
-  const handleUpgrade = () => {
-    router.push('/subscription' as any);
-  };
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -76,27 +71,9 @@ export default function ProfileScreen() {
             <Text style={styles.email}>{user?.email || "demo@dripmaxx.ai"}</Text>
           </View>
 
-          <TouchableOpacity style={styles.premiumCard} onPress={handleUpgrade} activeOpacity={0.8}>
-            <LinearGradient
-              colors={["#F97316", "#C2410C"]}
-              style={styles.premiumGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Crown color="#FEF3C7" size={24} />
-              <View style={styles.premiumContent}>
-                <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
-                <Text style={styles.premiumSubtitle}>
-                  Unlimited outfits & exclusive features
-                </Text>
-              </View>
-              <ChevronRight color="rgba(255,255,255,0.6)" size={22} />
-            </LinearGradient>
-          </TouchableOpacity>
-
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Account Information</Text>
-            
+
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
                 <User color="#FB923C" size={18} />
@@ -131,25 +108,16 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.infoItem} onPress={() => router.push('/subscription' as any)} activeOpacity={0.7}>
+            <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
                 <CreditCard color="#FB923C" size={18} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Subscription</Text>
-                <Text style={styles.infoValue}>
-                  {tierDisplayName(tier)}
-                  {isTrialing && ` (Trial: ${trialDaysLeft}d left)`}
-                  {subscription?.cancelAtPeriodEnd && ' (Canceling)'}
-                </Text>
-                <Text style={styles.infoSubtext}>
-                  {generationsRemaining !== null
-                    ? `${generationsRemaining} generations today`
-                    : 'Unlimited generations'}
-                </Text>
+                <Text style={styles.infoLabel}>Plan</Text>
+                <Text style={styles.infoValue}>{tierDisplayName(tier)} — Beta</Text>
+                <Text style={styles.infoSubtext}>All features unlocked</Text>
               </View>
-              <ChevronRight color="#475569" size={18} />
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.infoItem}>
               <View style={styles.infoIcon}>
@@ -187,18 +155,6 @@ export default function ProfileScreen() {
             </ScrollView>
           </View>
 
-          {!isTrialing && tier === "driplite" && (
-            <TouchableOpacity style={styles.trialBannerSmall} onPress={() => router.push('/subscription' as any)} activeOpacity={0.8}>
-              <View style={styles.trialBannerInner}>
-                <Crown color="#FBBF24" size={20} />
-                <Text style={styles.trialBannerText}>
-                  Start your 3-day free trial of DripMaxx
-                </Text>
-                <ChevronRight color="#FBBF24" size={16} />
-              </View>
-            </TouchableOpacity>
-          )}
-
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Settings</Text>
 
@@ -217,12 +173,6 @@ export default function ProfileScreen() {
                 ))}
               </View>
             )}
-
-            <TouchableOpacity style={styles.menuItem} activeOpacity={0.6}>
-              <CreditCard color="#64748B" size={20} />
-              <Text style={styles.menuText}>Payment Methods</Text>
-              <ChevronRight color="#334155" size={18} />
-            </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/select-budget' as any)} activeOpacity={0.6}>
               <Wallet color="#64748B" size={20} />
@@ -270,7 +220,7 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.version}>DripMaxx AI v1.0.0</Text>
+            <Text style={styles.version}>DripMaxx AI v1.0.0 (Beta)</Text>
             <Text style={styles.copyright}>© 2026 DripMaxx AI</Text>
           </View>
         </ScrollView>
@@ -318,30 +268,6 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 14,
     color: "#64748B",
-  },
-  premiumCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 28,
-  },
-  premiumGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 18,
-    gap: 14,
-  },
-  premiumContent: {
-    flex: 1,
-  },
-  premiumTitle: {
-    fontSize: 17,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-    marginBottom: 3,
-  },
-  premiumSubtitle: {
-    fontSize: 13,
-    color: "rgba(255, 255, 255, 0.6)",
   },
   section: {
     marginBottom: 28,
@@ -478,27 +404,6 @@ const styles = StyleSheet.create({
   prefChipText: {
     color: '#FDBA74',
     fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  trialBannerSmall: {
-    marginBottom: 28,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  trialBannerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-  },
-  trialBannerText: {
-    flex: 1,
-    color: '#FBBF24',
-    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

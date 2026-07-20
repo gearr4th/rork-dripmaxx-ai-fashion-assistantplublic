@@ -17,17 +17,7 @@ app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"] }));
 
 // Health check
 app.get("/", (c: any) => c.json({ status: "ok" }));
-app.get("/test", (c: any) => c.json({ hello: "world", version: "v2-supafix", supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL?.slice(8, 24) }));
-
-// Debug: test if Hono can parse JSON bodies
-app.post("/echo", async (c: any) => {
-  try {
-    const body = await c.req.json();
-    return c.json({ ok: true, body });
-  } catch (err: any) {
-    return c.json({ ok: false, error: err.message }, 400);
-  }
-});
+app.get("/test", (c: any) => c.json({ hello: "world", version: "beta-testflight" }));
 
 // tRPC handler — Hono buffers the raw body internally, so c.req.raw's
 // body stream is already consumed by the time tRPC tries to call .json().
