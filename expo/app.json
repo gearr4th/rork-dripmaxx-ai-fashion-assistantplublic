@@ -17,15 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.rork.dripmaxx-ai-fashion-assistant",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location.",
-        "NSLocationAlwaysUsageDescription": "Allow $(PRODUCT_NAME) to use your location.",
-        "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location.",
-        "UIBackgroundModes": [
-          "location"
-        ]
+        "NSPhotoLibraryUsageDescription": "DripMaxx needs photo access to add clothing items to your wardrobe.",
+        "NSCameraUsageDescription": "DripMaxx needs camera access to photograph your clothes and outfits.",
+        "NSLocationWhenInUseUsageDescription": "DripMaxx uses your location to suggest weather-appropriate outfits."
       }
     },
     "android": {
@@ -39,10 +33,7 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -64,10 +55,10 @@
       [
         "expo-location",
         {
-          "isAndroidForegroundServiceEnabled": true,
-          "isAndroidBackgroundLocationEnabled": true,
-          "isIosBackgroundLocationEnabled": true,
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+          "isAndroidForegroundServiceEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false,
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
       ]
     ],

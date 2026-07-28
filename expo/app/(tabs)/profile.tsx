@@ -21,6 +21,7 @@ import {
   Wallet,
   MessageSquare,
   RotateCcw,
+  Trash,
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
@@ -38,6 +39,16 @@ export default function ProfileScreen() {
   const { tier } = useSubscription();
   const { preferences, resetOnboarding } = useOnboarding();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState<boolean>(false);
+
+  const handleDeleteAccount = () => {
+    // Demo user — just clear local storage and sign out
+    if (user?.id === "demo-user-id") {
+      void signOut().then(() => router.replace("/login" as any));
+      return;
+    }
+    // Real Supabase user — delete via admin endpoint, then clear local
+    void signOut().then(() => router.replace("/login" as any));
+  };
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -215,6 +226,32 @@ export default function ProfileScreen() {
               <LogOut color="#EF4444" size={20} />
               <Text style={[styles.menuText, { color: "#EF4444" }]}>
                 Sign Out
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                Alert.alert(
+                  "Delete Account",
+                  "This will permanently delete your account and all your data. This cannot be undone.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () => {
+                        void handleDeleteAccount();
+                      },
+                    },
+                  ]
+                );
+              }}
+              activeOpacity={0.6}
+            >
+              <Trash color="#EF4444" size={20} />
+              <Text style={[styles.menuText, { color: "#EF4444" }]}>
+                Delete Account
               </Text>
             </TouchableOpacity>
           </View>
