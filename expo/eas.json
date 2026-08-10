@@ -22,7 +22,7 @@
     "production": {
       "ios": {
         "ascAppId": "REPLACE_AFTER_CREATING_APP_RECORD",
-        "appleId": "REPLACE_WITH_YOUR_APPLE_ID_EMAIL"
+        "appleId": "gearr4th@gmail.com"
       }
     }
   }
