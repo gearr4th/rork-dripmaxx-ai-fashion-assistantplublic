@@ -19,7 +19,8 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "DripMaxx needs photo access to add clothing items to your wardrobe.",
         "NSCameraUsageDescription": "DripMaxx needs camera access to photograph your clothes and outfits.",
-        "NSLocationWhenInUseUsageDescription": "DripMaxx uses your location to suggest weather-appropriate outfits."
+        "NSLocationWhenInUseUsageDescription": "DripMaxx uses your location to suggest weather-appropriate outfits.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
