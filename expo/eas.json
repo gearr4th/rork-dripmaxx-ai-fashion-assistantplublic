@@ -12,16 +12,14 @@
     },
     "production": {
       "distribution": "store",
-      "ios": {
-        "enterpriseProvisioning": "adhoc"
-      },
+      "ios": {},
       "credentialsSource": "remote"
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "111170705",
+        "ascAppId": "6800734915",
         "appleId": "gearr4th@gmail.com"
       }
     }
